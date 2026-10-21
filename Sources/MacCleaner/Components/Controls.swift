@@ -83,7 +83,7 @@ struct Badge: View {
         .padding(.horizontal, 7)
         .padding(.vertical, 3)
         .background(Capsule().fill(color))
-        .overlay(Capsule().strokeBorder(.white.opacity(0.25), lineWidth: 0.5))
+        .overlay(Pill().strokeBorder(.white.opacity(0.25), lineWidth: 0.5))
         .fixedSize()
         .accessibilityElement(children: .combine)
     }
@@ -295,7 +295,7 @@ struct Segmented<T: Hashable>: View {
                             if selected {
                                 Capsule()
                                     .fill(Color.white.opacity(0.18))
-                                    .overlay(Capsule().strokeBorder(.white.opacity(0.22), lineWidth: 0.75))
+                                    .overlay(Pill().strokeBorder(.white.opacity(0.22), lineWidth: 0.75))
                                     .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
                                     .matchedGeometryEffect(id: "thumb", in: ns)
                             }
@@ -308,7 +308,7 @@ struct Segmented<T: Hashable>: View {
         }
         .padding(3)
         .background(Capsule().fill(.black.opacity(0.22)))
-        .overlay(Capsule().strokeBorder(.white.opacity(0.08), lineWidth: 0.75))
+        .overlay(Pill().strokeBorder(.white.opacity(0.08), lineWidth: 0.75))
         .fixedSize()
     }
 }
@@ -336,12 +336,29 @@ struct Chip: View {
             .background(
                 Capsule().fill(selected ? AnyShapeStyle(tint.horizontal.opacity(0.55)) : AnyShapeStyle(Color.white.opacity(hover ? 0.12 : 0.07)))
             )
-            .overlay(Capsule().strokeBorder(.white.opacity(selected ? 0.3 : 0.1), lineWidth: 0.75))
+            .overlay(Pill().strokeBorder(.white.opacity(selected ? 0.3 : 0.1), lineWidth: 0.75))
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(selected ? .isSelected : [])
         .onHover { hover = $0 }
         .fixedSize()
+    }
+}
+
+/// Capsule replacement for strokes: a stroked SwiftUI `Capsule` leaves hairlines past both ends,
+/// a rounded rectangle with radius = height / 2 looks identical and renders clean.
+struct Pill: InsettableShape {
+    var insetAmount: CGFloat = 0
+
+    func path(in rect: CGRect) -> Path {
+        let r = rect.insetBy(dx: insetAmount, dy: insetAmount)
+        return RoundedRectangle(cornerRadius: min(r.width, r.height) / 2, style: .circular).path(in: r)
+    }
+
+    func inset(by amount: CGFloat) -> Pill {
+        var copy = self
+        copy.insetAmount += amount
+        return copy
     }
 }

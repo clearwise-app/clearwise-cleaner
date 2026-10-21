@@ -76,7 +76,7 @@ private struct AreaPills: View {
                 .padding(.horizontal, 12)
                 .frame(height: 32)
                 .background(Capsule().fill(.white.opacity(0.07)))
-                .overlay(Capsule().strokeBorder(.white.opacity(0.1), lineWidth: 0.75))
+                .overlay(Pill().strokeBorder(.white.opacity(0.1), lineWidth: 0.75))
             }
         }
     }

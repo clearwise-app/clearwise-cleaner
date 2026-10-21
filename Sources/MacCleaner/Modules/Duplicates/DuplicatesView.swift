@@ -279,7 +279,7 @@ private struct GroupCard: View {
                         .padding(.horizontal, 10)
                         .frame(height: 24)
                         .background(Capsule().fill(Theme.warning.opacity(0.14)))
-                        .overlay(Capsule().strokeBorder(Theme.warning.opacity(0.3), lineWidth: 0.5))
+                        .overlay(Pill().strokeBorder(Theme.warning.opacity(0.3), lineWidth: 0.5))
                         .fixedSize()
                         .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 } else {
@@ -476,7 +476,7 @@ private struct KeepToggle: View {
         }
         .padding(2)
         .background(Capsule().fill(.black.opacity(0.24)))
-        .overlay(Capsule().strokeBorder(.white.opacity(0.08), lineWidth: 0.75))
+        .overlay(Pill().strokeBorder(.white.opacity(0.08), lineWidth: 0.75))
         .fixedSize()
         .animation(Theme.quick, value: removing)
         .accessibilityElement(children: .ignore)
@@ -506,10 +506,10 @@ private struct KeepToggle: View {
                 if active {
                     if keep {
                         Capsule().fill(Theme.success.opacity(0.16))
-                            .overlay(Capsule().strokeBorder(Theme.success.opacity(0.65), lineWidth: 1.25))
+                            .overlay(Pill().strokeBorder(Theme.success.opacity(0.65), lineWidth: 1.25))
                     } else {
                         Capsule().fill(tint.horizontal.opacity(0.7))
-                            .overlay(Capsule().strokeBorder(.white.opacity(0.7), lineWidth: 1.25))
+                            .overlay(Pill().strokeBorder(.white.opacity(0.7), lineWidth: 1.25))
                     }
                 }
             }

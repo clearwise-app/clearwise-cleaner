@@ -90,7 +90,7 @@ struct CleaningOverlay: View {
         .padding(.trailing, 16)
         .frame(height: 38)
         .background(Capsule().fill(.white.opacity(0.07)))
-        .overlay(Capsule().strokeBorder(.white.opacity(0.12), lineWidth: 0.75))
+        .overlay(Pill().strokeBorder(.white.opacity(0.12), lineWidth: 0.75))
     }
 
     private func dial(diameter: CGFloat) -> some View {

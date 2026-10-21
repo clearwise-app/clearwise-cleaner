@@ -490,7 +490,7 @@ private struct BatchSummaryView: View {
                 .padding(.bottom, 12)
             }
 
-            ActionFooter(title: "Удалить \(Fmt.apps(n))", tint: .uninstaller, action: model.requestBatchUninstall) {
+            ActionFooter(title: "Удалить \(n)", tint: .uninstaller, action: model.requestBatchUninstall) {
                 SelectionSummary(bytes: totals.total, count: totals.count, label: "Будет удалено", noun: .items)
             } trailing: {
                 Button("Снять отметки", action: model.clearChecked)

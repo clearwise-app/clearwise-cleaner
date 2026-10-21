@@ -77,7 +77,7 @@ struct StorageSegmentBar: View {
             let progress: CGFloat = (grown || isSnapshot) ? 1 : 0
             ZStack(alignment: .leading) {
                 Capsule().fill(.white.opacity(0.11))
-                    .overlay(Capsule().strokeBorder(.white.opacity(0.05), lineWidth: 0.5))
+                    .overlay(Pill().strokeBorder(.white.opacity(0.05), lineWidth: 0.5))
                 ForEach(Array(segments.enumerated()), id: \.element.kind) { i, s in
                     let isLast = i == segments.count - 1
                     let lead: CGFloat = i == 0 ? height / 2 : 1.5

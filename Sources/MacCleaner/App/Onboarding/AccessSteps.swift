@@ -348,6 +348,8 @@ struct GrantedStep: View {
             SuccessMark(tint: .smartCare, scale: metrics.inSheet ? 0.55 : (metrics.compact ? 0.62 : 0.85))
                 .scaleEffect(shown || reduceMotion || isSnapshot ? 1 : 0.9)
                 .opacity(shown || isSnapshot ? 1 : 0)
+                // The halo reaches past the mark's frame; in the sheet it needs room under the card's edge.
+                .padding(.top, metrics.inSheet ? 18 : 0)
                 .padding(.bottom, metrics.gap)
 
             Text("Доступ открыт")
