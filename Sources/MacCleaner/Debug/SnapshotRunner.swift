@@ -85,6 +85,13 @@ enum SnapshotRunner {
                 fillAll(m)
                 m.smartCare.phase = .results
             },
+            Scene(name: "03b_smartcare_review") { m in
+                m.selection = .smartCare
+                fillAll(m)
+                m.smartCare.phase = .results
+                m.smartCare.reviewing = true
+                if let first = m.junk.categories.first { m.junk.expanded = [first.id] }
+            },
             Scene(name: "04_smartcare_done") { m in
                 m.selection = .smartCare
                 m.smartCare.phase = .done
@@ -183,6 +190,48 @@ enum SnapshotRunner {
                     m.diskMap.collect(dl.children[0], parent: dl)
                 }
             },
+            Scene(name: "dup_idle") { m in m.selection = .duplicates },
+            Scene(name: "dup_scanning") { m in
+                m.selection = .duplicates
+                m.duplicates.phase = .scanning
+                m.duplicates.progress = ScanProgress(phase: "Ищем файлы — Загрузки", fraction: 0.14,
+                                                     currentPath: MockData.h("Downloads/Telegram Desktop/DSC_0142.jpg").path)
+            },
+            Scene(name: "dup_results") { m in
+                m.selection = .duplicates
+                m.duplicates.apply(MockData.duplicates)
+            },
+            Scene(name: "dup_rule_hint") { m in
+                m.selection = .duplicates
+                m.duplicates.apply(MockData.duplicates)
+                // The user kept a second copy of the video, then tried to remove the last kept copy of the ISO.
+                if let video = m.duplicates.groups.first(where: { $0.kind == .video }) {
+                    m.duplicates.setRemove(false, video.files[2], in: video)
+                }
+                if let iso = m.duplicates.groups.first(where: { $0.kind == .diskImage }),
+                   let kept = iso.files.first(where: { !m.duplicates.isMarked($0) }) {
+                    m.duplicates.setRemove(true, kept, in: iso)
+                }
+            },
+            Scene(name: "dup_confirm") { m in
+                m.selection = .duplicates
+                m.duplicates.apply(MockData.duplicates)
+                m.duplicates.requestTrash()
+            },
+            Scene(name: "dup_done") { m in
+                m.selection = .duplicates
+                m.duplicates.phase = .done
+                m.duplicates.result = RemovalResult(removed: Array(repeating: MockData.h("x"), count: 14),
+                                                    failed: [RemovalFailure(url: MockData.h("Desktop/Скан диплома.pdf"),
+                                                                            reason: "Операция не разрешена: файл заблокирован")],
+                                                    freedBytes: 12_620_000_000)
+            },
+            Scene(name: "dup_compact_results", size: NSSize(width: 1100, height: 720)) { m in
+                m.selection = .duplicates
+                m.duplicates.apply(MockData.duplicates)
+                m.duplicates.kindFilter = .document
+            },
+            Scene(name: "dup_compact_idle", size: NSSize(width: 1100, height: 720)) { m in m.selection = .duplicates },
             Scene(name: "21_compact_smartcare_results", size: NSSize(width: 1100, height: 720)) { m in
                 m.selection = .smartCare
                 fillAll(m)
@@ -221,6 +270,15 @@ enum SnapshotRunner {
             Scene(name: "live_oldfiles") { m in
                 m.selection = .oldFiles
                 await m.oldFiles.scan()
+            },
+            Scene(name: "live_duplicates") { m in
+                m.selection = .duplicates
+                // MACCLEANER_DUP_ROOT points the scan at a fixture folder (this Mac may simply have no duplicates).
+                if let root = ProcessInfo.processInfo.environment["MACCLEANER_DUP_ROOT"] {
+                    m.duplicates.roots = [URL(fileURLWithPath: root)]
+                }
+                await m.duplicates.scan()
+                print("live duplicates: \(m.duplicates.groups.count) groups")
             },
             Scene(name: "live_diskmap") { m in
                 m.selection = .diskMap

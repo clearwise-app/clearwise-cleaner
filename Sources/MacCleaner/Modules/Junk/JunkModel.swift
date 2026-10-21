@@ -86,6 +86,12 @@ final class JunkModel {
         if selection.contains(item.url) { selection.remove(item.url) } else { selection.insert(item.url) }
     }
 
+    func selectSafeOnly() {
+        selection = Set(categories.filter(\.isSelectedByDefault).flatMap { $0.items.map(\.url) })
+    }
+
+    func selectNone() { selection = [] }
+
     func toggleExpanded(_ cat: JunkCategory) {
         withAnimation(Theme.spring) {
             if expanded.contains(cat.id) { expanded.remove(cat.id) } else { expanded.insert(cat.id) }

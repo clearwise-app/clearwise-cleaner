@@ -29,14 +29,18 @@ enum DuplicateFinder {
         let monitor = WalkMonitor(totalUnits: 1, handler: progress, parent: outer)
         let phase = "Поиск дубликатов"
 
-        // 1. Walk. Packages are not entered: their internals are not the user's files.
+        // 1. Walk (first 20% of progress, one step per root). Packages are not entered: their internals are not the user's files.
         let sink = ResultSink<WalkedFile>()
+        let walkedRoots = ResultSink<URL>()
         FileAnalyzer.concurrentRoots(roots) { root in
             let options = FileWalker.Options(minAllocatedSize: max(1, minSize), includePackages: false, phase: phase)
             FileWalker.walk(root: root, options: options, monitor: monitor) { file in
                 if FileWalker.isICloudPlaceholder(file.url) { return }
                 sink.append(file)
             }
+            walkedRoots.append(root)
+            monitor.force(phase: FileWalker.displayPhase(for: root),
+                          fraction: 0.2 * Double(walkedRoots.values.count) / Double(max(1, roots.count)))
         }
         if monitor.isCancelled { return [] }
         monitor.force(phase: phase, fraction: 0.2)

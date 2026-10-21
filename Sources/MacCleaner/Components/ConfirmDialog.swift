@@ -22,7 +22,7 @@ struct ConfirmDialog: View {
 
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
                     BigSize(bytes: confirmation.bytes, size: 40, weight: .light)
-                    Text(Fmt.items(confirmation.count))
+                    Text(confirmation.noun(confirmation.count))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(Theme.textSecondary)
                 }

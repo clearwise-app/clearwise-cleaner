@@ -66,9 +66,11 @@ private struct JunkResultsView: View {
     }
 }
 
-private struct JunkCategoryCard: View {
+/// Category with its items and keep/delete checkboxes. Also used by Smart Care's review step.
+struct JunkCategoryCard: View {
     let model: JunkModel
     let category: JunkCategory
+    var tint: ModuleTint = .junk
     @State private var hover = false
 
     private static let pageSize = 200
@@ -78,8 +80,8 @@ private struct JunkCategoryCard: View {
         let expanded = model.expanded.contains(category.id)
         VStack(spacing: 0) {
             HStack(spacing: 14) {
-                CheckBox(state: model.state(of: category), tint: .junk) { model.toggle(category) }
-                IconTile(symbol: category.symbol, tint: .junk, size: 36)
+                CheckBox(state: model.state(of: category), tint: tint) { model.toggle(category) }
+                IconTile(symbol: category.symbol, tint: tint, size: 36)
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 8) {
                         Text(category.title)
@@ -118,7 +120,7 @@ private struct JunkCategoryCard: View {
                 LazyVStack(spacing: 0) {
                     ForEach(category.items.prefix(shown)) { item in
                         FileRow(url: item.url, size: item.size, title: model.notes[item.url], isChecked: model.selection.contains(item.url),
-                                tint: .junk, indent: 30, onToggle: { model.toggle(item) })
+                                tint: tint, indent: 30, onToggle: { model.toggle(item) })
                     }
                     if category.items.count > shown {
                         Button("Показать ещё \(Fmt.integer(min(Self.pageSize, category.items.count - shown)))") {

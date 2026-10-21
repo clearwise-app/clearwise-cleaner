@@ -26,6 +26,7 @@ struct Sidebar: View {
             item(.uninstaller)
             section("Файлы")
             item(.oldFiles)
+            item(.duplicates)
             item(.diskMap)
 
             Spacer(minLength: 12)
@@ -76,6 +77,10 @@ struct Sidebar: View {
             return model.appsState == .loaded ? "\(model.apps.filter { !$0.isSystemApp }.count)" : nil
         case .oldFiles:
             return model.oldFiles.phase == .results && model.oldFiles.totalSize > 0 ? Fmt.size(model.oldFiles.totalSize) : nil
+        case .duplicates:
+            let d = model.duplicates
+            if d.phase == .scanning { return "\(Int(d.progress.fraction * 100))%" }
+            return d.phase == .results && d.reclaimable > 0 ? Fmt.size(d.reclaimable) : nil
         case .diskMap:
             return nil
         }

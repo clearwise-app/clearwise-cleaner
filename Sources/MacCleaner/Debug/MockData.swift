@@ -174,6 +174,49 @@ enum MockData {
         ]
     }
 
+    // MARK: Duplicates
+
+    /// Groups as the engine returns them: biggest waste first, oldest copy first inside a group.
+    static var duplicates: [[AnalyzedFile]] {
+        func g(_ size: Int64, _ kind: FileKind, _ copies: [(String, Double)]) -> [AnalyzedFile] {
+            copies.sorted { $0.1 > $1.1 }.map { path, days in
+                AnalyzedFile(item: FileItem(url: h(path), size: size, isDirectory: false, lastUsed: nil,
+                                            modified: daysAgo(days)), kind: kind)
+            }
+        }
+        let groups: [[AnalyzedFile]] = [
+            // Oldest copy is in Downloads → the copy filed in Movies is kept.
+            g(3_840 * MB, .video, [("Downloads/Свадьба Ани и Миши — финал.mp4", 520),
+                                   ("Movies/Свадьба/Свадьба Ани и Миши — финал.mp4", 498),
+                                   ("Desktop/Свадьба Ани и Миши — финал.mp4", 31)]),
+            g(4_710 * MB, .diskImage, [("Documents/Образы/ubuntu-24.04.1-desktop-arm64.iso", 410),
+                                       ("Downloads/ubuntu-24.04.1-desktop-arm64.iso", 120)]),
+            g(2_130 * MB, .archive, [("Downloads/Отпуск в Грузии — все фото.zip", 300),
+                                     ("Documents/Архив/Отпуск в Грузии — все фото.zip", 290)]),
+            g(1_210 * MB, .audio, [("Music/Подкаст/Выпуск 12 — исходник.wav", 305),
+                                   ("Desktop/Подкаст копия/Выпуск 12 — исходник.wav", 200)]),
+            g(344 * MB, .document, [("Documents/Работа/Презентация Q3 2023.key", 402),
+                                    ("Desktop/Презентация Q3 2023.key", 380),
+                                    ("Downloads/Презентация Q3 2023 (1).key", 379)]),
+            // Both copies in Downloads → simply the oldest stays.
+            g(232 * MB, .diskImage, [("Downloads/Figma-124.3.dmg", 201),
+                                     ("Downloads/Figma-124.3 (1).dmg", 160)]),
+            g(18_400 * KB, .image, [("Pictures/Байкал 2024/DSC_0142.jpg", 140),
+                                    ("Downloads/Telegram Desktop/DSC_0142.jpg", 138),
+                                    ("Desktop/На печать/Байкал — обложка.jpg", 12)]),
+            g(12_600 * KB, .document, [("Documents/Учёба/Курсовая — финальная версия.docx", 260),
+                                       ("Desktop/Курсовая — финальная версия.docx", 255),
+                                       ("Downloads/Курсовая — финальная версия (2).docx", 254)]),
+            g(4_200 * KB, .document, [("Documents/Договоры/Договор аренды 2024.pdf", 330),
+                                      ("Downloads/Договор аренды 2024.pdf", 331)]),
+            g(2_400 * KB, .document, [("Documents/Сканы/Скан диплома.pdf", 700),
+                                      ("Desktop/Скан диплома.pdf", 690)]),
+        ]
+        return groups.sorted {
+            ($0.first!.item.size * Int64($0.count - 1)) > ($1.first!.item.size * Int64($1.count - 1))
+        }
+    }
+
     // MARK: Disk map
 
     static var diskTree: DirectoryNode {

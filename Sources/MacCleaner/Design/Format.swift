@@ -53,6 +53,8 @@ enum Fmt {
     static func items(_ n: Int) -> String { "\(integer(n)) \(plural(n, "объект", "объекта", "объектов"))" }
     static func files(_ n: Int) -> String { "\(integer(n)) \(plural(n, "файл", "файла", "файлов"))" }
     static func apps(_ n: Int) -> String { "\(integer(n)) \(plural(n, "приложение", "приложения", "приложений"))" }
+    static func copies(_ n: Int) -> String { "\(integer(n)) \(plural(n, "копия", "копии", "копий"))" }
+    static func groups(_ n: Int) -> String { "\(integer(n)) \(plural(n, "группа", "группы", "групп"))" }
     static func categories(_ n: Int) -> String { "\(integer(n)) \(plural(n, "категория", "категории", "категорий"))" }
 
     /// Months since a date, nil if unknown.
@@ -87,6 +89,19 @@ enum Fmt {
         f.locale = Locale(identifier: "ru_RU")
         f.dateFormat = "d MMM yyyy"
         return f.string(from: date)
+    }
+
+    /// Russian name of a standard home folder ("Загрузки"), else the folder name.
+    static func folderTitle(_ url: URL) -> String {
+        switch url.lastPathComponent {
+        case "Desktop": "Рабочий стол"
+        case "Documents": "Документы"
+        case "Downloads": "Загрузки"
+        case "Movies": "Фильмы"
+        case "Music": "Музыка"
+        case "Pictures": "Изображения"
+        default: url.lastPathComponent
+        }
     }
 
     /// "~/Library/Caches/com.foo" — shorter but still a full, unambiguous path.

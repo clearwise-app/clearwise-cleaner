@@ -283,6 +283,7 @@ struct SelectionSummary: View {
     let bytes: Int64
     let count: Int
     var label = "Выбрано"
+    var noun: (Int) -> String = Fmt.items
 
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
@@ -291,7 +292,7 @@ struct SelectionSummary: View {
                 .foregroundStyle(Theme.textTertiary)
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 SizeText(bytes: bytes, font: .number(24, weight: .light))
-                Text(count == 0 ? "ничего" : Fmt.items(count))
+                Text(count == 0 ? "ничего" : noun(count))
                     .font(.system(size: 12.5))
                     .foregroundStyle(Theme.textSecondary)
             }

@@ -193,6 +193,13 @@ extension AppModule {
                 .init(symbol: "doc.zipper", angle: -30, distance: 0.6, scale: 0.8),
                 .init(symbol: "photo.fill", angle: 212, distance: 0.58, scale: 0.75),
             ])
+        case .duplicates:
+            HeroSpec(symbol: "doc.on.doc.fill", satellites: [
+                .init(symbol: "photo.fill", angle: 148, distance: 0.58),
+                .init(symbol: "square.on.square", angle: 32, distance: 0.6, scale: 0.85),
+                .init(symbol: "film.fill", angle: -30, distance: 0.6, scale: 0.8),
+                .init(symbol: "doc.text.fill", angle: 212, distance: 0.58, scale: 0.75),
+            ])
         case .diskMap:
             HeroSpec(symbol: "chart.pie.fill", satellites: [
                 .init(symbol: "folder.fill", angle: 150, distance: 0.58),

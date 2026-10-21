@@ -48,6 +48,7 @@ struct RootView: View {
             case .junk: JunkView(model: model.junk)
             case .uninstaller: UninstallerView(model: model.uninstaller)
             case .oldFiles: OldFilesView(model: model.oldFiles)
+            case .duplicates: DuplicatesView(model: model.duplicates)
             case .diskMap: DiskMapView(model: model.diskMap)
             }
         }

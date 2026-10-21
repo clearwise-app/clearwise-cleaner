@@ -100,7 +100,9 @@ private struct SmartCareResults: View {
                     .foregroundStyle(ModuleTint.smartCare.accent)
                     BigSize(bytes: junk.selectedSize, size: compact ? 52 : 64)
                         .padding(.top, 2)
-                    Text(junk.selectedSize > 0
+                    Text(model.reviewing
+                         ? "будет удалено · останется \(Fmt.size(max(0, junk.totalSize - junk.selectedSize)))"
+                         : junk.selectedSize > 0
                          ? "можно освободить прямо сейчас — только безопасный мусор"
                          : "безопасного мусора не найдено — загляните в разделы ниже")
                         .font(.system(size: 14))
@@ -109,13 +111,22 @@ private struct SmartCareResults: View {
                 Spacer()
                 VStack(alignment: .trailing, spacing: 10) {
                     DiskCapsule(disk: app.disk)
-                    Button { model.startScan() } label: { Label("Сканировать заново", systemImage: "arrow.clockwise") }
-                        .buttonStyle(PillButtonStyle(kind: .quiet))
+                    if model.reviewing {
+                        Button { model.closeReview() } label: { Label("Назад к обзору", systemImage: "chevron.left") }
+                            .buttonStyle(PillButtonStyle(kind: .quiet))
+                    } else {
+                        Button { model.startScan() } label: { Label("Сканировать заново", systemImage: "arrow.clockwise") }
+                            .buttonStyle(PillButtonStyle(kind: .quiet))
+                    }
                 }
             }
             .padding(.horizontal, Theme.Space.page)
             .padding(.top, 30)
 
+            if model.reviewing {
+                SmartCareReview(junk: junk)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            } else {
             Grid(horizontalSpacing: 14, verticalSpacing: 14) {
                 GridRow {
                     SmartTile(module: .junk, title: "Системный мусор", bytes: junk.totalSize,
@@ -173,17 +184,65 @@ private struct SmartCareResults: View {
             }
             .padding(.horizontal, Theme.Space.page)
             .padding(.top, compact ? 18 : 26)
+            .transition(.opacity)
 
             Spacer(minLength: 10)
+            }
 
-            ActionFooter(title: "Очистить", tint: .smartCare, enabled: junk.selectedCount > 0, action: model.requestClean) {
-                SelectionSummary(bytes: junk.selectedSize, count: junk.selectedCount, label: "Будет очищено")
-            } trailing: {
-                Label("Остальное — только после вашего просмотра", systemImage: "hand.raised.fill")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Theme.textTertiary)
+            if model.reviewing {
+                ActionFooter(title: "Очистить", tint: .smartCare, enabled: junk.selectedCount > 0, action: model.requestClean) {
+                    SelectionSummary(bytes: junk.selectedSize, count: junk.selectedCount, label: "Будет удалено")
+                } trailing: {
+                    VStack(alignment: .trailing, spacing: 1) {
+                        Text("Останется")
+                            .font(.system(size: 11.5, weight: .medium))
+                            .foregroundStyle(Theme.textTertiary)
+                        SizeText(bytes: max(0, junk.totalSize - junk.selectedSize), font: .number(24, weight: .light))
+                    }
+                }
+            } else {
+                ActionFooter(title: "Выбрать", tint: .smartCare, enabled: !junk.categories.isEmpty, action: model.openReview) {
+                    SelectionSummary(bytes: junk.selectedSize, count: junk.selectedCount, label: "Предлагаем удалить")
+                } trailing: {
+                    Label("Дальше вы выберете, что удалить, а что оставить", systemImage: "hand.raised.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Theme.textTertiary)
+                }
             }
         }
+        }
+    }
+}
+
+/// Step 2 of Smart Care: every junk category with its size and a keep/delete choice per category and per file.
+private struct SmartCareReview: View {
+    let junk: JunkModel
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Label("Отмеченное будет удалено в Корзину, снятые галочки — останется", systemImage: "checklist")
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(Theme.textSecondary)
+                Spacer()
+                Button("Только безопасное") { junk.selectSafeOnly() }
+                    .buttonStyle(PillButtonStyle(kind: .quiet))
+                Button("Снять всё") { junk.selectNone() }
+                    .buttonStyle(PillButtonStyle(kind: .quiet))
+            }
+            .padding(.horizontal, Theme.Space.page)
+            .padding(.top, 18)
+
+            ScrollView {
+                LazyVStack(spacing: 10) {
+                    ForEach(junk.categories) { cat in
+                        JunkCategoryCard(model: junk, category: cat, tint: .smartCare)
+                    }
+                }
+                .padding(.horizontal, Theme.Space.page)
+                .padding(.vertical, 14)
+            }
+            .scrollIndicators(.automatic)
         }
     }
 }

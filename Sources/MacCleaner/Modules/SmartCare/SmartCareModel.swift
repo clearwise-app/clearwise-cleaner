@@ -10,6 +10,8 @@ final class SmartCareModel {
 
     var phase: ModulePhase = .idle
     var result: RemovalResult?
+    /// Second step after the overview: the user picks what to delete and what to keep.
+    var reviewing = false
     @ObservationIgnored private var task: Task<Void, Never>?
 
     struct AreaStatus {
@@ -58,7 +60,7 @@ final class SmartCareModel {
 
     func scan() async {
         guard let app else { return }
-        withAnimation(Theme.spring) { phase = .scanning }
+        withAnimation(Theme.spring) { phase = .scanning; reviewing = false }
         app.oldFiles.mode = .old
         async let junk: Void = app.junk.scan()
         async let old: Void = app.oldFiles.scan()
@@ -76,7 +78,11 @@ final class SmartCareModel {
         withAnimation(Theme.spring) { phase = .idle }
     }
 
-    // MARK: Clean (safe junk only)
+    // MARK: Review → Clean
+
+    func openReview() { withAnimation(Theme.spring) { reviewing = true } }
+    func closeReview() { withAnimation(Theme.spring) { reviewing = false } }
+
 
     func requestClean() {
         guard let app, app.junk.selectedCount > 0 else { return }
@@ -109,6 +115,6 @@ final class SmartCareModel {
 
     func finish() {
         result = nil
-        withAnimation(Theme.spring) { phase = .results }
+        withAnimation(Theme.spring) { phase = .results; reviewing = false }
     }
 }

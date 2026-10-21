@@ -76,6 +76,12 @@ struct ModuleTint: Equatable {
                0x381906, 0x7A3A0E, 0x6C2610,
                0x110703, 0x4A2208, 0x7E2C12] as [UInt32]).map { Color(hex: $0) }
     )
+    static let duplicates = ModuleTint(
+        accent: Color(hex: 0x52E3FF), accent2: Color(hex: 0x3A7CFF),
+        mesh: ([0x03121C, 0x06304A, 0x0A2846,
+               0x06364F, 0x0D6390, 0x113F7E,
+               0x020B12, 0x0A3D5E, 0x0F578C] as [UInt32]).map { Color(hex: $0) }
+    )
     static let diskMap = ModuleTint(
         accent: Color(hex: 0xFF72B6), accent2: Color(hex: 0xA874FF),
         mesh: ([0x18071F, 0x380D40, 0x480F36,

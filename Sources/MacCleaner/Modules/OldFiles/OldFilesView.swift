@@ -52,7 +52,7 @@ private struct OldFilesOptionsView: View {
                     .font(.system(size: 12))
                     .foregroundStyle(Theme.textTertiary)
                 ForEach(model.roots, id: \.self) { url in
-                    Chip(title: displayName(url), selected: !model.disabledRoots.contains(url), tint: .oldFiles) {
+                    Chip(title: Fmt.folderTitle(url), selected: !model.disabledRoots.contains(url), tint: .oldFiles) {
                         model.toggleRoot(url)
                     }
                 }
@@ -65,18 +65,6 @@ private struct OldFilesOptionsView: View {
         HStack(spacing: 8) {
             Text(title).font(.system(size: 12)).foregroundStyle(Theme.textTertiary)
             content()
-        }
-    }
-
-    private func displayName(_ url: URL) -> String {
-        switch url.lastPathComponent {
-        case "Desktop": "Рабочий стол"
-        case "Documents": "Документы"
-        case "Downloads": "Загрузки"
-        case "Movies": "Фильмы"
-        case "Music": "Музыка"
-        case "Pictures": "Изображения"
-        default: url.lastPathComponent
         }
     }
 }

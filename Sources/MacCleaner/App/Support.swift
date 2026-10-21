@@ -60,6 +60,8 @@ struct Confirmation: Identifiable {
     var needsAdmin = false
     var warning: String? = nil
     var tint: ModuleTint
+    /// How the count is spelled ("14 объектов" by default, "14 копий" for duplicates).
+    var noun: (Int) -> String = Fmt.items
     var action: @MainActor () -> Void
 }
 

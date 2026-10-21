@@ -24,6 +24,7 @@ final class AppModel {
     let junk = JunkModel()
     let uninstaller = UninstallerModel()
     let oldFiles = OldFilesModel()
+    let duplicates = DuplicatesModel()
     let diskMap = DiskMapModel()
 
     init(probeSystem: Bool = true) {
@@ -33,6 +34,7 @@ final class AppModel {
         junk.app = self
         uninstaller.app = self
         oldFiles.app = self
+        duplicates.app = self
         diskMap.app = self
     }
 
@@ -87,6 +89,7 @@ final class AppModel {
         guard !removed.isEmpty else { return }
         junk.forget(removed)
         oldFiles.forget(removed)
+        duplicates.forget(removed)
         uninstaller.forget(removed)
         refreshSystemState()
     }
