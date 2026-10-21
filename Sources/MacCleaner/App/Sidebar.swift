@@ -11,10 +11,10 @@ struct Sidebar: View {
             // a header here only repeated Smart Care's icon and could not be clicked.
             Color.clear.frame(height: 52)
 
+            // Two groups, no one-item sections: what gets cleaned (junk, apps) and the user's own files.
             item(.smartCare)
             section("Очистка")
             item(.junk)
-            section("Приложения")
             item(.uninstaller)
             section("Файлы")
             item(.oldFiles)

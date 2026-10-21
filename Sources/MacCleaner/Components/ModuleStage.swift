@@ -189,37 +189,60 @@ struct FDABanner: View {
     }
 }
 
-/// «Последняя уборка · 3 дня назад · 1,2 ГБ» (Smart Care, top right). Nothing until the first cleanup;
-/// the disk itself is shown once, in the sidebar.
+/// Smart Care, top right: a small «↺ 31,5 МБ» chip; hovering (or clicking) shows when the last cleanup was.
+/// Nothing until the first cleanup. The disk itself is shown once, in the sidebar.
 struct LastCleanupChip: View {
     @Environment(AppModel.self) private var app
+    @State private var hover = false
+    @State private var showsDetails = false
+    @State private var hoverTask: Task<Void, Never>?
 
     var body: some View {
         if let last = app.lastCleanup {
-            // Re-reads «… назад» once a minute while visible.
-            TimelineView(.periodic(from: .now, by: 60)) { context in
-                HStack(spacing: 8) {
+            Button { showsDetails.toggle() } label: {
+                HStack(spacing: 5) {
                     Image(systemName: "clock.arrow.circlepath")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 10.5, weight: .semibold))
                         .foregroundStyle(ModuleTint.smartCare.accent)
-                    Text("Последняя уборка")
-                        .foregroundStyle(Theme.textSecondary)
-                    Text(Self.ago(last.date, now: context.date))
-                        .foregroundStyle(Theme.text)
-                    Text("·").foregroundStyle(.themeTertiary)
                     Text(Fmt.size(last.bytes))
+                        .font(.system(size: 11.5, weight: .medium, design: .rounded))
                         .monospacedDigit()
-                        .foregroundStyle(Theme.text)
+                        .foregroundStyle(Theme.textSecondary)
                 }
-                .font(.system(size: 12, weight: .medium, design: .rounded))
                 .lineLimit(1)
                 .fixedSize()
-                .padding(.horizontal, 14)
-                .frame(height: 34)
-                .glass(radius: 17, shadow: false)
-                .accessibilityElement(children: .combine)
+                .padding(.horizontal, 10)
+                .frame(height: 26)
+                .background(Pill().fill(.white.opacity(hover || showsDetails ? 0.1 : 0.06)))
+                .contentShape(Pill())
             }
-            .help("Убрано в Корзину или удалено \(last.date.formatted(date: .long, time: .shortened))")
+            .buttonStyle(.plain)
+            .onHover { inside in
+                hover = inside
+                hoverTask?.cancel()
+                hoverTask = Task {
+                    try? await Task.sleep(for: .milliseconds(inside ? 350 : 150))
+                    guard !Task.isCancelled else { return }
+                    showsDetails = inside
+                }
+            }
+            .popover(isPresented: $showsDetails, arrowEdge: .bottom) {
+                TimelineView(.periodic(from: .now, by: 60)) { context in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Последняя уборка")
+                            .font(.system(size: 13, weight: .semibold))
+                        Text("\(Self.ago(last.date, now: context.date).capitalizedFirst) · \(last.date.formatted(.dateTime.day().month(.wide).hour().minute().locale(Locale(identifier: "ru_RU"))))")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                        Text("Убрано \(Fmt.size(last.bytes))")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(14)
+                }
+            }
+            .accessibilityLabel("Последняя уборка: \(Self.ago(last.date, now: Date())), \(Fmt.size(last.bytes))")
+            .accessibilityHint("Показать подробности")
         }
     }
 
