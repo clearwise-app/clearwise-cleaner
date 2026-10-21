@@ -377,49 +377,59 @@ private struct SmartTile<Preview: View>: View {
 
     var body: some View {
         Button(action: onOpen) {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .top) {
-                    IconTile(symbol: symbol ?? module.symbol, tint: module.tint, size: 40)
-                    Spacer()
-                    if included {
-                        Badge(text: "Входит в очистку", color: Theme.success, symbol: "checkmark")
-                    } else {
-                        Badge(text: "На ваш выбор", color: .white.opacity(0.7), symbol: "hand.point.up.left.fill")
-                    }
-                }
-                Text(title)
-                    .font(.cardTitle)
-                    .foregroundStyle(Theme.text)
-                    .padding(.top, 14)
-                BigSize(bytes: bytes, size: 34, weight: .light)
-                    .padding(.top, 2)
-                Text(caption)
-                    .font(.caption12)
-                    .foregroundStyle(Theme.textSecondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-                    .padding(.top, 2)
-                if showsPreview {
-                    VStack(alignment: .leading, spacing: 5) { preview }
-                        .padding(.top, 12)
-                }
-                Spacer(minLength: 10)
-                HStack(spacing: 4) {
-                    Text(openText)
-                        .lineLimit(1)
-                    Image(systemName: "arrow.right").font(.system(size: 10, weight: .bold))
-                        .offset(x: hover ? 3 : 0)
-                }
-                .font(.system(size: 12.5, weight: .semibold))
-                .foregroundStyle(module.tint.accent)
+            // The preview list shows only when it fits: on a short window (or under the Trash hint) the tile
+            // drops it instead of growing into the tile below.
+            ViewThatFits(in: .vertical) {
+                if showsPreview { content(preview: true) }
+                content(preview: false)
             }
             .padding(18)
-            .frame(maxWidth: .infinity, minHeight: 196, maxHeight: .infinity, alignment: .topLeading)
+            .frame(maxWidth: .infinity, minHeight: 150, maxHeight: .infinity, alignment: .topLeading)
             .glass(radius: 18, intensity: hover ? 1.4 : 1)
             .contentShape(RoundedRectangle(cornerRadius: 18))
         }
         .buttonStyle(PressScaleStyle())
         .onHover { hover = $0 }
         .animation(Theme.quick, value: hover)
+    }
+
+    private func content(preview showsList: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top) {
+                IconTile(symbol: symbol ?? module.symbol, tint: module.tint, size: 40)
+                Spacer()
+                if included {
+                    Badge(text: "Входит в очистку", color: Theme.success, symbol: "checkmark")
+                } else {
+                    Badge(text: "На ваш выбор", color: .white.opacity(0.7), symbol: "hand.point.up.left.fill")
+                }
+            }
+            Text(title)
+                .font(.cardTitle)
+                .foregroundStyle(Theme.text)
+                .padding(.top, 14)
+            BigSize(bytes: bytes, size: 34, weight: .light)
+                .padding(.top, 2)
+            Text(caption)
+                .font(.caption12)
+                .foregroundStyle(Theme.textSecondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+                .padding(.top, 2)
+            if showsList {
+                VStack(alignment: .leading, spacing: 5) { preview }
+                    .padding(.top, 12)
+            }
+            Spacer(minLength: 10)
+            HStack(spacing: 4) {
+                Text(openText)
+                    .lineLimit(1)
+                Image(systemName: "arrow.right").font(.system(size: 10, weight: .bold))
+                    .offset(x: hover ? 3 : 0)
+            }
+            .font(.system(size: 12.5, weight: .semibold))
+            .foregroundStyle(module.tint.accent)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }

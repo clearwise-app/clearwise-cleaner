@@ -14,10 +14,11 @@ final class UninstallerModel {
 
     var phase: ModulePhase = .idle
     var tab: Tab = .apps
-    var search = ""
+    // Narrowing the list must never leave a hidden app selected: «Удалить» would act on something not shown.
+    var search = "" { didSet { if search != oldValue { keepSelectionVisible() } } }
     var sort: Sort = .size
-    var filter: Filter = .all
-    var showSystemApps = false
+    var filter: Filter = .all { didSet { if filter != oldValue { keepSelectionVisible() } } }
+    var showSystemApps = false { didSet { if showSystemApps != oldValue { keepSelectionVisible() } } }
 
     // Apps
     var selectedAppID: URL?
@@ -130,6 +131,22 @@ final class UninstallerModel {
             guard !Task.isCancelled, selectedAppID == target.url else { return }
             remnants = found.sorted { $0.item.size > $1.item.size }
             remnantSelection = Set(found.filter { $0.confidence >= .medium }.map(\.id))
+            remnantsLoading = false
+        }
+    }
+
+    /// The selected app was filtered out of the list: select the first one shown, or nothing.
+    private func keepSelectionVisible() {
+        guard phase == .results, let id = selectedAppID else { return }
+        let apps = visibleApps
+        guard !apps.contains(where: { $0.url == id }) else { return }
+        if let first = apps.first {
+            select(first)
+        } else {
+            remnantsTask?.cancel()
+            selectedAppID = nil
+            remnants = []
+            remnantSelection = []
             remnantsLoading = false
         }
     }

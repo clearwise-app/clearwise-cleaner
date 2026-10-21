@@ -4,3 +4,10 @@
 build/
 *.xcodeproj/xcuserdata/
 .DS_Store
+*.app
+xcuserdata/
+.claude/settings.local.json
+.env*
+*.p12
+*.mobileprovision
+*.pem
