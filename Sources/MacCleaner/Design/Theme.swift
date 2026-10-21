@@ -124,4 +124,7 @@ extension EnvironmentValues {
     /// True when the view is being rendered for a static snapshot: animations stay at rest.
     @Entry var isSnapshot: Bool = false
     @Entry var moduleTint: ModuleTint = .smartCare
+    /// True when decorative, continuously running animations must stop: window inactive,
+    /// or the full-screen cleaning overlay covers the content. Set by RootView.
+    @Entry var animationsPaused: Bool = false
 }
