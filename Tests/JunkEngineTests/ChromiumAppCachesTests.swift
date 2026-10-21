@@ -175,6 +175,23 @@ final class ChromiumAppCachesTests: XCTestCase {
         XCTAssertTrue(items(JunkCategoryID.chromiumAppCaches, in: withoutAccess).isEmpty)
     }
 
+    func testGroupContainerCachesOfThirdPartyAppsOnlyWithFullDiskAccess() async throws {
+        let telegram = "Library/Group Containers/6N38VWS5BX.ru.keepcoder.Telegram"
+        try file("\(telegram)/Library/Caches/media/x", bytes: 20_000)
+        try file("\(telegram)/appstore/account-1/postbox/db", bytes: 20_000)   // messages: not a cache
+        try file("Library/Group Containers/group.com.apple.notes/Library/Caches/x", bytes: 20_000)
+        try file("Library/Group Containers/UBF8T346G9.com.apple.share/Library/Caches/x", bytes: 20_000)
+        try file("Library/Group Containers/ABCDE12345.com.adguard.safari.AdGuard/Library/Caches/rules", bytes: 20_000)
+
+        var env = environment()
+        let (_, withAccess) = await scan(env)
+        XCTAssertEqual(items(JunkCategoryID.userCaches, in: withAccess), ["\(telegram)/Library/Caches/media"])
+
+        env.readsAppContainers = false
+        let (_, withoutAccess) = await scan(env)
+        XCTAssertTrue(items(JunkCategoryID.userCaches, in: withoutAccess).isEmpty)
+    }
+
     func testItemsAreLabelledWithInstalledAppName() async throws {
         try fakeApp("Visual Studio Code", bundleName: "Code")
         try fakeApp("Discord", bundleName: "Discord")

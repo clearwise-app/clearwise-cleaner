@@ -37,10 +37,11 @@ enum JunkCatalog {
 
     static var userCaches: JunkRule {
         var r = JunkRule(id: JunkCategoryID.userCaches, title: "Кэш приложений",
-                         detail: "Временные данные программ из ~/Library/Caches. Приложения создадут их заново, когда понадобится.",
+                         detail: "Временные данные программ из ~/Library/Caches и их общих контейнеров. Приложения создадут их заново, когда понадобится.",
                          symbol: "internaldrive.fill", risk: .safe)
         r.priority = 0
         r.locations = [.home("Library/Caches")]
+        r.collector = { SpecialCollectors.groupContainerCaches($0) }
         // JetBrains keeps IDE Local History (the user's unsaved-change safety net) inside its cache folder,
         // so it is handled by its own rule that offers only the regenerable subfolders.
         r.excludedNames = protectedCacheNames + [.exact("JetBrains")]
