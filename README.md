@@ -14,6 +14,7 @@
 ![SwiftUI](https://img.shields.io/badge/UI-SwiftUI-0A84FF)
 ![Offline](https://img.shields.io/badge/интернет-не%20нужен-30D158)
 ![Trash first](https://img.shields.io/badge/удаление-в%20Корзину-8E5CF7)
+[![License: MIT](https://img.shields.io/badge/лицензия-MIT-lightgrey)](LICENSE)
 
 </div>
 
@@ -79,3 +80,7 @@ VERSION=1.0.0 scripts/package_release.sh     # build/Clearwise-Cleaner-1.0.0.dmg
 | `Sources/UninstallEngine` | Список приложений, поиск их следов и остатков удалённых |
 | `Sources/SpaceEngine` | Старые и большие файлы, карта диска, дубликаты, разбивка хранилища |
 | `Sources/MacCleaner` | Интерфейс на SwiftUI. С флагом `--snapshot <папка>` (отладочная сборка) сохраняет скриншоты всех экранов на демо-данных |
+
+## Лицензия
+
+[MIT](LICENSE) — пользуйтесь, меняйте и распространяйте свободно, сохранив упоминание авторов.
