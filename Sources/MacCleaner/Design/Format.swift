@@ -50,6 +50,22 @@ enum Fmt {
         return many
     }
 
+    /// Verb agreement with a count: 1, 21, 101 → singular («оставило»), otherwise plural («оставили»).
+    static func verb(_ n: Int, one: String, other: String) -> String {
+        n % 10 == 1 && n % 100 != 11 ? one : other
+    }
+
+    /// Noun for a counted thing, chosen per module («объект», «файл», «копия», «приложение»).
+    enum Noun { case items, files, copies, apps }
+    static func count(_ n: Int, _ noun: Noun) -> String {
+        switch noun {
+        case .items: items(n)
+        case .files: files(n)
+        case .copies: copies(n)
+        case .apps: apps(n)
+        }
+    }
+
     static func items(_ n: Int) -> String { "\(integer(n)) \(plural(n, "объект", "объекта", "объектов"))" }
     static func files(_ n: Int) -> String { "\(integer(n)) \(plural(n, "файл", "файла", "файлов"))" }
     static func apps(_ n: Int) -> String { "\(integer(n)) \(plural(n, "приложение", "приложения", "приложений"))" }
