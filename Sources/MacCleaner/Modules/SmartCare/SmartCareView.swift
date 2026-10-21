@@ -17,7 +17,7 @@ struct SmartCareView: View {
                                                      fraction: SmartCareModel.fraction(of: areas),
                                                      currentPath: model.currentPath))
                             : .idle(button: "Сканировать", enabled: true),
-                        onAction: model.startScan, onStop: model.stop, dimsOptionsWhileWorking: false,
+                        onAction: model.startScan, onStop: model.stop, dimsOptionsWhileWorking: false, showsTrashHint: true,
                         onGrantAccess: { app.presentAccessSheet() }) {
                 LastCleanupChip()
             } options: {
@@ -134,6 +134,13 @@ private struct SmartCareResults: View {
             }
             .padding(.horizontal, Theme.Space.page)
             .padding(.top, 30)
+
+            if !model.reviewing {
+                TrashHint()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, Theme.Space.page)
+                    .padding(.top, 12)
+            }
 
             if model.reviewing {
                 SmartCareReview(junk: junk)

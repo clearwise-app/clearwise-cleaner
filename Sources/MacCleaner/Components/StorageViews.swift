@@ -246,6 +246,8 @@ struct StorageDetailCard: View {
     let breakdown: StorageBreakdown
     var hovered: StorageCategory.Kind?
     var onHover: ((StorageCategory.Kind?) -> Void)?
+    /// A click on a category row: open it in «Хранилище». Rows are not clickable when nil.
+    var onSelect: ((StorageCategory.Kind) -> Void)?
     var onClose: (() -> Void)?
     /// «Дать доступ» in the no-access note: the in-app access flow.
     var onGrantAccess: (() -> Void)?
@@ -293,6 +295,13 @@ struct StorageDetailCard: View {
             }
 
             Rectangle().fill(Theme.hairline).frame(height: 1).padding(.vertical, 10)
+
+            if onSelect != nil {
+                Text("Нажмите на категорию или на диск, чтобы посмотреть файлы")
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(Theme.textTertiary)
+                    .padding(.bottom, 8)
+            }
 
             HStack(spacing: 0) {
                 total("Занято", b.used, color: Theme.text)
@@ -372,6 +381,8 @@ struct StorageDetailCard: View {
         )
         .opacity(dim ? 0.55 : 1)
         .contentShape(Rectangle())
+        .onTapGesture { if c.bytes > 0 { onSelect?(c.kind) } }
+        .pointerStyle(onSelect != nil && c.bytes > 0 ? .link : nil)
         .onHover { inside in
             if inside { onHover?(c.kind) } else if hovered == c.kind { onHover?(nil) }
         }

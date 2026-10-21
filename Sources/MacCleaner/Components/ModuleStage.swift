@@ -27,6 +27,8 @@ struct ModuleStage<Accessory: View, Options: View>: View {
     var onAction: () -> Void = {}
     var onStop: (() -> Void)? = nil
     var dimsOptionsWhileWorking = true
+    /// «В Корзине X — это место ещё занято» under the header (Smart Care). The access banner goes first.
+    var showsTrashHint = false
     /// «Как дать доступ» in the Full Disk Access banner. Nil: opens System Settings directly.
     var onGrantAccess: (() -> Void)? = nil
     @ViewBuilder var accessory: Accessory
@@ -54,6 +56,11 @@ struct ModuleStage<Accessory: View, Options: View>: View {
                         .padding(.horizontal, 40)
                         .padding(.top, 4)
                         .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
+                } else if showsTrashHint && !isWorking {
+                    TrashHint()
+                        .padding(.horizontal, 40)
+                        .padding(.top, 4)
+                        .transition(.opacity)
                 }
 
                 Spacer(minLength: 4)

@@ -2,6 +2,7 @@ import SwiftUI
 import AppKit
 import CleanerKit
 import UninstallEngine
+import SpaceEngine
 
 /// Shared app state: navigation, permissions, disk usage, installed apps, pending confirmation.
 @MainActor @Observable
@@ -25,6 +26,8 @@ final class AppModel {
     var toast: Toast?
     /// «Корзина очищена» after `requestEmptyTrash()` (covers the content area until «Готово»).
     var trashCompletion: TrashCompletion?
+    /// «Хранилище» over the content area (a click on the sidebar disk widget). Closed by Esc, ✕ or any module.
+    var storageExplorer: StorageExplorerModel?
     /// Bumped by «Найти» (⌘F). The Uninstaller's search field focuses itself when it changes
     /// (read it in `.onChange` and on appear: the module may have just been selected).
     var searchFocusRequest = 0
@@ -237,7 +240,26 @@ final class AppModel {
 
     func select(_ module: AppModule) {
         if trashCompletion != nil { trashCompletion = nil }
+        if storageExplorer != nil { closeStorage() }
         withAnimation(Theme.softSpring) { selection = module }
+    }
+
+    /// Opens «Хранилище» on `kind` (default: the biggest category).
+    func openStorage(_ kind: StorageCategory.Kind? = nil) {
+        guard let b = storage.breakdown, !isModalActive else { return }
+        let start = kind ?? b.categories.filter { $0.kind != .system }.max { $0.bytes < $1.bytes }?.kind ?? .apps
+        if let open = storageExplorer {
+            open.select(start)
+            return
+        }
+        withAnimation(Theme.softSpring) {
+            storageExplorer = StorageExplorerModel(kind: start, fullDiskAccess: hasFullDiskAccess)
+        }
+    }
+
+    func closeStorage() {
+        storageExplorer?.cancel()
+        withAnimation(Theme.softSpring) { storageExplorer = nil }
     }
 
     /// Drag & drop of an .app anywhere on the window (or the Dock icon) opens it in the uninstaller.

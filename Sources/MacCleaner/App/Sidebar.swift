@@ -222,14 +222,14 @@ private struct BadgeText: View, Equatable {
 // MARK: - Storage widget
 
 /// Bottom-left disk widget: free space, the disk as coloured category segments, the top categories in percent.
-/// A real button: click, Space or Return pins the full breakdown card (Esc closes it); hovering opens it too,
+/// A real button: click, Space or Return opens «Хранилище» (a full screen over the content); hovering shows the
+/// breakdown card as a preview,
 /// and hovering a segment shows its share and size. VoiceOver reads it as a list of categories.
 private struct SidebarStorage: View {
     @Environment(AppModel.self) private var model
     @State private var hoveredSegment: StorageCategory.Kind?
     @State private var hoverWidget = false
     @State private var hoverCard = false
-    @State private var pinned = false
     @State private var cardVisible = false
     @State private var cardTask: Task<Void, Never>?
     @State private var tooltipSize = CGSize(width: 160, height: 42)
@@ -239,7 +239,7 @@ private struct SidebarStorage: View {
     private static let barHeight: CGFloat = 8
     private var storage: StorageModel { model.storage }
     private var hovered: StorageCategory.Kind? { hoveredSegment ?? storage.debugHovered }
-    private var showsCard: Bool { cardVisible || pinned || storage.debugShowsDetails }
+    private var showsCard: Bool { cardVisible || storage.debugShowsDetails }
 
     var body: some View {
         Button(action: activate) {
@@ -420,7 +420,7 @@ private struct SidebarStorage: View {
         if showsCard, let b = storage.breakdown {
             StorageDetailCard(breakdown: b, hovered: hovered,
                               onHover: { hoveredSegment = $0 },
-                              onClose: pinned ? { close() } : nil,
+                              onSelect: { kind in close(); model.openStorage(kind) },
                               onGrantAccess: { close(); model.presentAccessSheet() })
                 .onHover { inside in
                     hoverCard = inside
@@ -443,13 +443,25 @@ private struct SidebarStorage: View {
 
     // MARK: Behaviour
 
+    /// Not measured yet: measure. Otherwise open «Хранилище» (the hover card is only a preview).
     private func activate() {
-        if storage.breakdown == nil { storage.requestMeasure() } else if showsCard { close() } else { pinned = true }
+        if storage.breakdown == nil {
+            storage.requestMeasure()
+        } else {
+            close()
+            // A click on a bar segment opens that category; anywhere else, the biggest one.
+            if let kind = hoveredSegment {
+                model.openStorage(kind)
+            } else if model.storageExplorer != nil {
+                model.closeStorage()
+            } else {
+                model.openStorage()
+            }
+        }
     }
 
     private func close() {
         cardTask?.cancel()
-        pinned = false
         cardVisible = false
     }
 

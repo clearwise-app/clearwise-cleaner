@@ -89,6 +89,15 @@ struct RootView: View {
             Sidebar()
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // Under «Хранилище» the module stays alive but out of reach (clicks, keyboard, VoiceOver).
+                .disabled(model.storageExplorer != nil)
+                .accessibilityHidden(model.storageExplorer != nil)
+                .overlay {
+                    if let explorer = model.storageExplorer {
+                        StorageScreen(explorer: explorer)
+                            .transition(Theme.motion(.opacity.combined(with: .scale(scale: 0.985))))
+                    }
+                }
                 .overlay {
                     if let done = model.trashCompletion {
                         TrashCompletionScreen(completion: done)

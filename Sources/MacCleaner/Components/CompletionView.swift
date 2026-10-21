@@ -54,7 +54,7 @@ struct CompletionView: View {
                     Text(subtitle)
                         .foregroundStyle(Theme.textSecondary)
                     if !permanent && !result.removed.isEmpty {
-                        Text("Место освободится, когда вы очистите Корзину.")
+                        Text("Пока файлы лежат в Корзине, они занимают место. Чтобы освободить его, очистите Корзину.")
                             .foregroundStyle(Theme.textSecondary)
                     }
                 }
