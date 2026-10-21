@@ -211,15 +211,21 @@ public final class DirectoryNode: Identifiable, @unchecked Sendable {
     public let size: Int64
     public let isDirectory: Bool
     public let children: [DirectoryNode]
+    /// Synthetic "Прочее" bucket aggregating small siblings. Its `url` is the PARENT folder,
+    /// so it must never be offered for removal or opened as if it were a real item.
+    public let isAggregate: Bool
 
-    public init(url: URL, size: Int64, isDirectory: Bool, children: [DirectoryNode]) {
+    public init(url: URL, size: Int64, isDirectory: Bool, children: [DirectoryNode], isAggregate: Bool = false) {
         self.url = url
         self.size = size
         self.isDirectory = isDirectory
         self.children = children
+        self.isAggregate = isAggregate
     }
 
-    public var name: String { url.lastPathComponent }
+    public var name: String { isAggregate ? "Прочее" : url.lastPathComponent }
+    /// True when the node is a real file/folder the user may act on (reveal, trash).
+    public var isActionable: Bool { !isAggregate }
 }
 
 // MARK: - Removal

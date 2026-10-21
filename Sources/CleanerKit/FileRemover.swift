@@ -74,7 +74,7 @@ public enum FileRemover {
 
     /// Permanently deletes items. Only allowed for items already inside a Trash folder
     /// (this is how "Empty Trash" works). Anything else is refused.
-    public static func deletePermanentlyFromTrash(_ urls: [URL]) async -> RemovalResult {
+    public static func deletePermanentlyFromTrash(_ urls: [URL], knownSizes: [URL: Int64] = [:]) async -> RemovalResult {
         await Task.detached(priority: .userInitiated) {
             var result = RemovalResult()
             for url in dedupeNested(urls) {
@@ -82,7 +82,7 @@ public enum FileRemover {
                     result.failed.append(RemovalFailure(url: url, reason: "Безвозвратное удаление разрешено только в Корзине"))
                     continue
                 }
-                let size = FileSizer.allocatedSize(of: url)
+                let size = knownSizes[url] ?? FileSizer.allocatedSize(of: url)
                 do {
                     try FileManager.default.removeItem(at: url)
                     result.removed.append(url)
@@ -98,12 +98,12 @@ public enum FileRemover {
     /// Drops URLs that are inside another URL in the same list, so a folder and its child
     /// are not removed (and counted) twice.
     public static func dedupeNested(_ urls: [URL]) -> [URL] {
-        let sorted = Array(Set(urls.map { $0.standardizedFileURL })).sorted { $0.path.count < $1.path.count }
-        var kept: [URL] = []
-        for url in sorted where !kept.contains(where: { url.path.hasPrefix($0.path + "/") }) {
-            kept.append(url)
+        // Keeps the caller's order (uninstall relies on "bundle last").
+        var seen = Set<String>()
+        let unique = urls.map { $0.standardizedFileURL }.filter { seen.insert($0.path).inserted }
+        return unique.filter { url in
+            !unique.contains { other in other != url && url.path.hasPrefix(other.path + "/") }
         }
-        return kept
     }
 
     private static func isSymlink(_ url: URL) -> Bool {
