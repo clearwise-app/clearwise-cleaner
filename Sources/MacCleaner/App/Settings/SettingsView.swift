@@ -33,7 +33,7 @@ struct SettingsView: View {
                     AppGlyph(size: 40)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("MacCleaner").font(.headline)
+                        Text("\(AppInfo.name)").font(.headline)
                         Text(versionText).font(.caption).foregroundStyle(.secondary)
                     }
                 }
@@ -60,8 +60,8 @@ struct SettingsView: View {
                 Text(granted ? "Полный доступ к диску включён" : "Нет полного доступа к диску")
                     .font(.headline)
                 Text(granted
-                     ? "MacCleaner видит все файлы, которые нужны для сканирования. Отключить доступ можно в Системных настройках."
-                     : "Без него macOS скрывает кэши Safari и Mail, контейнеры приложений и резервные копии — MacCleaner найдёт не всё.")
+                     ? "\(AppInfo.name) видит все файлы, которые нужны для сканирования. Отключить доступ можно в Системных настройках."
+                     : "Без него macOS скрывает кэши Safari и Mail, контейнеры приложений и резервные копии — \(AppInfo.name) найдёт не всё.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -78,7 +78,7 @@ struct SettingsView: View {
                     model.presentAccessSheet()
                 }
                 .keyboardShortcut(.defaultAction)
-                Button("Показать MacCleaner в Finder") { Permissions.revealAppInFinder() }
+                Button("Показать \(AppInfo.name) в Finder") { Permissions.revealAppInFinder() }
             }
             Spacer()
         }

@@ -108,6 +108,8 @@ final class JunkEngineTests: XCTestCase {
         try file("\(chrome)/Default/Cookies", bytes: 8_000)
         try file("\(chrome)/Default/Login Data", bytes: 8_000)
         try file("Library/Containers/com.apple.Safari/Data/Library/Caches/com.apple.Safari/x", bytes: 8_000)
+        // Safari's iCloud sync cache sits next to its page cache and must stay.
+        try file("Library/Containers/com.apple.Safari/Data/Library/Caches/CloudKit/db", bytes: 8_000)
 
         let (scanner, result) = await scan()
         let browsers = try XCTUnwrap(category(JunkCategoryID.browserCaches, in: result))

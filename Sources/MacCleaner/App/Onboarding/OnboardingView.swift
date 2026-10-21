@@ -41,7 +41,7 @@ struct OnboardingView: View {
         .environment(\.moduleTint, .smartCare)
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isModal)
-        .accessibilityLabel("Знакомство с MacCleaner")
+        .accessibilityLabel("Знакомство с \(AppInfo.name)")
     }
 
     /// 2, 2a and 2b are one screen (the card changes in place); 1 and 3 are separate screens.

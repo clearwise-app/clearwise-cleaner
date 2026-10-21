@@ -19,7 +19,7 @@ struct SmartCareView: View {
                             : .idle(button: "Сканировать", enabled: true),
                         onAction: model.startScan, onStop: model.stop, dimsOptionsWhileWorking: false,
                         onGrantAccess: { app.presentAccessSheet() }) {
-                DiskCapsule(disk: app.disk)
+                LastCleanupChip()
             } options: {
                 AreaPills(areas: areas, scanning: scanning)
             }
@@ -122,7 +122,7 @@ private struct SmartCareResults: View {
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 10) {
-                    DiskCapsule(disk: app.disk)
+                    LastCleanupChip()
                     if model.reviewing {
                         Button { model.closeReview() } label: { Label("Назад к обзору", systemImage: "chevron.left") }
                             .buttonStyle(PillButtonStyle(kind: .quiet))

@@ -80,7 +80,9 @@ enum JunkCatalog {
                          symbol: "globe", risk: .safe)
         r.priority = 2
         r.collector = { env in BrowserCacheSpec.all.flatMap { $0.candidates(in: env) } }
-        r.excludedNames = [.prefix("com.apple.Safari.SafeBrowsing")]
+        // Same protected names as app caches: Safari's container keeps a CloudKit cache (bookmark/tab sync)
+        // next to its page cache, and clearing it forces a full iCloud re-sync.
+        r.excludedNames = protectedCacheNames
         return r
     }
 

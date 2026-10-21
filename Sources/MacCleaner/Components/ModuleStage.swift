@@ -166,7 +166,7 @@ struct FDABanner: View {
             IconTile(symbol: "lock.shield.fill", tint: .oldFiles, size: 34)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text("Часть файлов скрыта от MacCleaner")
+                Text("Часть файлов скрыта от \(AppInfo.name)")
                     .font(.cardTitle)
                     .foregroundStyle(Theme.text)
                 Text("Без полного доступа macOS не показывает кэши Safari и Mail и контейнеры приложений — найдём не всё.")
@@ -189,65 +189,50 @@ struct FDABanner: View {
     }
 }
 
-struct DiskCapsule: View {
-    let disk: DiskUsage?
+/// «Последняя уборка · 3 дня назад · 1,2 ГБ» (Smart Care, top right). Nothing until the first cleanup;
+/// the disk itself is shown once, in the sidebar.
+struct LastCleanupChip: View {
     @Environment(AppModel.self) private var app
-    @State private var hovered: StorageCategory.Kind?
 
     var body: some View {
-        if let disk {
-            HStack(spacing: 10) {
-                Image(systemName: "internaldrive.fill")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Theme.textSecondary)
-                VStack(alignment: .leading, spacing: 5) {
-                    HStack(spacing: 6) {
-                        Text(disk.name).font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.text)
-                        Spacer(minLength: 6)
-                        Text("свободно \(Fmt.size(disk.available)) из \(Fmt.size(disk.total))")
-                            .font(.system(size: 11.5, design: .rounded))
-                            .monospacedDigit()
-                            .foregroundStyle(Theme.textSecondary)
-                            .lineLimit(1)
-                            .fixedSize()
-                    }
-                    // Same category segments as the sidebar widget; plain usage bar until the first measurement.
-                    if let breakdown = app.storage.breakdown {
-                        StorageSegmentBar(breakdown: breakdown, height: 6, hovered: hovered) { hovered = $0 }
-                            .help(hovered.map { kind in
-                                "\(kind.title): \(StorageFmt.precisePercent(breakdown.share(kind))) · \(Fmt.size(breakdown.bytes(kind)))"
-                            } ?? "")
-                    } else {
-                        UsageBar(fraction: disk.fraction)
-                            .frame(height: 5)
-                    }
+        if let last = app.lastCleanup {
+            // Re-reads «… назад» once a minute while visible.
+            TimelineView(.periodic(from: .now, by: 60)) { context in
+                HStack(spacing: 8) {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(ModuleTint.smartCare.accent)
+                    Text("Последняя уборка")
+                        .foregroundStyle(Theme.textSecondary)
+                    Text(Self.ago(last.date, now: context.date))
+                        .foregroundStyle(Theme.text)
+                    Text("·").foregroundStyle(.themeTertiary)
+                    Text(Fmt.size(last.bytes))
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.text)
                 }
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .lineLimit(1)
+                .fixedSize()
+                .padding(.horizontal, 14)
+                .frame(height: 34)
+                .glass(radius: 17, shadow: false)
+                .accessibilityElement(children: .combine)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 9)
-            .frame(width: 320)
-            .glass(radius: 14, shadow: false)
+            .help("Убрано в Корзину или удалено \(last.date.formatted(date: .long, time: .shortened))")
         }
     }
-}
 
-struct UsageBar: View {
-    let fraction: Double
-    var tint: LinearGradient = LinearGradient(colors: [.white.opacity(0.95), .white.opacity(0.7)], startPoint: .leading, endPoint: .trailing)
-
-    var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule().fill(.white.opacity(0.13))
-                Capsule()
-                    .fill(fraction > 0.9 ? AnyShapeStyle(Theme.warning) : AnyShapeStyle(tint))
-                    .frame(width: max(4, geo.size.width * min(1, fraction)))
-            }
-        }
+    /// «только что», «5 минут назад», «вчера», «3 дня назад».
+    static func ago(_ date: Date, now: Date) -> String {
+        if now.timeIntervalSince(date) < 60 { return "только что" }
+        let f = RelativeDateTimeFormatter()
+        f.locale = Locale(identifier: "ru_RU")
+        f.dateTimeStyle = .named
+        f.unitsStyle = .full
+        return f.localizedString(for: date, relativeTo: now)
     }
 }
-
-// MARK: - Results scaffolding
 
 /// One line for results headers when Full Disk Access is missing: the list may be incomplete.
 /// Renders nothing while the app has access.

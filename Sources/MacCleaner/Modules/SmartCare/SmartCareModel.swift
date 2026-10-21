@@ -161,11 +161,13 @@ final class SmartCareModel {
         task = Task {
             guard let app else { return }
             withAnimation(Theme.spring) { phase = .cleaning }
-            await app.junk.clean(title: "Умная очистка", module: .smartCare)
-            result = app.junk.result
-            resultWasPermanent = app.junk.resultWasPermanent
-            app.junk.finish()
-            withAnimation(Theme.spring) { phase = .done }
+            await app.junk.clean(title: "Умная очистка", module: .smartCare) { [weak self] in
+                guard let self else { return }
+                self.result = app.junk.result
+                self.resultWasPermanent = app.junk.resultWasPermanent
+                app.junk.finish()
+                withAnimation(Theme.spring) { self.phase = .done }
+            }
         }
     }
 
@@ -179,7 +181,7 @@ final class SmartCareModel {
     }
 
     func finish() {
-        result = nil
+        // `result` stays: the completion screen fades out with its numbers (the next cleanup replaces it).
         withAnimation(Theme.spring) { phase = .results; reviewing = false }
     }
 }

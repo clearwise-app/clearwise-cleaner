@@ -27,13 +27,13 @@ struct WelcomeStep: View {
     var body: some View {
         VStack(spacing: 0) {
             StepHeader(symbol: "sparkles", title: "Освободим место — бережно",
-                       subtitle: "MacCleaner находит кэши, остатки приложений, дубликаты и забытые файлы. Что удалить, решаете вы.",
+                       subtitle: "\(AppInfo.name) находит кэши, остатки приложений, дубликаты и забытые файлы. Что удалить, решаете вы.",
                        metrics: metrics)
 
             VStack(alignment: .leading, spacing: Theme.Space.m) {
                 promise("arrow.uturn.backward", "Всё удалённое сначала попадает в Корзину — его можно вернуть.")
                 promise("hand.raised.fill", "Личные файлы никогда не отмечаются сами.")
-                promise("wifi.slash", "MacCleaner работает без интернета и ничего никуда не отправляет.")
+                promise("wifi.slash", "\(AppInfo.name) работает без интернета и ничего никуда не отправляет.")
             }
             .frame(maxWidth: 520, alignment: .leading)
             .padding(.top, metrics.compact ? Theme.Space.l : Theme.Space.xl)
@@ -79,7 +79,7 @@ struct AccessRequestStep: View {
     var body: some View {
         VStack(spacing: 0) {
             StepHeader(symbol: "lock.shield.fill", title: "Разрешите доступ ко всему диску",
-                       subtitle: "macOS скрывает от программ часть файлов — почту, кэши Safari, контейнеры приложений, резервные копии. Чтобы найти весь мусор, MacCleaner нужен полный доступ к диску. Его даёте вы в Системных настройках — там же его можно отключить в любой момент.",
+                       subtitle: "macOS скрывает от программ часть файлов — почту, кэши Safari, контейнеры приложений, резервные копии. Чтобы найти весь мусор, \(AppInfo.name) нужен полный доступ к диску. Его даёте вы в Системных настройках — там же его можно отключить в любой момент.",
                        metrics: metrics)
 
             Group {
@@ -107,7 +107,7 @@ struct AccessRequestStep: View {
             } else {
                 // After 20 s the relaunch offer says the same thing more specifically.
                 if !(waiting && flow.showsRelaunch) {
-                    Text("macOS может попросить пароль администратора или перезапустить MacCleaner — это нормально.")
+                    Text("macOS может попросить пароль администратора или перезапустить \(AppInfo.name) — это нормально.")
                         .font(.caption12)
                         .foregroundStyle(.themeTertiary)
                         .multilineTextAlignment(.center)
@@ -142,7 +142,7 @@ struct AccessRequestStep: View {
                 }
                 .padding(.top, waiting ? Theme.Space.m : metrics.buttonsTop)
 
-                Text("Доступ нужен, только чтобы видеть файлы. Удаляет MacCleaner лишь то, что вы выбрали.")
+                Text("Доступ нужен, только чтобы видеть файлы. Удаляет \(AppInfo.name) лишь то, что вы выбрали.")
                     .font(.caption12)
                     .foregroundStyle(.themeTertiary)
                     .multilineTextAlignment(.center)
@@ -169,11 +169,11 @@ private struct HowToCard: View {
                 .foregroundStyle(Theme.text)
             row(1, done: waiting, "Нажмите «Открыть настройки» — откроется раздел «Полный доступ к диску».")
             VStack(alignment: .leading, spacing: Theme.Space.s) {
-                row(2, done: false, "Включите переключатель рядом с MacCleaner. Если его нет в списке — нажмите «+» или перетащите значок ниже.")
+                row(2, done: false, "Включите переключатель рядом с \(AppInfo.name). Если его нет в списке — нажмите «+» или перетащите значок ниже.")
                 AppIconDragRow()
                     .padding(.leading, 34)
             }
-            row(3, done: false, "Вернитесь сюда — MacCleaner заметит доступ сам.")
+            row(3, done: false, "Вернитесь сюда — \(AppInfo.name) заметит доступ сам.")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(metrics.compact || metrics.inSheet ? 16 : 18)
@@ -255,7 +255,7 @@ struct AppIconDragTile: View {
         .pointerStyle(.grabIdle)
         .help("Перетащите в список «Полный доступ к диску»")
         .accessibilityElement()
-        .accessibilityLabel("Значок MacCleaner")
+        .accessibilityLabel("Значок \(AppInfo.name)")
         .accessibilityHint("Перетащите в список «Полный доступ к диску» в Системных настройках")
         .accessibilityAction(named: "Показать в Finder") { Permissions.revealAppInFinder() }
     }
@@ -269,7 +269,7 @@ private struct WaitingStatus: View {
         VStack(spacing: Theme.Space.s) {
             HStack(spacing: 8) {
                 ProgressView().controlSize(.small)
-                Text("Ждём, когда вы включите MacCleaner в настройках…")
+                Text("Ждём, когда вы включите \(AppInfo.name) в настройках…")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Theme.text)
             }
@@ -281,7 +281,7 @@ private struct WaitingStatus: View {
                         .font(.caption12)
                         .foregroundStyle(.themeSecondary)
                         .fixedSize(horizontal: false, vertical: true)
-                    Button("Перезапустить MacCleaner") { flow.relaunch() }
+                    Button("Перезапустить \(AppInfo.name)") { flow.relaunch() }
                         .buttonStyle(PillButtonStyle(kind: .secondary))
                         .fixedSize()
                 }
@@ -306,7 +306,7 @@ private struct WithoutAccessCard: View {
             point("eye.slash.fill", "Кэши Safari и Mail, часть контейнеров приложений и резервные копии останутся невидимы — найдём меньше мусора.")
             point("folder.badge.questionmark", "При первом сканировании macOS отдельно спросит доступ к Рабочему столу, Документам и Загрузкам.")
             point("forward.fill", "Часть файлов при очистке может быть пропущена.")
-            Text("Включить доступ можно в любой момент — кнопкой «Дать доступ» внизу боковой панели или в меню MacCleaner → «Полный доступ к диску…».")
+            Text("Включить доступ можно в любой момент — кнопкой «Дать доступ» внизу боковой панели или в меню \(AppInfo.name) → «Полный доступ к диску…».")
                 .font(.caption12)
                 .foregroundStyle(.themeTertiary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -355,7 +355,7 @@ struct GrantedStep: View {
             Text("Доступ открыт")
                 .font(metrics.titleFont)
                 .foregroundStyle(Theme.text)
-            Text("Теперь MacCleaner видит весь диск, и macOS не будет спрашивать разрешение на каждую папку.")
+            Text("Теперь \(AppInfo.name) видит весь диск, и macOS не будет спрашивать разрешение на каждую папку.")
                 .font(metrics.subtitleFont)
                 .foregroundStyle(.themeSecondary)
                 .multilineTextAlignment(.center)

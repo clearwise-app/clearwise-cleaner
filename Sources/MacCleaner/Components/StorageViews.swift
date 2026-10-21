@@ -315,7 +315,7 @@ struct StorageDetailCard: View {
                                 .fontWeight(.semibold)
                                 .foregroundStyle(Theme.warning)
                                 .pointerStyle(.link)
-                                .help("Как дать MacCleaner полный доступ к диску")
+                                .help("Как дать \(AppInfo.name) полный доступ к диску")
                         }
                     }
                 }

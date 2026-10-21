@@ -7,20 +7,9 @@ struct Sidebar: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Room for the traffic lights.
-            Color.clear.frame(height: 44)
-
-            HStack(spacing: 10) {
-                AppGlyph(size: 30)
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("MacCleaner").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.text)
-                    Text("Чисто и безопасно").font(.system(size: 11)).foregroundStyle(.themeTertiary)
-                }
-            }
-            .accessibilityElement(children: .combine)
-            .padding(.horizontal, 18)
-            .padding(.bottom, 22)
+            // Room for the traffic lights. The app's name lives at the bottom (`Wordmark`):
+            // a header here only repeated Smart Care's icon and could not be clicked.
+            Color.clear.frame(height: 52)
 
             item(.smartCare)
             section("Очистка")
@@ -34,8 +23,16 @@ struct Sidebar: View {
 
             Spacer(minLength: 12)
 
-            SidebarStorage().padding(.horizontal, 14).padding(.bottom, 10)
-            FDAPill().padding(.horizontal, 12).padding(.bottom, 16)
+            // One column: the storage card and the access pill share the same width.
+            VStack(spacing: 8) {
+                SidebarStorage()
+                FDAPill()
+            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 12)
+            Wordmark()
+                .padding(.horizontal, 22)
+                .padding(.bottom, 16)
         }
         .frame(width: Theme.sidebarWidth)
         .frame(maxHeight: .infinity)
@@ -246,7 +243,7 @@ private struct SidebarStorage: View {
 
     var body: some View {
         Button(action: activate) {
-            widget
+            widget.frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(StorageWidgetStyle(highlighted: hoverWidget || showsCard, outlined: showsCard || focused))
         .focused($focused)
@@ -303,7 +300,8 @@ private struct SidebarStorage: View {
                     .foregroundStyle(ModuleTint.smartCare.accent)
             }
         }
-        .padding(12)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 12)
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
@@ -360,7 +358,7 @@ private struct SidebarStorage: View {
     private func legend(_ b: StorageBreakdown) -> some View {
         let top = Array(StorageSegmentBar.order(b).prefix(4))
         let rows = stride(from: 0, to: top.count, by: 2).map { Array(top[$0..<min($0 + 2, top.count)]) }
-        return Grid(alignment: .leading, horizontalSpacing: 4, verticalSpacing: 4) {
+        return Grid(alignment: .leading, horizontalSpacing: 3, verticalSpacing: 4) {
             ForEach(rows.indices, id: \.self) { r in
                 GridRow {
                     ForEach(Array(rows[r].enumerated()), id: \.element.id) { i, c in
@@ -385,7 +383,8 @@ private struct SidebarStorage: View {
         Text(c.kind.shortTitle)
             .foregroundStyle(.themeSecondary)
             .lineLimit(1)
-            .fixedSize()
+            // Shrinks a little instead of widening the card past the sidebar (and past the access pill).
+            .minimumScaleFactor(0.8)
             .opacity(opacity)
         Text(StorageFmt.percent(share))
             .fontWeight(.semibold)
@@ -393,7 +392,7 @@ private struct SidebarStorage: View {
             .monospacedDigit()
             .fixedSize()
             .gridColumnAlignment(.trailing)
-            .padding(.trailing, gap ? 10 : 0)
+            .padding(.trailing, gap ? 6 : 0)
             .opacity(opacity)
     }
 
@@ -404,7 +403,7 @@ private struct SidebarStorage: View {
                 let barWidth = geo.size.width
                 let seg = StorageSegmentBar.layout(b, width: barWidth).first { $0.kind == kind }
                 let center = seg.map { $0.x + $0.width / 2 } ?? barWidth / 2
-                // Centered over the segment, kept inside the widget (12 pt padding on each side).
+                // Centered over the segment, kept inside the widget (10 pt padding on each side).
                 let x = min(max(center - tooltipSize.width / 2, -8), barWidth - tooltipSize.width + 8)
                 StorageTooltip(category: c, breakdown: b)
                     .onGeometryChange(for: CGSize.self) { $0.size } action: { tooltipSize = $0 }
@@ -538,7 +537,7 @@ private struct FDAPill: View {
         .buttonStyle(.plain)
         .onHover { hover = $0 }
         .popover(isPresented: $showsPopover, arrowEdge: .top) { AccessGrantedPopover() }
-        .help(granted ? "MacCleaner видит все файлы, которые нужны для сканирования."
+        .help(granted ? "\(AppInfo.name) видит все файлы, которые нужны для сканирования."
                       : "Системные настройки → Конфиденциальность и безопасность → Полный доступ к диску")
         .accessibilityLabel(granted ? "Полный доступ к диску включён" : "Нет полного доступа к диску")
         .accessibilityHint(granted ? "Показать подробности" : "Показать, как дать доступ")
@@ -567,7 +566,7 @@ private struct AccessGrantedPopover: View {
             Label("Доступ открыт", systemImage: "checkmark.shield.fill")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Theme.success)
-            Text("MacCleaner видит все файлы, которые нужны для сканирования. Отключить доступ можно в Системных настройках.")
+            Text("\(AppInfo.name) видит все файлы, которые нужны для сканирования. Отключить доступ можно в Системных настройках.")
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -581,6 +580,28 @@ private struct AccessGrantedPopover: View {
 }
 
 /// The app's own mark: violet→magenta rounded square with sparkles.
+/// «Clearwise Cleaner» at the bottom of the sidebar: the brand, quietly, under the disk status.
+private struct Wordmark: View {
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text("Clearwise")
+                .font(.system(size: 14, weight: .heavy, design: .rounded))
+                .foregroundStyle(ModuleTint.smartCare.horizontal)
+            Text("Cleaner")
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundStyle(.themeSecondary)
+            Spacer(minLength: 6)
+            Text(AppInfo.version)
+                .font(.system(size: 10.5, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(.themeTertiary)
+        }
+        .lineLimit(1)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(AppInfo.name), версия \(AppInfo.version)")
+    }
+}
+
 struct AppGlyph: View {
     var size: CGFloat = 30
 

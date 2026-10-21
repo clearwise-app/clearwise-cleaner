@@ -186,8 +186,9 @@ final class OldFilesModel {
         task = Task {
             let r = await app?.runCleaning(Self.plan(picked)) ?? RemovalResult()
             result = r
-            app?.didRemove(r)
+            // `.done` first: `didRemove` updates other models, and a phase set after it can be lost.
             withAnimation(Theme.spring) { phase = .done }
+            app?.didRemove(r)
         }
     }
 
@@ -214,7 +215,7 @@ final class OldFilesModel {
     }
 
     func finish() {
-        result = nil
+        // `result` stays: the completion screen fades out with its numbers (the next cleanup replaces it).
         withAnimation(Theme.spring) { phase = files.isEmpty ? .idle : .results }
     }
 }

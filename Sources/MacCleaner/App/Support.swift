@@ -3,6 +3,15 @@ import CleanerKit
 import Foundation
 import UniformTypeIdentifiers
 
+/// The app's user-facing name: sidebar, onboarding, copy. Must match CFBundleDisplayName in scripts/build_app.sh
+/// (System Settings lists the app under that name, and the onboarding tells the user to look for it).
+enum AppInfo {
+    static let name = "Clearwise Cleaner"
+    static var version: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+    }
+}
+
 /// Wraps a MainActor setter into an engine `ProgressHandler`, coalesced to ~30 updates/s
 /// so a fast scanner cannot flood the main thread. Only the latest value is kept, and a trailing
 /// flush always delivers it, so the last update before completion is never dropped.

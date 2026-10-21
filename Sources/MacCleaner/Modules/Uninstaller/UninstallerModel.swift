@@ -350,8 +350,9 @@ final class UninstallerModel {
             // Straight after the scene returns (no suspension) so it fades into the completion screen.
             result = r
             resultTitle = request.doneTitle
-            app?.didRemove(r)
+            // `.done` first: `didRemove` updates other models, and a phase set after it can be lost.
             withAnimation(Theme.spring) { phase = .done }
+            app?.didRemove(r)
             // Files moved: the finder's index of what exists is stale now.
             finderSynced = false
             batchTask?.cancel()
@@ -523,7 +524,7 @@ final class UninstallerModel {
     }
 
     func finish() {
-        result = nil
+        // `result` stays: the completion screen fades out with its numbers (the next cleanup replaces it).
         lastRequest = nil
         withAnimation(Theme.spring) { phase = .results }
         if let selected = selectedApp { selectedAppID = nil; select(selected) }

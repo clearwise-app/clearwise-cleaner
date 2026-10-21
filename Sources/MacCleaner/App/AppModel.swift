@@ -13,6 +13,8 @@ final class AppModel {
     var hasFullDiskAccess: Bool
     var fdaBannerDismissed = false
     var disk: DiskUsage?
+    /// Latest cleanup that moved or deleted something (Smart Care's «Последняя уборка»). Persisted.
+    var lastCleanup: LastCleanup?
     var confirmation: Confirmation?
     var isDropTargeted = false
     /// Full-screen cleaning scene while a confirmed cleanup runs (see `runCleaning`).
@@ -60,6 +62,7 @@ final class AppModel {
         hasFullDiskAccess = probeSystem ? Permissions.hasFullDiskAccess : true
         disk = probeSystem ? DiskUsage.startupVolume() : nil
         storage = StorageModel(live: probeSystem)
+        lastCleanup = probeSystem ? LastCleanup.load() : nil
         if probeSystem { storage.refreshIfAllowed(fullDiskAccess: hasFullDiskAccess) }
         smartCare.app = self
         junk.app = self
@@ -256,6 +259,11 @@ final class AppModel {
     func didRemove(_ result: RemovalResult) {
         let removed = Set(result.removed.map(\.standardizedFileURL))
         guard !removed.isEmpty else { return }
+        if result.freedBytes > 0 {
+            let cleanup = LastCleanup(date: Date(), bytes: result.freedBytes)
+            lastCleanup = cleanup
+            if probesSystem { cleanup.save() }
+        }
         junk.forget(removed)
         oldFiles.forget(removed)
         duplicates.forget(removed)
@@ -517,5 +525,25 @@ extension AppModel {
 
     func dismissTrashCompletion() {
         withAnimation(Theme.spring) { trashCompletion = nil }
+    }
+}
+
+/// When the user last cleaned something and how much. A tiny record in UserDefaults.
+struct LastCleanup: Equatable {
+    let date: Date
+    let bytes: Int64
+
+    private static let dateKey = "lastCleanup.date"
+    private static let bytesKey = "lastCleanup.bytes"
+
+    static func load() -> LastCleanup? {
+        let d = UserDefaults.standard
+        guard let date = d.object(forKey: dateKey) as? Date else { return nil }
+        return LastCleanup(date: date, bytes: Int64(d.integer(forKey: bytesKey)))
+    }
+
+    func save() {
+        UserDefaults.standard.set(date, forKey: Self.dateKey)
+        UserDefaults.standard.set(Int(bytes), forKey: Self.bytesKey)
     }
 }

@@ -207,15 +207,20 @@ final class JunkModel {
     }
 
     /// Runs the selected categories through the full-screen cleaning scene (Smart Care reuses it with its own look).
-    func clean(title: String = "Очистка системного мусора", module: AppModule = .junk) async {
+    /// `onDone` runs after `.done` is set and before the results are dropped elsewhere (Smart Care sets its own `.done` there).
+    func clean(title: String = "Очистка системного мусора", module: AppModule = .junk,
+               onDone: (() -> Void)? = nil) async {
         let pairs = selectedPairs
         resultWasPermanent = pairs.count == 1 && pairs[0].0.id == JunkCategoryID.trash
         withAnimation(Theme.spring) { phase = .cleaning }
         let plan = Self.plan(pairs, title: title, module: module)
         let total = await app?.runCleaning(plan) ?? RemovalResult()
         result = total
-        app?.didRemove(total)
+        // `.done` before `didRemove`: dropping the removed items re-renders the screens mid-update,
+        // and a phase change made after that was lost (the completion screen never appeared).
         withAnimation(Theme.spring) { phase = .done }
+        onDone?()
+        app?.didRemove(total)
     }
 
     /// One stage per category, in the order shown; items go to the engine in chunks, so «Остановить» works between chunks.
@@ -271,7 +276,7 @@ final class JunkModel {
     }
 
     func finish() {
-        result = nil
+        // `result` stays: the completion screen fades out with its numbers (the next cleanup replaces it).
         withAnimation(Theme.spring) { phase = categories.isEmpty ? .idle : .results }
     }
 }

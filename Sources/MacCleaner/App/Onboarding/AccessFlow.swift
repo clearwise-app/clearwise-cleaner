@@ -7,7 +7,7 @@ enum OnboardingKeys {
     /// The first-run flow ended: access was granted, or the user confirmed «Продолжить без доступа».
     static let done = "onboarding.done.v1"
     /// The user was sent to System Settings and the app may be relaunched by macOS («Выйти и открыть снова»)
-    /// or by «Перезапустить MacCleaner». On the next launch the flow resumes (step 3 if access arrived).
+    /// or by «Перезапустить» in step 2a. On the next launch the flow resumes (step 3 if access arrived).
     static let awaitingGrant = "onboarding.awaitingGrant"
 }
 
@@ -66,11 +66,13 @@ final class AccessFlow {
     func go(_ next: Step) {
         guard next != step else { return }
         if next == .withoutAccess { stepBeforeWithout = step == .withoutAccess ? .prime : step }
-        if step == .waiting && next != .waiting && next != .withoutAccess { stopWaiting() }
+        if step == .waiting && next != .waiting && next != .withoutAccess && next != .granted { stopWaiting() }
         withAnimation(Theme.spring) { step = next }
         if next == .waiting { startWaiting() }
         if next == .granted {
-            stopWaiting()
+            // The relaunch flag stays until the flow closes: macOS often grants access and then asks to
+            // «Выйти и открыть снова» right away, and the new instance must still show «Доступ открыт».
+            stopPolling()
             if live { AccessibilityNotification.Announcement("Полный доступ к диску включён").post() }
         }
     }
@@ -123,9 +125,13 @@ final class AccessFlow {
     }
 
     private func stopWaiting() {
+        stopPolling()
+        if live { UserDefaults.standard.removeObject(forKey: OnboardingKeys.awaitingGrant) }
+    }
+
+    private func stopPolling() {
         pollTask?.cancel()
         pollTask = nil
-        if live { UserDefaults.standard.removeObject(forKey: OnboardingKeys.awaitingGrant) }
     }
 
     /// The flow is closing: stop polling and forget the relaunch flag.

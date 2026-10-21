@@ -22,7 +22,7 @@ struct JunkEnvironment: Sendable {
     var sizingConcurrency: Int = max(4, ProcessInfo.processInfo.activeProcessorCount)
 
     static var live: JunkEnvironment {
-        var own = ["MacCleaner"]
+        var own = ["MacCleaner", "Clearwise Cleaner", "Clearwise"]
         if let id = Bundle.main.bundleIdentifier, !id.isEmpty { own.append(id) }
         return JunkEnvironment(
             home: FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL,
