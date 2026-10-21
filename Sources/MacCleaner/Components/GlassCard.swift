@@ -2,21 +2,42 @@ import SwiftUI
 
 /// Translucent "glass" surface. Built from fills and strokes rather than system materials so it
 /// looks identical over the animated mesh, in snapshots, and on every macOS version.
+///
+/// A dark underlay sits beneath the white sheen so text on the card keeps 4.5:1 even over the
+/// lightest mesh nodes. Reduce Transparency swaps the whole thing for an opaque surface;
+/// Increase Contrast strengthens the outline.
 struct GlassBackground: View {
     var radius: CGFloat = Theme.Radius.card
     var intensity: Double = 1
     var shadow = true
 
+    @Environment(\.moduleTint) private var tint
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    /// How much the underlay darkens what is behind the card.
+    static let underlay = 0.2
+
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
-        shape
-            .fill(LinearGradient(colors: [.white.opacity(0.105 * intensity), .white.opacity(0.045 * intensity)],
-                                 startPoint: .top, endPoint: .bottom))
-            .overlay(
-                shape.strokeBorder(LinearGradient(colors: [.white.opacity(0.24), .white.opacity(0.05)],
-                                                  startPoint: .top, endPoint: .bottom), lineWidth: 1)
-            )
-            .shadow(color: .black.opacity(shadow ? 0.28 : 0), radius: 22, y: 12)
+        Group {
+            if reduceTransparency {
+                shape.fill(tint.solidSurface)
+                    .overlay(shape.fill(.white.opacity(0.06 * intensity)))
+            } else {
+                shape.fill(.black.opacity(Self.underlay))
+                    .overlay(
+                        shape.fill(LinearGradient(colors: [.white.opacity(0.105 * intensity), .white.opacity(0.045 * intensity)],
+                                                  startPoint: .top, endPoint: .bottom))
+                    )
+            }
+        }
+        .overlay(
+            shape.strokeBorder(LinearGradient(colors: [.white.opacity(Theme.strokeOpacity(0.24, contrast)),
+                                                       .white.opacity(Theme.strokeOpacity(0.05, contrast))],
+                                              startPoint: .top, endPoint: .bottom), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(shadow ? 0.28 : 0), radius: 22, y: 12)
     }
 }
 
@@ -58,5 +79,6 @@ struct IconTile: View {
         }
         .frame(width: size, height: size)
         .shadow(color: (muted ? Color.clear : tint.accent2).opacity(0.35), radius: size * 0.22, y: size * 0.1)
+        .accessibilityHidden(true) // decoration: the title next to it carries the meaning
     }
 }

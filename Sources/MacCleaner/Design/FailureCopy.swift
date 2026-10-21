@@ -21,7 +21,7 @@ enum FailureCopy {
             return Line(text: "Пароль администратора не введён", action: .retry)
         }
         if lower.contains("permission") || lower.contains("not permitted") || lower.contains("нет прав")
-            || lower.contains("нет доступа") || lower.contains("don’t have permission") || lower.contains("don't have permission") {
+            || lower.contains("нет доступа") || lower.contains("полный доступ") || lower.contains("не разрешена") || lower.contains("don’t have permission") || lower.contains("don't have permission") {
             return Line(text: "Нет доступа — дайте MacCleaner полный доступ к диску", action: .grantAccess)
         }
         if lower.contains("locked") || lower.contains("защищ") && lower.contains("finder") {

@@ -15,6 +15,8 @@ struct CheckBox: View {
     let state: CheckState
     var tint: ModuleTint
     var disabled = false
+    /// What is being checked, for VoiceOver and the tooltip ("Кэш браузеров").
+    var label: String = ""
     let action: () -> Void
 
     var body: some View {
@@ -39,38 +41,67 @@ struct CheckBox: View {
         .disabled(disabled)
         .opacity(disabled ? 0.35 : 1)
         .animation(Theme.quick, value: state)
+        .help(helpText)
+        .accessibilityLabel(label.isEmpty ? "Отметить" : label)
+        .accessibilityValue(stateText)
+        .accessibilityAddTraits(.isToggle)
+    }
+
+    private var stateText: String {
+        switch state {
+        case .on: "отмечено"
+        case .off: "не отмечено"
+        case .mixed: "частично"
+        }
+    }
+
+    private var helpText: String {
+        let verb = state == .off ? "Отметить" : "Снять отметку"
+        return label.isEmpty ? verb : "\(verb): \(label)"
     }
 }
 
 // MARK: - Badges
 
+/// Solid capsule with dark ink: ≥ 4.5:1 on every fill we use (colored text on a 16 % tint
+/// measured 2.5–3.6:1). Meaning is carried by icon + text, never by color alone.
 struct Badge: View {
     let text: String
     var color: Color
     var symbol: String? = nil
 
+    static let ink = Color(hex: 0x14101C)
+
     var body: some View {
         HStack(spacing: 4) {
-            if let symbol { Image(systemName: symbol).font(.system(size: 9, weight: .bold)) }
+            if let symbol {
+                Image(systemName: symbol).font(.system(size: 9, weight: .bold)).accessibilityHidden(true)
+            }
             Text(text).font(.system(size: 10.5, weight: .semibold))
         }
-        .foregroundStyle(color)
+        .foregroundStyle(Self.ink)
         .padding(.horizontal, 7)
         .padding(.vertical, 3)
-        .background(Capsule().fill(color.opacity(0.16)))
-        .overlay(Capsule().strokeBorder(color.opacity(0.28), lineWidth: 0.5))
+        .background(Capsule().fill(color))
+        .overlay(Capsule().strokeBorder(.white.opacity(0.25), lineWidth: 0.5))
         .fixedSize()
+        .accessibilityElement(children: .combine)
     }
 }
 
 struct RiskBadge: View {
     let risk: RiskLevel
 
+    /// Lighter badge fills than the UI accents, so dark ink reads at 8:1 and more.
+    static let safeFill = Color(hex: 0x5BE8A3)
+    static let reviewFill = Color(hex: 0xFFC46B)
+    static let cautionFill = Color(hex: 0xFF8A8A)
+
     var body: some View {
         switch risk {
-        case .safe: Badge(text: "Безопасно", color: Theme.success, symbol: "checkmark.shield.fill")
-        case .review: Badge(text: "Проверьте", color: Theme.warning, symbol: "eye.fill")
-        case .caution: Badge(text: "Осторожно", color: Theme.danger, symbol: "exclamationmark.triangle.fill")
+        case .safe: Badge(text: "Безопасно", color: Self.safeFill, symbol: "checkmark.shield.fill")
+        case .review: Badge(text: "Проверьте", color: Self.reviewFill, symbol: "eye.fill")
+        case .caution: Badge(text: "Осторожно", color: Self.cautionFill, symbol: "exclamationmark.triangle.fill")
         }
     }
 }
@@ -97,6 +128,8 @@ struct BigSize: View {
         .foregroundStyle(Theme.text)
         .lineLimit(1)
         .fixedSize()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Fmt.size(bytes))
     }
 }
 
@@ -211,6 +244,7 @@ struct IconButton: View {
         }
         .buttonStyle(.plain)
         .help(help)
+        .accessibilityLabel(help)
         .onHover { hover = $0 }
         .animation(Theme.quick, value: hover)
     }
@@ -250,6 +284,7 @@ struct Segmented<T: Hashable>: View {
                         .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
+                .accessibilityAddTraits(selected ? .isSelected : [])
             }
         }
         .padding(3)
@@ -271,7 +306,9 @@ struct Chip: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 5) {
-                if let symbol { Image(systemName: symbol).font(.system(size: 10.5, weight: .semibold)) }
+                if let symbol {
+                    Image(systemName: symbol).font(.system(size: 10.5, weight: .semibold)).accessibilityHidden(true)
+                }
                 Text(title).font(.system(size: 12, weight: .medium))
             }
             .foregroundStyle(selected ? Theme.text : Theme.textSecondary)
@@ -284,6 +321,7 @@ struct Chip: View {
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? .isSelected : [])
         .onHover { hover = $0 }
         .fixedSize()
     }

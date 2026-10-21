@@ -13,6 +13,8 @@ enum SnapshotRunner {
         let name: String
         var fullDiskAccess = true
         var size = NSSize(width: 1280, height: 800)
+        /// Renders this instead of `RootView` (states that need closures only modules wire up).
+        var content: (@MainActor (AppModel) -> AnyView)? = nil
         let configure: @MainActor (AppModel) async -> Void
     }
 
@@ -44,7 +46,7 @@ enum SnapshotRunner {
         if live { print("live scene \(scene.name): \(Int(Date().timeIntervalSince(started)))s") }
 
         let size = scene.size
-        let root = RootView()
+        let root = (scene.content?(model) ?? AnyView(RootView()))
             .environment(model)
             .environment(\.isSnapshot, true)
             .frame(width: size.width, height: size.height)
@@ -257,6 +259,26 @@ enum SnapshotRunner {
             Scene(name: "clean_batch_40") { m in MockCleaning.batch(m, fraction: 0.4) },
             Scene(name: "clean_dup_55") { m in MockCleaning.duplicates(m, fraction: 0.55) },
             Scene(name: "clean_done_transition") { m in MockCleaning.done(m) },
+            // Completion with refusals and one action per kind (closures wired here; modules wire them in wave 2).
+            Scene(name: "done_failures_actions", content: completionScene(compact: false)) { _ in },
+            Scene(name: "done_failures_compact", size: NSSize(width: 1100, height: 720),
+                  content: completionScene(compact: true)) { _ in },
+            Scene(name: "done_all_failed", content: completionScene(compact: false, allFailed: true)) { _ in },
+            Scene(name: "done_permanent", content: completionScene(compact: false, permanent: true)) { _ in },
+            Scene(name: "08b_junk_confirm_permanent") { m in
+                m.selection = .junk
+                m.junk.apply(MockData.junk)
+                m.ask(.make(.deleteForever, title: "Очистить Корзину?", count: 37, bytes: 2_400_000_000, tint: .junk) {})
+            },
+            Scene(name: "16b_oldfiles_confirm") { m in
+                m.selection = .oldFiles
+                m.oldFiles.apply(MockData.oldFiles, mode: .old)
+                m.ask(.make(.trash, count: 3, bytes: 8_420_000_000, noun: .files, tint: .oldFiles) {})
+            },
+            Scene(name: "07b_junk_results_noFDA", fullDiskAccess: false) { m in
+                m.selection = .junk
+                m.junk.apply(MockData.junk)
+            },
             Scene(name: "clean_compact_junk_40", size: NSSize(width: 1100, height: 720)) { m in MockCleaning.junk(m, fraction: 0.4) },
             Scene(name: "clean_compact_uninstall_admin", size: NSSize(width: 1100, height: 720)) { m in MockCleaning.uninstallAdmin(m) },
             // Sidebar disk widget: category segments, a hovered segment's tooltip, the full breakdown card.
@@ -334,6 +356,27 @@ enum SnapshotRunner {
                 }
             },
         ]
+    }
+
+    private static func completionScene(compact: Bool, allFailed: Bool = false,
+                                        permanent: Bool = false) -> @MainActor (AppModel) -> AnyView {
+        { _ in
+            let result = allFailed
+                ? RemovalResult(failed: Array(MockData.actionableFailures.prefix(2)))
+                : RemovalResult(removed: Array(repeating: MockData.h("x"), count: permanent ? 37 : 14),
+                                failed: permanent ? [] : MockData.actionableFailures,
+                                freedBytes: permanent ? 2_400_000_000 : 12_620_000_000)
+            return AnyView(
+                ZStack {
+                    ModuleBackground(tint: .duplicates)
+                    CompletionView(tint: .duplicates, result: result, title: permanent ? "Корзина очищена" : "Перемещено в Корзину",
+                                   permanent: permanent, noun: permanent ? .items : .copies,
+                                   onGrantAccess: {}, onRetry: {}, onEmptyTrash: {}, onDone: {})
+                }
+                .preferredColorScheme(.dark)
+                .environment(\.locale, Locale(identifier: "ru_RU"))
+            )
+        }
     }
 
     private static func loadApps(_ m: AppModel) {

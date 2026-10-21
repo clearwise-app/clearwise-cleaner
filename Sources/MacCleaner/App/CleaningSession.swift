@@ -5,7 +5,8 @@ import CleanerKit
 
 /// What a module wants removed, described for the full-screen cleaning scene.
 /// Stages are what the user sees («Кэш приложений», «Приложение»…); units are the actual engine calls,
-/// run one after another so «Остановить» can stop between them.
+/// run one after another so «Остановить» can stop between them. User-owned files go in chunks of
+/// `chunkSize`, so stopping takes effect after the current chunk; root-owned items stay one unit (one prompt).
 struct CleaningPlan {
     struct Stage {
         var title: String
@@ -20,12 +21,20 @@ struct CleaningPlan {
     struct Unit {
         /// Stage shown as active as soon as the unit starts (e.g. «Завершение приложения»).
         var activates: Int?
+        /// Stage the unit belongs to (the last one added before it): the driver flushes progress when it changes.
+        var stage: Int?
         var run: @MainActor (_ progress: @escaping RemovalProgressHandler) async -> RemovalResult
     }
+
+    /// Items per unit for user-owned files: big enough that the main thread isn't woken per file,
+    /// small enough that «Остановить» reacts within a moment.
+    static let chunkSize = 25
 
     var title: String
     var symbol: String
     var tint: ModuleTint
+    /// Status line prefix for the current stage: «Сейчас — Xcode: DerivedData», «Удаляем — Spotify».
+    var activity: String
     private(set) var stages: [Stage] = []
     private(set) var units: [Unit] = []
 
@@ -33,6 +42,7 @@ struct CleaningPlan {
         self.title = title
         self.symbol = module.symbol
         self.tint = tint ?? module.tint
+        self.activity = module == .uninstaller ? "Удаляем" : "Сейчас"
     }
 
     @discardableResult
@@ -44,19 +54,35 @@ struct CleaningPlan {
 
     mutating func addUnit(activating stage: Int? = nil,
                           _ run: @escaping @MainActor (_ progress: @escaping RemovalProgressHandler) async -> RemovalResult) {
-        units.append(Unit(activates: stage, run: run))
+        units.append(Unit(activates: stage, stage: stage ?? stages.indices.last, run: run))
     }
 
-    /// One unit per element, so a stop request takes effect after the current item.
+    /// Splits `elements` into units of about `size`; `run` gets one chunk per engine call.
+    /// Callers dedupe nested URLs up front, so chunking never changes what an engine call drops.
+    mutating func addChunks<T>(_ elements: [T], size: Int = CleaningPlan.chunkSize,
+                               _ run: @escaping @MainActor ([T], _ progress: @escaping RemovalProgressHandler) async -> RemovalResult) {
+        let n = max(1, size)
+        for start in stride(from: 0, to: elements.count, by: n) {
+            let chunk = Array(elements[start..<min(start + n, elements.count)])
+            addUnit { progress in await run(chunk, progress) }
+        }
+    }
+
+    /// One engine call per element, grouped into units of about `chunkSize`: a stop request takes effect
+    /// after the current chunk. Results are exactly those of calling `run` per element.
     mutating func addEach<T>(_ elements: [T],
                              _ run: @escaping @MainActor (T, _ progress: @escaping RemovalProgressHandler) async -> RemovalResult) {
-        for e in elements { addUnit { progress in await run(e, progress) } }
+        addChunks(elements) { chunk, progress in
+            var total = RemovalResult()
+            for e in chunk { total.merge(await run(e, progress)) }
+            return total
+        }
     }
 
-    /// The common case: plain files moved to the Trash one by one.
+    /// The common case: plain files moved to the Trash, one `FileRemover` call per chunk.
     mutating func addTrashUnits(_ urls: [URL], knownSizes: [URL: Int64]) {
-        addEach(urls) { url, progress in
-            await FileRemover.moveToTrash([url], knownSizes: knownSizes, progress: progress)
+        addChunks(urls) { chunk, progress in
+            await FileRemover.moveToTrash(chunk, knownSizes: knownSizes, progress: progress)
         }
     }
 
@@ -108,6 +134,8 @@ final class CleaningSession {
     let title: String
     let symbol: String
     let tint: ModuleTint
+    /// «Сейчас» / «Удаляем»: prefix of the current-stage line.
+    let activity: String
     private(set) var stages: [CleaningStage]
     private(set) var currentStageID: Int?
     private(set) var currentURL: URL?
@@ -119,7 +147,7 @@ final class CleaningSession {
     let totalBytes: Int64
     let totalItems: Int
 
-    /// The user pressed «Остановить»; the driver stops before the next unit.
+    /// The user pressed «Остановить»; the driver stops before the next unit (chunk).
     private(set) var cancelRequested = false
     /// More than the current unit is left, so stopping would actually skip something.
     var canCancel = false
@@ -141,10 +169,11 @@ final class CleaningSession {
     /// Item order, for the snapshot driver.
     @ObservationIgnored private var orderedItems: [(key: String, url: URL)] = []
 
-    init(title: String, symbol: String, tint: ModuleTint, stages plan: [CleaningPlan.Stage]) {
+    init(title: String, symbol: String, tint: ModuleTint, activity: String = "Сейчас", stages plan: [CleaningPlan.Stage]) {
         self.title = title
         self.symbol = symbol
         self.tint = tint
+        self.activity = activity
         var built: [CleaningStage] = []
         var bytes: Int64 = 0
         var count = 0
@@ -172,7 +201,7 @@ final class CleaningSession {
     }
 
     convenience init(plan: CleaningPlan) {
-        self.init(title: plan.title, symbol: plan.symbol, tint: plan.tint, stages: plan.stages)
+        self.init(title: plan.title, symbol: plan.symbol, tint: plan.tint, activity: plan.activity, stages: plan.stages)
     }
 
     nonisolated static func key(_ url: URL) -> String { url.standardizedFileURL.path }
@@ -295,7 +324,8 @@ final class CleaningSession {
 // MARK: - Relay
 
 /// Collects engine steps from any thread and hands them to the session on the main thread,
-/// at most ~30 times a second. Nothing is dropped: counts must add up.
+/// at most ~30 times a second. Nothing is dropped: counts must add up — which is why this is not
+/// `LatestValueRelay` (that one keeps only the newest value, right for scan progress, wrong for steps).
 final class CleaningStepRelay: @unchecked Sendable {
     private let lock = NSLock()
     private var pending: [RemovalStep] = []
@@ -347,13 +377,18 @@ extension AppModel {
         var total = RemovalResult()
         // Let the scene settle before anything moves (and before a possible admin prompt).
         try? await Task.sleep(for: .milliseconds(350))
+        var stage: Int?
         for (i, unit) in plan.units.enumerated() {
             if session.cancelRequested { break }
+            // Within a stage the relay alone paces updates (≤30/s); a finished stage lands at once.
+            if i > 0, unit.stage != stage { relay.flush() }
+            stage = unit.stage
             session.canCancel = i < plan.units.count - 1
             if let s = unit.activates { session.activate(s) }
             total.merge(await unit.run(relay.handler))
-            relay.flush()
         }
+        // Everything the engines reported must be counted before the scene closes the ring.
+        relay.flush()
         // A cleanup that took a blink still gets a moment of sweeping.
         let minimum = 1.4
         let elapsed = Date().timeIntervalSince(session.startedAt)
@@ -361,9 +396,9 @@ extension AppModel {
         withAnimation(.easeOut(duration: 0.5)) { session.finish() }
         // Ring closes, broom flourishes.
         try? await Task.sleep(for: .seconds(1.3))
+        // Enqueued on the main actor, so it runs only after the current job ends — and the caller sets its
+        // `.done` phase in that same job, synchronously after this returns (same actor, no hop). No delay needed.
         Task { @MainActor [weak self] in
-            // The caller has set its `.done` phase by now (it continues synchronously after this returns).
-            try? await Task.sleep(for: .milliseconds(30))
             guard let self, self.cleaning === session else { return }
             withAnimation(.easeInOut(duration: 0.8)) { self.cleaning = nil }
         }

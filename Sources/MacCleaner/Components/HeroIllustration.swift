@@ -25,10 +25,13 @@ struct HeroIllustration: View {
 
     @Environment(\.isSnapshot) private var isSnapshot
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.animationsPaused) private var animationsPaused
     @State private var floating = false
     @State private var spin = false
 
-    private var animated: Bool { !isSnapshot && !reduceMotion }
+    /// Off in snapshots, under Reduce Motion, and while `animationsPaused` (inactive window,
+    /// cleaning overlay): the repeatForever loops below are stopped, not just hidden.
+    private var animated: Bool { !isSnapshot && !reduceMotion && !animationsPaused }
 
     var body: some View {
         let tile = size * 0.6
@@ -72,12 +75,24 @@ struct HeroIllustration: View {
                 .animation(animated ? .easeInOut(duration: 3.4).repeatForever(autoreverses: true) : nil, value: floating)
         }
         .frame(width: size * 1.6, height: size * 1.25)
-        .onAppear {
-            guard animated else { return }
-            floating = true
-            withAnimation(.linear(duration: 90).repeatForever(autoreverses: false)) { spin = true }
+        .accessibilityHidden(true) // decoration; the stage title says what this is
+        .onChange(of: animated, initial: true) { _, run in
+            if run {
+                floating = true
+                withAnimation(.linear(duration: 90).repeatForever(autoreverses: false)) { spin = true }
+            } else {
+                // Assigning without animation replaces the running repeatForever loops: back to rest.
+                stillTransaction { floating = false; spin = false }
+            }
         }
     }
+}
+
+/// Runs `body` with animations disabled, cancelling any repeating animation on the same values.
+private func stillTransaction(_ body: () -> Void) {
+    var t = Transaction(animation: nil)
+    t.disablesAnimations = true
+    withTransaction(t, body)
 }
 
 private struct HeroTile: View {
@@ -155,9 +170,12 @@ private struct Comet: View {
             }
         }
         .rotationEffect(.degrees(turn ? 360 : 0) + .degrees(-60))
-        .onAppear {
-            guard animated else { return }
-            withAnimation(.linear(duration: 2.4).repeatForever(autoreverses: false)) { turn = true }
+        .onChange(of: animated, initial: true) { _, run in
+            if run {
+                withAnimation(.linear(duration: 2.4).repeatForever(autoreverses: false)) { turn = true }
+            } else {
+                stillTransaction { turn = false }
+            }
         }
     }
 }

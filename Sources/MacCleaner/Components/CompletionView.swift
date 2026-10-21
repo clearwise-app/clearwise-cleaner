@@ -1,134 +1,230 @@
 import SwiftUI
 import CleanerKit
 
-/// Celebratory but calm "done" state with honest numbers and any refusals listed.
+/// Calm "done" state with honest numbers: what went to the Trash still takes space until the Trash is emptied,
+/// so the headline says «В Корзине X»; only permanent deletion says «Удалено навсегда». Refusals are listed in
+/// human words (`FailureCopy`) with one action per kind of problem.
 struct CompletionView: View {
     let tint: ModuleTint
     let result: RemovalResult
     var title: String = "Готово"
     /// Items were deleted permanently (emptying the Trash).
     var permanent = false
+    /// How counts are spelled: «14 копий», «3 файла», «1 приложение».
+    var noun: Fmt.Noun = .items
+    /// «Дать доступ и повторить» on access refusals: open the Full Disk Access flow, then retry. Hidden when nil.
+    var onGrantAccess: (() -> Void)? = nil
+    /// «Повторить» on refusals that may pass a second time (app was running, password cancelled). Hidden when nil.
+    var onRetry: (() -> Void)? = nil
+    /// Secondary «Очистить Корзину…» (should ask for confirmation first). Hidden when nil or `permanent`.
+    var onEmptyTrash: (() -> Void)? = nil
     var onDone: () -> Void
 
     @State private var showFailures = false
     @Environment(\.isSnapshot) private var isSnapshot
 
     private var allFailed: Bool { result.removed.isEmpty && !result.failed.isEmpty }
+    private var lines: [FailureCopy.Line] { result.failed.map(FailureCopy.describe) }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: 20)
-            SuccessMark(tint: tint, failed: allFailed)
-                .padding(.bottom, 26)
+        GeometryReader { geo in
+            let compact = geo.size.height < 760
+            VStack(spacing: 0) {
+                Spacer(minLength: 12)
+                SuccessMark(tint: tint, failed: allFailed, scale: compact ? 0.72 : 1)
+                    .padding(.bottom, compact ? 12 : 26)
 
-            Text(allFailed ? "Не удалось удалить" : title)
-                .font(.pageTitle)
-                .foregroundStyle(Theme.text)
+                Text(allFailed ? "Не удалось убрать выбранное" : title)
+                    .font(.pageTitle)
+                    .foregroundStyle(Theme.text)
+                    .multilineTextAlignment(.center)
 
-            if result.freedBytes > 0 {
-                HStack(alignment: .firstTextBaseline, spacing: 14) {
-                    Text("Освобождено")
-                        .font(.system(size: 20, weight: .light))
+                if result.freedBytes > 0 && !allFailed {
+                    HStack(alignment: .firstTextBaseline, spacing: 14) {
+                        Text(permanent ? "Удалено навсегда" : "В Корзине")
+                            .font(.system(size: 20, weight: .light))
+                            .foregroundStyle(Theme.textSecondary)
+                        BigSize(bytes: result.freedBytes, size: compact ? 50 : 60)
+                    }
+                    .accessibilityElement(children: .combine)
+                    .padding(.top, 6)
+                }
+
+                VStack(spacing: 4) {
+                    Text(subtitle)
                         .foregroundStyle(Theme.textSecondary)
-                    BigSize(bytes: result.freedBytes, size: 60)
+                    if !permanent && !result.removed.isEmpty {
+                        Text("Место освободится, когда вы очистите Корзину.")
+                            .foregroundStyle(Theme.textSecondary)
+                    }
                 }
-                .padding(.top, 6)
-            }
-
-            Text(subtitle)
                 .font(.system(size: 14))
-                .foregroundStyle(Theme.textSecondary)
                 .multilineTextAlignment(.center)
-                .frame(maxWidth: 460)
-                .padding(.top, 10)
+                .frame(maxWidth: 480)
                 .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 10)
 
-            if !result.failed.isEmpty {
-                failures.padding(.top, 20)
-            }
-
-            HStack(spacing: 10) {
-                if !permanent && !result.removed.isEmpty {
-                    Button("Открыть Корзину") { Finder.openTrash() }
-                        .buttonStyle(PillButtonStyle(kind: .secondary, large: true))
+                if !result.failed.isEmpty {
+                    failures(compact: compact).padding(.top, compact ? 14 : 20)
                 }
-                Button("Готово", action: onDone)
-                    .buttonStyle(PillButtonStyle(kind: .primary(tint), large: true))
-                    .keyboardShortcut(.defaultAction)
+
+                HStack(spacing: 10) {
+                    if !permanent && !result.removed.isEmpty {
+                        Button("Открыть Корзину") { Finder.openTrash() }
+                            .buttonStyle(PillButtonStyle(kind: .secondary, large: true))
+                        if let onEmptyTrash {
+                            Button("Очистить Корзину…", action: onEmptyTrash)
+                                .buttonStyle(PillButtonStyle(kind: .secondary, large: true))
+                                .help("Удалить содержимое Корзины навсегда и освободить место")
+                        }
+                    }
+                    Button("Готово", action: onDone)
+                        .buttonStyle(PillButtonStyle(kind: .primary(tint), large: true))
+                        .keyboardShortcut(.defaultAction)
+                }
+                .padding(.top, compact ? 20 : 28)
+                Spacer(minLength: 12)
             }
-            .padding(.top, 28)
-            Spacer(minLength: 20)
+            .padding(.horizontal, 40)
+            .frame(width: geo.size.width, height: geo.size.height)
         }
-        .padding(.horizontal, 40)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear {
+            if allFailed { showFailures = true }
+            guard !isSnapshot else { return }
+            AccessibilityNotification.Announcement(announcement).post()
+        }
     }
+
+    // MARK: Copy
 
     private var subtitle: String {
         let n = result.removed.count
         if allFailed {
-            if result.failed.contains(where: { $0.reason.contains("запущено") }) {
+            if result.failed.contains(where: { $0.reason == "Приложение запущено" }) {
                 return "Приложение всё ещё запущено и не закрылось. Закройте его и попробуйте снова."
             }
-            return "macOS не разрешила удалить выбранные объекты. Подробности ниже."
+            if lines.allSatisfy({ $0.action == .grantAccess }) {
+                return "macOS не дала MacCleaner доступ к этим файлам. Дайте полный доступ к диску и повторите."
+            }
+            return "Файлы остались на месте. Что помешало и что можно сделать — ниже."
         }
-        if permanent { return "\(Fmt.items(n).capitalizedFirst) удалено безвозвратно." }
-        return "\(Fmt.items(n).capitalizedFirst) в Корзине. Их можно вернуть, пока Корзина не очищена."
+        if permanent { return "Место на диске освобождено · \(Fmt.count(n, noun))" }
+        return "\(Fmt.count(n, noun).capitalizedFirst) можно вернуть из Корзины."
     }
 
-    private var failures: some View {
-        VStack(alignment: .leading, spacing: 0) {
+    private var announcement: String {
+        var parts: [String] = []
+        if allFailed {
+            parts.append("Не удалось убрать выбранное")
+        } else {
+            parts.append(title)
+            if result.freedBytes > 0 {
+                parts.append(permanent ? "Удалено навсегда \(Fmt.size(result.freedBytes))"
+                                       : "В Корзине \(Fmt.size(result.freedBytes))")
+            }
+        }
+        if !result.failed.isEmpty { parts.append("Пропущено: \(Fmt.count(result.failed.count, noun))") }
+        return parts.joined(separator: ". ")
+    }
+
+    // MARK: Failures
+
+    private func failures(compact: Bool) -> some View {
+        let expanded = showFailures || isSnapshot
+        let lines = self.lines
+        return VStack(alignment: .leading, spacing: 0) {
             Button {
                 withAnimation(Theme.spring) { showFailures.toggle() }
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Theme.warning)
-                    Text("Пропущено: \(Fmt.items(result.failed.count))")
+                        .accessibilityHidden(true)
+                    Text("Пропущено: \(Fmt.count(result.failed.count, noun))")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(Theme.text)
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(Theme.textTertiary)
-                        .rotationEffect(.degrees(showFailures || isSnapshot ? 90 : 0))
+                        .rotationEffect(.degrees(expanded ? 90 : 0))
+                        .accessibilityHidden(true)
                 }
                 .padding(.horizontal, 14)
                 .frame(height: 40)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityValue(expanded ? "развёрнуто" : "свёрнуто")
+            .accessibilityHint("Показывает, что не удалось убрать и почему")
 
-            if showFailures || isSnapshot {
+            if expanded {
                 Divider().overlay(Theme.hairline)
                 ScrollView {
                     VStack(alignment: .leading, spacing: 10) {
-                        ForEach(result.failed, id: \.self) { f in
+                        ForEach(Array(zip(result.failed, lines).enumerated()), id: \.offset) { _, pair in
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(Fmt.path(f.url))
+                                Text(Fmt.path(pair.0.url))
                                     .font(.system(size: 11.5, design: .monospaced))
                                     .foregroundStyle(Theme.text)
                                     .lineLimit(1)
                                     .truncationMode(.middle)
-                                Text(f.reason)
-                                    .font(.system(size: 11.5))
-                                    .foregroundStyle(Theme.textTertiary)
+                                Text(pair.1.text)
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Theme.textSecondary)
                             }
+                            .accessibilityElement(children: .combine)
                         }
                     }
                     .padding(14)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(height: min(170, CGFloat(result.failed.count) * 44 + 24))
+                .frame(height: min(compact ? 104 : 170, CGFloat(result.failed.count) * 44 + 24))
                 .transition(.opacity)
             }
+
+            actions(for: lines)
         }
         .frame(width: 520)
         .glass(radius: 14, shadow: false)
     }
+
+    /// One button per kind of problem present; a button whose closure is missing stays hidden.
+    @ViewBuilder private func actions(for lines: [FailureCopy.Line]) -> some View {
+        let kinds = Set(lines.map(\.action))
+        let grant = kinds.contains(.grantAccess) ? onGrantAccess : nil
+        let retry = kinds.contains(.retry) ? onRetry : nil
+        let reveal = result.failed.enumerated()
+            .filter { lines[$0.offset].action == .revealInFinder }
+            .map(\.element.url)
+        if grant != nil || retry != nil || !reveal.isEmpty {
+            Divider().overlay(Theme.hairline)
+            HStack(spacing: 8) {
+                if let grant {
+                    Button("Дать доступ и повторить", action: grant)
+                        .buttonStyle(PillButtonStyle(kind: .primary(tint)))
+                }
+                if !reveal.isEmpty {
+                    Button("Показать в Finder") { Finder.reveal(reveal) }
+                        .buttonStyle(PillButtonStyle(kind: .secondary))
+                }
+                if let retry {
+                    Button("Повторить", action: retry)
+                        .buttonStyle(PillButtonStyle(kind: .secondary))
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+        }
+    }
 }
 
-private struct SuccessMark: View {
+/// The big check (or warning) mark with a soft halo and sparse sparks. Also used by onboarding.
+struct SuccessMark: View {
     let tint: ModuleTint
-    let failed: Bool
+    var failed = false
+    /// 1 = 280×220 pt; compact screens use ~0.7.
+    var scale: CGFloat = 1
 
     var body: some View {
         ZStack {
@@ -160,6 +256,9 @@ private struct SuccessMark: View {
             .shadow(color: tint.accent2.opacity(0.6), radius: 30, y: 14)
         }
         .frame(width: 280, height: 220)
+        .scaleEffect(scale)
+        .frame(width: 280 * scale, height: 220 * scale)
+        .accessibilityHidden(true)
     }
 }
 

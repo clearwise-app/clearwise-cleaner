@@ -1,16 +1,29 @@
 import SwiftUI
 
 /// In-window confirmation for every destructive action: what, how many, how much, and where it goes.
+/// Modal: VoiceOver and keyboard focus stay inside, Esc cancels, Return confirms — except permanent
+/// deletion, which needs an explicit click (or Space on the focused button).
+/// Titles and button verbs come from the caller; `ConfirmCopy` spells them per the verb policy.
 struct ConfirmDialog: View {
     let confirmation: Confirmation
+    /// How the count is spelled; overrides `confirmation.noun` when set.
+    var noun: Fmt.Noun? = nil
     let onCancel: () -> Void
     let onConfirm: () -> Void
+
+    private enum Field: Hashable { case cancel, confirm }
+    @FocusState private var focus: Field?
+
+    private var countText: String {
+        noun.map { Fmt.count(confirmation.count, $0) } ?? confirmation.noun(confirmation.count)
+    }
 
     var body: some View {
         ZStack {
             Color.black.opacity(0.5)
                 .ignoresSafeArea()
                 .onTapGesture(perform: onCancel)
+                .accessibilityHidden(true)
 
             VStack(spacing: 0) {
                 icon
@@ -22,11 +35,12 @@ struct ConfirmDialog: View {
 
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
                     BigSize(bytes: confirmation.bytes, size: 40, weight: .light)
-                    Text(confirmation.noun(confirmation.count))
+                    Text(countText)
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(Theme.textSecondary)
                 }
                 .padding(.top, 10)
+                .accessibilityElement(children: .combine)
 
                 Text(confirmation.message)
                     .font(.system(size: 13))
@@ -50,8 +64,12 @@ struct ConfirmDialog: View {
                     Button("Отмена", action: onCancel)
                         .buttonStyle(PillButtonStyle(kind: .secondary, large: true))
                         .keyboardShortcut(.cancelAction)
+                        .focused($focus, equals: .cancel)
                     Button(confirmation.confirmTitle, action: onConfirm)
                         .buttonStyle(PillButtonStyle(kind: confirmation.permanent ? .destructive : .primary(confirmation.tint), large: true))
+                        // Return must never wipe the Trash by reflex.
+                        .keyboardShortcut(confirmation.permanent ? nil : .defaultAction)
+                        .focused($focus, equals: .confirm)
                 }
                 .padding(.top, 24)
             }
@@ -67,6 +85,17 @@ struct ConfirmDialog: View {
                         .strokeBorder(LinearGradient(colors: [.white.opacity(0.22), .white.opacity(0.06)], startPoint: .top, endPoint: .bottom), lineWidth: 1))
                     .shadow(color: .black.opacity(0.55), radius: 40, y: 20)
             )
+            .accessibilityElement(children: .contain)
+            .accessibilityAddTraits(.isModal)
+            .accessibilityLabel(confirmation.title)
+            .accessibilityAction(.escape, onCancel)
+            .focusSection()
+            .defaultFocus($focus, .cancel)
+        }
+        .onAppear { focus = .cancel }
+        // Keep keyboard focus inside the dialog: if Tab walks out to the screen underneath, bring it back.
+        .onChange(of: focus) { _, new in
+            if new == nil { focus = .cancel }
         }
     }
 
@@ -86,6 +115,7 @@ struct ConfirmDialog: View {
                 IconTile(symbol: "trash.fill", tint: confirmation.tint, size: 58)
             }
         }
+        .accessibilityHidden(true)
     }
 
     private func note(symbol: String, color: Color, text: String) -> some View {

@@ -291,5 +291,13 @@ enum MockData {
         RemovalFailure(url: URL(fileURLWithPath: "/Library/Logs/DiagnosticReports"), reason: "Системная или пользовательская папка"),
         RemovalFailure(url: h("Library/Caches/com.apple.Safari"), reason: "Операция не разрешена: нужен полный доступ к диску"),
     ]
+
+    /// One refusal per `FailureCopy` action, worded like the real engine/Foundation errors.
+    static let actionableFailures: [RemovalFailure] = [
+        RemovalFailure(url: h("Library/Containers/com.apple.mail/Data/Library/Mail Downloads/Скан.pdf"),
+                       reason: "“Скан.pdf” couldn’t be moved to the Trash because you don’t have permission to access it."),
+        RemovalFailure(url: h("Desktop/Скан диплома.pdf"), reason: "“Скан диплома.pdf” couldn’t be moved to the Trash because it’s locked."),
+        RemovalFailure(url: URL(fileURLWithPath: "/Applications/Spotify.app"), reason: "Приложение запущено"),
+    ]
 }
 #endif

@@ -47,6 +47,24 @@ struct CleaningOverlay: View {
         .contentShape(Rectangle())
         // Swallow clicks and drops meant for the screens underneath.
         .onTapGesture {}
+        // VoiceOver stays inside the scene while it is up.
+        .accessibilityElement(children: .contain)
+        .accessibilityAddTraits(.isModal)
+        .accessibilityLabel(session.title)
+        .onChange(of: session.currentStageID) { _, id in
+            guard let id, !isSnapshot, !session.finished, session.stages.indices.contains(id) else { return }
+            announce("\(session.activity) — \(session.stages[id].title)")
+        }
+        .onChange(of: session.finished) { _, finished in
+            guard finished, !isSnapshot else { return }
+            announce(session.stopped
+                     ? "Остановлено. Убрано \(Fmt.size(session.freedBytes)) из \(Fmt.size(session.totalBytes))"
+                     : "Готово. Убрано \(Fmt.size(session.freedBytes))")
+        }
+    }
+
+    private func announce(_ text: String) {
+        AccessibilityNotification.Announcement(text).post()
     }
 
     private var backdrop: some View {
@@ -76,15 +94,17 @@ struct CleaningOverlay: View {
     }
 
     private func dial(diameter: CGFloat) -> some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60, paused: frozen)) { context in
-            let now = session.frozenTime ?? (isSnapshot ? 1.0 : context.date.timeIntervalSince(session.startedAt))
-            BroomDial(tint: session.tint,
-                      fraction: session.fraction,
-                      time: now,
-                      finishTime: session.finishElapsed.map { max(0, now - $0) },
-                      diameter: diameter,
-                      reduceMotion: reduceMotion)
-        }
+        let fraction = session.fraction
+        return BroomDial(tint: session.tint,
+                         fraction: fraction,
+                         clock: BroomClock(startedAt: session.startedAt,
+                                           frozenTime: session.frozenTime ?? (isSnapshot ? 1.0 : nil),
+                                           finishElapsed: session.finishElapsed),
+                         diameter: diameter,
+                         reduceMotion: reduceMotion)
+            .accessibilityRepresentation {
+                ProgressView(value: fraction) { Text(session.title) }
+            }
     }
 
     @ViewBuilder private var footer: some View {
@@ -93,7 +113,7 @@ struct CleaningOverlay: View {
         } else if session.cancelRequested {
             HStack(spacing: 8) {
                 ProgressView().controlSize(.small)
-                Text("Останавливаем после текущего объекта…")
+                Text("Остановим после текущей группы файлов…")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Theme.textSecondary)
             }
@@ -130,15 +150,20 @@ private struct CleaningStatus: View {
             }
             .foregroundStyle(Theme.text)
             .animation(.easeOut(duration: 0.25), value: Int(session.fraction * 100))
+            // The dial already reports progress to VoiceOver.
+            .accessibilityHidden(true)
 
             headline
                 .padding(.top, compact ? 0 : 2)
 
             Text(detail)
-                .font(.system(size: 11.5, design: .monospaced))
-                .foregroundStyle(Theme.textTertiary)
-                .lineLimit(1)
+                .font(session.awaitingAdmin && !session.finished ? .system(size: 12.5) : .system(size: 11.5, design: .monospaced))
+                .foregroundStyle(session.awaitingAdmin && !session.finished ? Theme.textSecondary : Theme.textTertiary)
+                .multilineTextAlignment(.center)
+                // The admin explanation is prose and may wrap; paths stay one line, cut in the middle.
+                .lineLimit(session.awaitingAdmin && !session.finished ? 2 : 1)
                 .truncationMode(.middle)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: compact ? 400 : 440)
                 .padding(.top, 6)
 
@@ -150,16 +175,18 @@ private struct CleaningStatus: View {
     @ViewBuilder private var headline: some View {
         Group {
             if session.finished {
-                Text(session.stopped ? "Очистка остановлена"
+                Text(session.stopped ? "Остановлено"
                      : session.freedBytes < session.processedBytes ? "Готово" : "Готово — всё убрано")
                     .foregroundStyle(Theme.text)
             } else if session.awaitingAdmin {
                 HStack(spacing: 7) {
                     Image(systemName: "lock.fill").foregroundStyle(Theme.warning)
-                    Text("Ожидание пароля администратора…").foregroundStyle(Theme.text)
+                        .accessibilityHidden(true)
+                    Text("Введите пароль администратора").foregroundStyle(Theme.text)
                 }
             } else if let stage = session.currentStage {
-                (Text("Очищается: ").foregroundStyle(Theme.textSecondary) + Text(stage.title).foregroundStyle(Theme.text))
+                Text("\(session.activity) — \(Text(stage.title).foregroundStyle(Theme.text))")
+                    .foregroundStyle(Theme.textSecondary)
             } else {
                 Text("Подготовка…").foregroundStyle(Theme.textSecondary)
             }
@@ -172,21 +199,16 @@ private struct CleaningStatus: View {
 
     private var detail: String {
         if session.finished { return " " }
-        if session.awaitingAdmin { return "macOS запросит пароль, чтобы убрать системные файлы" }
+        if session.awaitingAdmin { return "macOS спрашивает пароль, чтобы удалить системные компоненты" }
         return session.currentURL.map { Fmt.path($0) } ?? " "
     }
 
     private var totals: some View {
-        HStack(spacing: 6) {
-            Text("Освобождено").foregroundStyle(Theme.textSecondary)
-            Text(Fmt.size(session.freedBytes)).foregroundStyle(Theme.text).fontWeight(.semibold)
-            if session.totalBytes > 0 {
-                Text("из \(Fmt.size(session.totalBytes))").foregroundStyle(Theme.textSecondary)
-            }
-            Text("·").foregroundStyle(Theme.textTertiary)
-            Text("\(Fmt.integer(min(session.processedItems, session.totalItems))) из \(Fmt.integer(session.totalItems))")
-                .foregroundStyle(Theme.textSecondary)
-        }
+        let freed = Text(Fmt.size(session.freedBytes)).foregroundStyle(Theme.text).fontWeight(.semibold)
+        let ofTotal = session.totalBytes > 0 ? " из \(Fmt.size(session.totalBytes))" : ""
+        let items = "\(Fmt.integer(min(session.processedItems, session.totalItems))) из \(Fmt.integer(session.totalItems))"
+        return Text("Убрано \(freed)\(ofTotal)  ·  \(items)")
+            .foregroundStyle(Theme.textSecondary)
         .font(.system(size: 13, weight: .medium))
         .monospacedDigit()
         .lineLimit(1)
@@ -202,6 +224,7 @@ private struct StageList: View {
     let session: CleaningSession
     let compact: Bool
     let frozen: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var maxRows: Int { compact ? 6 : 7 }
 
@@ -235,13 +258,14 @@ private struct StageList: View {
             .padding(.bottom, 8)
 
             if w.hiddenAbove > 0 {
-                moreLine("Готово ещё: \(w.hiddenAbove)", symbol: "checkmark")
+                moreLine("Выполнено: ещё \(w.hiddenAbove) \(Fmt.plural(w.hiddenAbove, "этап", "этапа", "этапов"))",
+                         symbol: "checkmark")
             }
             VStack(spacing: 2) {
                 ForEach(w.rows) { stage in
                     StageRow(stage: stage, tint: session.tint, current: stage.id == session.currentStageID && !session.finished,
                              frozen: frozen)
-                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                        .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .bottom)))
                 }
             }
             .padding(.horizontal, 6)
@@ -306,6 +330,9 @@ private struct StageRow: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(current ? tint.accent.opacity(0.35) : .clear, lineWidth: 1)
         )
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(stage.title)
+        .accessibilityValue(stage.state == .done ? "выполнено" : current ? "выполняется" : "ожидает")
     }
 
     private var sizeText: String {
@@ -361,6 +388,7 @@ private struct Spinner: View {
     let tint: ModuleTint
     let frozen: Bool
     @State private var turn = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
@@ -372,7 +400,8 @@ private struct Spinner: View {
                 .rotationEffect(.degrees(turn ? 360 : 0) + .degrees(-60))
         }
         .onAppear {
-            guard !frozen else { return }
+            // Reduce Motion: a still arc; the stage's progress bar still shows activity.
+            guard !frozen, !reduceMotion else { return }
             withAnimation(.linear(duration: 0.9).repeatForever(autoreverses: false)) { turn = true }
         }
     }

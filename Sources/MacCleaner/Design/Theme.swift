@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 /// Design tokens shared by every screen.
 enum Theme {
@@ -21,7 +22,9 @@ enum Theme {
     // Text on dark tinted backgrounds.
     static let text = Color.white
     static let textSecondary = Color.white.opacity(0.68)
-    static let textTertiary = Color.white.opacity(0.44)
+    /// Metadata only (paths, counts, dates) at 11 pt and up; never field labels.
+    /// 0.62 keeps ≥ 4.5:1 over the darkened mesh and glass (0.44 measured 2.45–3.5:1).
+    static let textTertiary = Color.white.opacity(0.62)
     static let hairline = Color.white.opacity(0.09)
     static let fill = Color.white.opacity(0.06)
     static let fillStrong = Color.white.opacity(0.11)
@@ -32,9 +35,65 @@ enum Theme {
 
     static let sidebarWidth: CGFloat = 252
 
-    static let spring = Animation.spring(response: 0.45, dampingFraction: 0.86)
-    static let softSpring = Animation.spring(response: 0.7, dampingFraction: 0.9)
-    static let quick = Animation.easeOut(duration: 0.18)
+    // Motion. Under Reduce Motion the springs become a short ease so moves, offsets and scales
+    // settle almost at once; pair moving transitions with `Theme.motion(_:)` to get a crossfade.
+    static var spring: Animation {
+        reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.45, dampingFraction: 0.86)
+    }
+    static var softSpring: Animation {
+        reduceMotion ? .easeInOut(duration: 0.25) : .spring(response: 0.7, dampingFraction: 0.9)
+    }
+    static var quick: Animation {
+        reduceMotion ? .easeInOut(duration: 0.15) : .easeOut(duration: 0.18)
+    }
+
+    /// System Reduce Motion setting. AppKit caches it and keeps it current, so reading it is cheap.
+    static var reduceMotion: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
+
+    /// `transition` as is, or a plain crossfade under Reduce Motion.
+    static func motion(_ transition: AnyTransition) -> AnyTransition {
+        reduceMotion ? .opacity : transition
+    }
+}
+
+// MARK: - Increase Contrast / Reduce Transparency
+
+extension Theme {
+    /// Tertiary text that follows Increase Contrast (0.62 → 0.8).
+    static func textTertiary(_ contrast: ColorSchemeContrast) -> Color {
+        contrast == .increased ? .white.opacity(0.8) : textTertiary
+    }
+    /// Secondary text that follows Increase Contrast (0.68 → 0.85).
+    static func textSecondary(_ contrast: ColorSchemeContrast) -> Color {
+        contrast == .increased ? .white.opacity(0.85) : textSecondary
+    }
+    /// Separators: 0.09 → 0.25 under Increase Contrast.
+    static func hairline(_ contrast: ColorSchemeContrast) -> Color {
+        contrast == .increased ? .white.opacity(0.25) : hairline
+    }
+    /// Card and control outlines: at least 0.4 under Increase Contrast.
+    static func strokeOpacity(_ base: Double, _ contrast: ColorSchemeContrast) -> Double {
+        contrast == .increased ? max(base, 0.4) : base
+    }
+}
+
+/// Text colors that resolve against the environment, so a view gets the Increase Contrast variant
+/// without reading the setting itself: `.foregroundStyle(.themeTertiary)`.
+struct ThemeTextStyle: ShapeStyle {
+    enum Level { case secondary, tertiary }
+    let level: Level
+
+    func resolve(in environment: EnvironmentValues) -> Color {
+        switch level {
+        case .secondary: Theme.textSecondary(environment.colorSchemeContrast)
+        case .tertiary: Theme.textTertiary(environment.colorSchemeContrast)
+        }
+    }
+}
+
+extension ShapeStyle where Self == ThemeTextStyle {
+    static var themeSecondary: ThemeTextStyle { ThemeTextStyle(level: .secondary) }
+    static var themeTertiary: ThemeTextStyle { ThemeTextStyle(level: .tertiary) }
 }
 
 /// Per-module color identity: vivid accents for controls and a dark mesh for the background.
@@ -58,11 +117,13 @@ struct ModuleTint: Equatable {
                0x23105E, 0x55209A, 0x7A1E7C,
                0x0E0624, 0x3A1062, 0x86226C] as [UInt32]).map { Color(hex: $0) }
     )
+    // Junk and Duplicates had the lightest centre nodes, right under the result cards;
+    // they are darkened ~25 % so tertiary text on glass keeps 4.5:1.
     static let junk = ModuleTint(
         accent: Color(hex: 0x3CE6AE), accent2: Color(hex: 0x22B7D6),
         mesh: ([0x03141A, 0x062F38, 0x07362E,
-               0x063940, 0x0C6058, 0x0A4D3C,
-               0x020F13, 0x0A3A47, 0x0E5D4A] as [UInt32]).map { Color(hex: $0) }
+               0x063940, 0x0A4C46, 0x0A4D3C,
+               0x020F13, 0x0A3A47, 0x0B4A3B] as [UInt32]).map { Color(hex: $0) }
     )
     static let uninstaller = ModuleTint(
         accent: Color(hex: 0x5AA8FF), accent2: Color(hex: 0x8A6CFF),
@@ -79,8 +140,8 @@ struct ModuleTint: Equatable {
     static let duplicates = ModuleTint(
         accent: Color(hex: 0x52E3FF), accent2: Color(hex: 0x3A7CFF),
         mesh: ([0x03121C, 0x06304A, 0x0A2846,
-               0x06364F, 0x0D6390, 0x113F7E,
-               0x020B12, 0x0A3D5E, 0x0F578C] as [UInt32]).map { Color(hex: $0) }
+               0x06364F, 0x0A4E73, 0x0D2F5E,
+               0x020B12, 0x0A3D5E, 0x0B4169] as [UInt32]).map { Color(hex: $0) }
     )
     static let diskMap = ModuleTint(
         accent: Color(hex: 0xFF72B6), accent2: Color(hex: 0xA874FF),
@@ -88,6 +149,11 @@ struct ModuleTint: Equatable {
                0x31103F, 0x7A1E6C, 0x56196C,
                0x110518, 0x48134F, 0x7C1F58] as [UInt32]).map { Color(hex: $0) }
     )
+}
+
+extension ModuleTint {
+    /// Opaque surface for Reduce Transparency: the mesh's centre node, darkened by half.
+    var solidSurface: Color { mesh[4].mix(with: .black, by: 0.5) }
 }
 
 extension Color {

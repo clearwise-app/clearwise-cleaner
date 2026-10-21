@@ -15,8 +15,12 @@ struct ScanButton: View {
     var diameter: CGFloat = 104
     var enabled = true
     var action: () -> Void = {}
-    /// Shown as "Стоп" on hover while in progress.
+    /// While working: a visible "Остановить" under the percentage, the whole disc on hover, and Esc.
     var onStop: (() -> Void)? = nil
+    /// Return triggers the idle action. `nil` = automatic: on for the large stage button
+    /// (idle screens), off for the smaller review-footer button, where Return would start a
+    /// destructive confirmation. Pass it explicitly to override.
+    var isDefaultAction: Bool? = nil
 
     @State private var hover = false
     @State private var pressed = false
@@ -24,6 +28,18 @@ struct ScanButton: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var isAction: Bool { if case .action = mode { true } else { false } }
+    private var canStop: Bool { !isAction && onStop != nil }
+    private var returnTriggers: Bool { isAction && enabled && (isDefaultAction ?? (diameter >= 90)) }
+
+    /// Animate the morph between kinds only: `mode` carries the progress value, and keying the
+    /// spring on it would restart an animation on every progress tick.
+    private var kind: Int {
+        switch mode {
+        case .action: 0
+        case .progress: 1
+        case .busy: 2
+        }
+    }
 
     var body: some View {
         ZStack {
@@ -45,7 +61,7 @@ struct ScanButton: View {
             core
         }
         .frame(width: diameter + 30, height: diameter + 30)
-        .animation(Theme.spring, value: mode)
+        .animation(Theme.spring, value: kind)
         .animation(Theme.quick, value: hover)
     }
 
@@ -85,9 +101,34 @@ struct ScanButton: View {
             .contentShape(Circle())
         }
         .buttonStyle(PressScaleStyle())
+        .keyboardShortcut(canStop ? .cancelAction : returnTriggers ? .defaultAction : nil)
         .disabled(!enabled || (!isAction && onStop == nil))
         .opacity(enabled ? 1 : 0.45)
         .onHover { hover = $0 }
+        .help(helpText)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityValue(accessibilityValue)
+        .accessibilityAddTraits(isAction ? [] : .updatesFrequently)
+    }
+
+    private var helpText: String {
+        switch mode {
+        case .action(let title): returnTriggers ? "\(title) (↩)" : title
+        case .progress, .busy: canStop ? "Остановить (Esc)" : "Идёт работа…"
+        }
+    }
+
+    private var accessibilityLabel: String {
+        switch mode {
+        case .action(let title): title
+        case .progress: canStop ? "Остановить сканирование" : "Сканирование"
+        case .busy: canStop ? "Остановить" : "Идёт работа"
+        }
+    }
+
+    private var accessibilityValue: String {
+        if case .progress(let value) = mode { return Fmt.percent(min(1, max(0, value))) }
+        return ""
     }
 
     @ViewBuilder private var label: some View {
@@ -103,31 +144,54 @@ struct ScanButton: View {
                 .padding(.horizontal, 8)
                 .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
         case .progress(let value):
-            if hover, onStop != nil {
+            if hover, canStop {
                 stopLabel
             } else {
-                HStack(alignment: .firstTextBaseline, spacing: 1) {
-                    Text("\(Int((min(1, value)) * 100))")
-                        .font(.number(diameter * 0.28, weight: .light))
-                        .monospacedDigit()
-                        .contentTransition(.numericText())
-                    Text("%").font(.number(diameter * 0.13, weight: .light)).foregroundStyle(Theme.textSecondary)
+                let percent = Int(min(1, max(0, value)) * 100)
+                VStack(spacing: 2) {
+                    HStack(alignment: .firstTextBaseline, spacing: 1) {
+                        Text("\(percent)")
+                            .font(.number(diameter * 0.28, weight: .light))
+                            .monospacedDigit()
+                            .contentTransition(.numericText())
+                            .animation(Theme.quick, value: percent)
+                        Text("%").font(.number(diameter * 0.13, weight: .light)).foregroundStyle(Theme.textSecondary)
+                    }
+                    .foregroundStyle(.white)
+                    if canStop { stopHint }
                 }
-                .foregroundStyle(.white)
+                // The caption lives under the number; keep the number optically centred.
+                .offset(y: canStop ? diameter * 0.04 : 0)
             }
         case .busy:
-            if hover, onStop != nil { stopLabel } else {
-                Image(systemName: "trash.fill")
-                    .font(.system(size: diameter * 0.24, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.85))
+            if hover, canStop { stopLabel } else {
+                VStack(spacing: 4) {
+                    Image(systemName: "trash.fill")
+                        .font(.system(size: diameter * 0.24, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.85))
+                    if canStop { stopHint }
+                }
             }
         }
+    }
+
+    /// Always-visible stop affordance under the percentage (not hover-only).
+    private var stopHint: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "stop.fill").font(.system(size: 7, weight: .bold))
+            Text("Остановить").font(.system(size: 10.5, weight: .semibold))
+        }
+        .foregroundStyle(.white.opacity(0.82))
+        .padding(.horizontal, 7)
+        .padding(.vertical, 2.5)
+        .background(Capsule().fill(.white.opacity(0.12)))
+        .fixedSize()
     }
 
     private var stopLabel: some View {
         VStack(spacing: 3) {
             Image(systemName: "stop.fill").font(.system(size: 14, weight: .bold))
-            Text("Стоп").font(.system(size: 12, weight: .semibold))
+            Text("Остановить").font(.system(size: 12, weight: .semibold))
         }
         .foregroundStyle(.white)
     }

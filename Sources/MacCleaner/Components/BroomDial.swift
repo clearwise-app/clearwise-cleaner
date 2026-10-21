@@ -1,16 +1,37 @@
 import SwiftUI
 
+/// Time source of the dial. Only the parts that move read it, each inside its own `TimelineView`.
+struct BroomClock {
+    var startedAt: Date
+    /// Snapshots: render this moment (seconds after the start) and never tick.
+    var frozenTime: Double?
+    /// Seconds between the start and the finish; nil while working.
+    var finishElapsed: Double?
+
+    var paused: Bool { frozenTime != nil }
+    var finished: Bool { finishElapsed != nil }
+
+    func time(at date: Date) -> Double { frozenTime ?? date.timeIntervalSince(startedAt) }
+    /// Seconds since the finish at `time`, for the flourish.
+    func finishTime(at time: Double) -> Double? { finishElapsed.map { max(0, time - $0) } }
+
+    var schedule: AnimationTimelineSchedule { .animation(minimumInterval: 1.0 / 60, paused: paused) }
+}
+
 /// The centrepiece of the cleaning scene: a glass disc with a sweeping broom, dust flying off each stroke,
 /// and a thick gradient progress ring with a glowing leading cap around it.
+///
+/// Only the broom `Canvas`, the finish badge and the dashed orbit are redrawn per frame; the halo, ring,
+/// glass and shadow are static layers. Under Reduce Motion nothing moves: the broom rests and the glow
+/// inside the disc slowly breathes (opacity only).
 struct BroomDial: View {
     let tint: ModuleTint
     let fraction: Double
-    /// Seconds since the cleanup started; drives the sweep.
-    let time: Double
-    /// Seconds since the cleanup finished (nil while working): the flourish.
-    let finishTime: Double?
+    let clock: BroomClock
     let diameter: CGFloat
     var reduceMotion = false
+
+    @State private var breathe = false
 
     private var lineWidth: CGFloat { diameter * 0.05 }
     private var disc: CGFloat { diameter - lineWidth * 2 - diameter * 0.075 }
@@ -24,26 +45,117 @@ struct BroomDial: View {
                 .frame(width: diameter * 1.9, height: diameter * 1.9)
                 .allowsHitTesting(false)
 
-            // Faint orbit outside the ring
-            Circle()
-                .strokeBorder(.white.opacity(0.06), style: StrokeStyle(lineWidth: 1, dash: [2, 7]))
-                .frame(width: diameter + diameter * 0.16, height: diameter + diameter * 0.16)
-                .rotationEffect(.degrees(reduceMotion ? 0 : time * 6))
+            orbit
 
-            ring
+            DialRing(tint: tint, fraction: fraction, diameter: diameter, lineWidth: lineWidth)
 
             discView
         }
         .frame(width: diameter * 1.18, height: diameter * 1.18)
+        .onAppear { startBreathing() }
+        .onChange(of: clock.finished) { _, finished in
+            if finished && breathe { withAnimation(.easeOut(duration: 0.4)) { breathe = false } }
+        }
     }
 
-    // MARK: Ring
+    // MARK: Orbit
 
-    private var ring: some View {
+    @ViewBuilder private var orbit: some View {
+        let ring = Circle()
+            .strokeBorder(.white.opacity(0.06), style: StrokeStyle(lineWidth: 1, dash: [2, 7]))
+            .frame(width: diameter * 1.16, height: diameter * 1.16)
+        if reduceMotion {
+            ring
+        } else {
+            TimelineView(clock.schedule) { context in
+                ring.rotationEffect(.degrees(clock.time(at: context.date) * 6))
+            }
+        }
+    }
+
+    // MARK: Disc
+
+    private var discView: some View {
+        ZStack {
+            Circle()
+                .fill(LinearGradient(colors: [tint.accent2.opacity(0.42), tint.mesh[4].opacity(0.9), .black.opacity(0.55)],
+                                     startPoint: .top, endPoint: .bottom))
+            Circle()
+                .fill(RadialGradient(colors: [tint.accent.opacity(0.35), .clear],
+                                     center: .init(x: 0.5, y: 0.78), startRadius: 0, endRadius: disc * 0.55))
+                .opacity(breathe ? 0.4 : 1)
+
+            if reduceMotion {
+                broom(time: clock.frozenTime ?? 0, finishTime: nil)
+                DoneBadge(tint: tint, size: disc * 0.24)
+                    .offset(x: disc * 0.26, y: disc * 0.27)
+                    .opacity(clock.finished ? 1 : 0)
+                    .animation(.easeOut(duration: 0.4), value: clock.finished)
+            } else {
+                TimelineView(clock.schedule) { context in
+                    let t = clock.time(at: context.date)
+                    broom(time: t, finishTime: clock.finishTime(at: t))
+                }
+            }
+
+            // Gloss
+            Circle()
+                .fill(LinearGradient(colors: [.white.opacity(0.22), .white.opacity(0.02), .clear],
+                                     startPoint: .top, endPoint: .center))
+                .padding(disc * 0.025)
+                .allowsHitTesting(false)
+            Circle()
+                .strokeBorder(LinearGradient(colors: [.white.opacity(0.6), .white.opacity(0.06), .white.opacity(0.18)],
+                                             startPoint: .top, endPoint: .bottom), lineWidth: 1.25)
+        }
+        .frame(width: disc, height: disc)
+        // A static shape casts the shadow, so the per-frame broom never forces an offscreen shadow pass.
+        .background(DiscShadow())
+    }
+
+    /// The per-frame part: broom, dust and, after the finish, the popping badge.
+    private func broom(time: Double, finishTime: Double?) -> some View {
+        ZStack {
+            Canvas { ctx, size in
+                BroomRenderer(tint: tint, time: time, finishTime: finishTime, still: reduceMotion)
+                    .draw(in: &ctx, size: size)
+            }
+            .clipShape(Circle())
+
+            if let ft = finishTime {
+                DoneBadge(tint: tint, size: disc * 0.24)
+                    .scaleEffect(Self.pop(ft - 0.35))
+                    .opacity(min(1, max(0, (ft - 0.35) * 6)))
+                    .offset(x: disc * 0.26, y: disc * 0.27)
+            }
+        }
+    }
+
+    private func startBreathing() {
+        guard reduceMotion, !clock.paused, !clock.finished else { return }
+        withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) { breathe = true }
+    }
+
+    /// Overshooting pop-in, 0 before the start.
+    static func pop(_ t: Double) -> Double {
+        guard t > 0 else { return 0.001 }
+        let x = min(1, t / 0.4)
+        return max(0.001, sin(x * .pi / 2) * (1 + 0.22 * sin(x * .pi)))
+    }
+}
+
+/// Progress ring with a glowing leading cap. Changes only with `fraction`.
+private struct DialRing: View {
+    let tint: ModuleTint
+    let fraction: Double
+    let diameter: CGFloat
+    let lineWidth: CGFloat
+
+    var body: some View {
         let value = max(0, min(1, fraction))
         let r = (diameter - lineWidth) / 2
         let angle = Angle.degrees(360 * value - 90)
-        return ZStack {
+        ZStack {
             Circle()
                 .stroke(.white.opacity(0.09), lineWidth: lineWidth)
             Circle()
@@ -77,50 +189,22 @@ struct BroomDial: View {
         .frame(width: diameter, height: diameter)
         .animation(.easeOut(duration: 0.35), value: value)
     }
+}
 
-    // MARK: Disc
-
-    private var discView: some View {
-        let pulse = reduceMotion && finishTime == nil ? 1 + 0.025 * sin(time * 2 * .pi / 2.6) : 1
-        return ZStack {
-            Circle()
-                .fill(LinearGradient(colors: [tint.accent2.opacity(0.42), tint.mesh[4].opacity(0.9), .black.opacity(0.55)],
-                                     startPoint: .top, endPoint: .bottom))
-            Circle()
-                .fill(RadialGradient(colors: [tint.accent.opacity(0.35), .clear],
-                                     center: .init(x: 0.5, y: 0.78), startRadius: 0, endRadius: disc * 0.55))
-            Canvas { ctx, size in
-                BroomRenderer(tint: tint, time: time, finishTime: finishTime, still: reduceMotion)
-                    .draw(in: &ctx, size: size)
+/// The disc's drop shadow, cast by a plain circle and cut out inside so the translucent glass looks as before.
+private struct DiscShadow: View {
+    var body: some View {
+        Circle()
+            .fill(.black)
+            .shadow(color: .black.opacity(0.4), radius: 24, y: 14)
+            .mask {
+                ZStack {
+                    Rectangle().padding(-80)
+                    Circle().blendMode(.destinationOut)
+                }
+                .compositingGroup()
             }
-            .clipShape(Circle())
-            // Gloss
-            Circle()
-                .fill(LinearGradient(colors: [.white.opacity(0.22), .white.opacity(0.02), .clear],
-                                     startPoint: .top, endPoint: .center))
-                .padding(disc * 0.025)
-                .allowsHitTesting(false)
-            Circle()
-                .strokeBorder(LinearGradient(colors: [.white.opacity(0.6), .white.opacity(0.06), .white.opacity(0.18)],
-                                             startPoint: .top, endPoint: .bottom), lineWidth: 1.25)
-
-            if let ft = finishTime {
-                DoneBadge(tint: tint, size: disc * 0.24)
-                    .scaleEffect(Self.pop(ft - 0.35))
-                    .opacity(min(1, max(0, (ft - 0.35) * 6)))
-                    .offset(x: disc * 0.26, y: disc * 0.27)
-            }
-        }
-        .frame(width: disc, height: disc)
-        .scaleEffect(pulse)
-        .shadow(color: .black.opacity(0.4), radius: 24, y: 14)
-    }
-
-    /// Overshooting pop-in, 0 before the start.
-    static func pop(_ t: Double) -> Double {
-        guard t > 0 else { return 0.001 }
-        let x = min(1, t / 0.4)
-        return max(0.001, sin(x * .pi / 2) * (1 + 0.22 * sin(x * .pi)))
+            .allowsHitTesting(false)
     }
 }
 
@@ -165,6 +249,8 @@ struct BroomRenderer {
 
     /// Angle in degrees and bristle flex (−1…1, positive bends the tips right).
     func pose() -> (angle: Double, flex: Double, scale: Double) {
+        // Reduce Motion: the broom rests, the flourish included.
+        if still { return (Self.rest, 0, 1) }
         if let ft = finishTime {
             // Flourish: one big flick that settles back, with a little bounce in size.
             let decay = exp(-ft * 2.6)
@@ -174,7 +260,6 @@ struct BroomRenderer {
             let scale = 1 + 0.07 * sin(min(1, ft / 0.6) * .pi)
             return (angle, flex, scale)
         }
-        if still { return (Self.rest, 0, 1) }
         let w = 2 * Double.pi / Self.period
         let angle = Self.rest + Self.amplitude * sin(w * time)
         // Tips trail the motion: when the broom swings left (angle grows), they bend right.
@@ -192,7 +277,7 @@ struct BroomRenderer {
 
         drawFloor(&ctx, size: size, tip: tip, S: S)
         if !still && finishTime == nil { drawPuffs(&ctx, S: S, pivot: pivot, L: L) }
-        if let ft = finishTime { drawBurst(&ctx, size: size, S: S, ft: ft) }
+        if !still, let ft = finishTime { drawBurst(&ctx, size: size, S: S, ft: ft) }
 
         var broom = ctx
         broom.addFilter(.shadow(color: .black.opacity(0.38), radius: S * 0.03, x: S * 0.012, y: S * 0.03))

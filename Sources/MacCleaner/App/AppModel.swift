@@ -69,6 +69,19 @@ final class AppModel {
         return result
     }
 
+    // MARK: Shared actions for every module (wave 2 contracts)
+
+    /// Opens the Full Disk Access flow (explanation + steps + live detection).
+    /// Modules call this from FDA banners, PartialAccessNote and CompletionView's «Дать доступ».
+    /// Placeholder until the onboarding workstream replaces it: opens System Settings directly.
+    func presentAccessSheet() {
+        Permissions.openFullDiskAccessSettings()
+    }
+
+    /// «Очистить Корзину…» from CompletionView: confirm (permanent), then empty ~/.Trash through
+    /// the cleaning overlay. Placeholder until the shell workstream implements it.
+    func requestEmptyTrash() {}
+
     func ask(_ confirmation: Confirmation) {
         withAnimation(Theme.spring) { self.confirmation = confirmation }
     }

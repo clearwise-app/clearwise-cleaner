@@ -3,11 +3,14 @@ import Foundation
 /// Russian formatting for sizes, counts and dates. Independent of the system locale,
 /// so the UI always reads consistently ("12,4 ГБ", "342 объекта").
 enum Fmt {
+    static let ru = Locale(identifier: "ru_RU")
+    /// U+00A0, keeps "14 %" and "12,4 ГБ" from wrapping apart.
+    static let nbsp = "\u{00A0}"
     private static let units = ["Б", "КБ", "МБ", "ГБ", "ТБ", "ПБ"]
 
     static func size(_ bytes: Int64) -> String {
         let p = sizeParts(bytes)
-        return "\(p.value) \(p.unit)"
+        return "\(p.value)\(nbsp)\(p.unit)"
     }
 
     /// Decimal units like Finder: 1 КБ = 1000 Б.
@@ -31,13 +34,26 @@ enum Fmt {
         return (number(value, digits: digits), units[idx])
     }
 
+    /// Styles are built once; FormatStyle also caches its ICU formatter, so a row's body
+    /// no longer pays for a NumberFormatter per call.
+    private static let numberStyles: [FloatingPointFormatStyle<Double>] = (0...3).map {
+        FloatingPointFormatStyle<Double>(locale: ru).precision(.fractionLength($0))
+    }
+
     static func number(_ value: Double, digits: Int) -> String {
-        let f = NumberFormatter()
-        f.locale = Locale(identifier: "ru_RU")
-        f.numberStyle = .decimal
-        f.minimumFractionDigits = digits
-        f.maximumFractionDigits = digits
-        return f.string(from: NSNumber(value: value)) ?? String(format: "%.\(digits)f", value)
+        let style = numberStyles.indices.contains(digits)
+            ? numberStyles[digits]
+            : FloatingPointFormatStyle<Double>(locale: ru).precision(.fractionLength(max(0, digits)))
+        return value.formatted(style)
+    }
+
+    /// Percent of a 0…1 share with a non-breaking space: "14 %", "4,2 %" (digits: 1).
+    /// A non-zero share too small for the precision reads "<1 %" / "<0,1 %", never "0 %".
+    static func percent(_ fraction: Double, digits: Int = 0) -> String {
+        let p = max(0, fraction * 100)
+        let step = pow(10, -Double(digits))
+        if p > 0 && p < step / 2 { return "<\(number(step, digits: digits))\(nbsp)%" }
+        return "\(number(p, digits: digits))\(nbsp)%"
     }
 
     static func integer(_ n: Int) -> String { number(Double(n), digits: 0) }
@@ -79,32 +95,39 @@ enum Fmt {
         return Calendar.current.dateComponents([.month], from: date, to: now).month
     }
 
-    /// "сегодня", "3 дн. назад", "8 мес. назад", "2 г. назад".
+    static func years(_ n: Int) -> String { "\(integer(n))\(nbsp)\(plural(n, "год", "года", "лет"))" }
+    static func months(_ n: Int) -> String { "\(integer(n))\(nbsp)\(plural(n, "месяц", "месяца", "месяцев"))" }
+    static func days(_ n: Int) -> String { "\(integer(n))\(nbsp)\(plural(n, "день", "дня", "дней"))" }
+
+    /// "сегодня", "вчера", "2 дня назад", "21 день назад", "8 месяцев назад", "2 года назад".
     static func ago(_ date: Date?, now: Date = Date()) -> String {
         guard let date else { return "нет данных" }
         let comps = Calendar.current.dateComponents([.year, .month, .day], from: date, to: now)
-        if let y = comps.year, y >= 1 { return "\(y) \(plural(y, "год", "года", "лет")) назад" }
-        if let m = comps.month, m >= 1 { return "\(m) мес. назад" }
-        if let d = comps.day, d >= 2 { return "\(d) дн. назад" }
+        if let y = comps.year, y >= 1 { return "\(years(y)) назад" }
+        if let m = comps.month, m >= 1 { return "\(months(m)) назад" }
+        if let d = comps.day, d >= 2 { return "\(days(d)) назад" }
         if let d = comps.day, d == 1 { return "вчера" }
         return "сегодня"
     }
 
-    /// For the app list: "не открывалось 8 мес." when idle for 3+ months.
+    /// For the app list: "не открывалось 8 месяцев" when idle for 3+ months.
     static func idleHint(_ date: Date?, now: Date = Date()) -> String? {
         guard let date else { return "не открывалось" }
         let comps = Calendar.current.dateComponents([.year, .month], from: date, to: now)
-        if let y = comps.year, y >= 1 { return "не открывалось \(y) \(plural(y, "год", "года", "лет"))" }
-        if let m = comps.month, m >= 3 { return "не открывалось \(m) мес." }
+        if let y = comps.year, y >= 1 { return "не открывалось \(years(y))" }
+        if let m = comps.month, m >= 3 { return "не открывалось \(months(m))" }
         return nil
     }
 
+    /// "19 мая 2025". Verbatim pattern rather than `.dateTime`, which appends "г." in Russian;
+    /// `y`, not `yyyy`, is the calendar year.
+    private static let dateStyle = Date.VerbatimFormatStyle(
+        format: "\(day: .defaultDigits) \(month: .abbreviated) \(year: .defaultDigits)",
+        locale: ru, timeZone: .current, calendar: Calendar(identifier: .gregorian))
+
     static func date(_ date: Date?) -> String {
         guard let date else { return "—" }
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "ru_RU")
-        f.dateFormat = "d MMM yyyy"
-        return f.string(from: date)
+        return date.formatted(dateStyle)
     }
 
     /// Russian name of a standard home folder ("Загрузки"), else the folder name.

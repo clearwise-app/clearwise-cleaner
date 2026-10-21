@@ -27,10 +27,13 @@ struct ModuleStage<Accessory: View, Options: View>: View {
     var onAction: () -> Void = {}
     var onStop: (() -> Void)? = nil
     var dimsOptionsWhileWorking = true
+    /// «Как дать доступ» in the Full Disk Access banner. Nil: opens System Settings directly.
+    var onGrantAccess: (() -> Void)? = nil
     @ViewBuilder var accessory: Accessory
     @ViewBuilder var options: Options
 
     @Environment(AppModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var isWorking: Bool { if case .idle = state { false } else { true } }
 
@@ -47,10 +50,10 @@ struct ModuleStage<Accessory: View, Options: View>: View {
                 .padding(.horizontal, 28)
 
                 if model.showsFDABanner && !isWorking {
-                    FDABanner()
+                    FDABanner(onGrantAccess: onGrantAccess)
                         .padding(.horizontal, 40)
                         .padding(.top, 4)
-                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
                 }
 
                 Spacer(minLength: 4)
@@ -77,7 +80,7 @@ struct ModuleStage<Accessory: View, Options: View>: View {
                 Spacer(minLength: 8)
 
                 ScanButton(mode: buttonMode, tint: module.tint, diameter: compact ? 96 : 106,
-                           enabled: buttonEnabled, action: onAction, onStop: onStop)
+                           enabled: buttonEnabled, action: onAction, onStop: onStop, isDefaultAction: true)
 
                 status
                     .frame(height: 46, alignment: .top)
@@ -129,39 +132,51 @@ struct ModuleStage<Accessory: View, Options: View>: View {
 extension ModuleStage where Accessory == EmptyView {
     init(module: AppModule, title: String? = nil, subtitle: String? = nil, state: State,
          onAction: @escaping () -> Void = {}, onStop: (() -> Void)? = nil,
+         onGrantAccess: (() -> Void)? = nil,
          @ViewBuilder options: () -> Options) {
         self.init(module: module, title: title, subtitle: subtitle, state: state, onAction: onAction, onStop: onStop,
-                  accessory: { EmptyView() }, options: options)
+                  onGrantAccess: onGrantAccess, accessory: { EmptyView() }, options: options)
     }
 }
 
 extension ModuleStage where Accessory == EmptyView, Options == EmptyView {
     init(module: AppModule, title: String? = nil, subtitle: String? = nil, state: State,
-         onAction: @escaping () -> Void = {}, onStop: (() -> Void)? = nil) {
+         onAction: @escaping () -> Void = {}, onStop: (() -> Void)? = nil,
+         onGrantAccess: (() -> Void)? = nil) {
         self.init(module: module, title: title, subtitle: subtitle, state: state, onAction: onAction, onStop: onStop,
-                  accessory: { EmptyView() }, options: { EmptyView() })
+                  onGrantAccess: onGrantAccess, accessory: { EmptyView() }, options: { EmptyView() })
     }
+}
+
+/// Opens the Full Disk Access flow when the app provides one, else System Settings (today's behaviour).
+@MainActor
+private func grantAccess(_ handler: (() -> Void)?) {
+    if let handler { handler() } else { Permissions.openFullDiskAccessSettings() }
 }
 
 // MARK: - Banners & capsules
 
 struct FDABanner: View {
+    /// «Как дать доступ»: the in-app access flow. Nil opens System Settings directly.
+    var onGrantAccess: (() -> Void)? = nil
     @Environment(AppModel.self) private var model
 
     var body: some View {
         HStack(spacing: 14) {
             IconTile(symbol: "lock.shield.fill", tint: .oldFiles, size: 34)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text("Нужен полный доступ к диску")
+                Text("Часть файлов скрыта от MacCleaner")
                     .font(.cardTitle)
                     .foregroundStyle(Theme.text)
-                Text("Без него macOS скрывает часть кэшей, контейнеров и почтовых файлов — результаты будут неполными.")
+                Text("Без полного доступа macOS не показывает кэши Safari и Mail и контейнеры приложений — найдём не всё.")
                     .font(.caption12)
                     .foregroundStyle(Theme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            .accessibilityElement(children: .combine)
             Spacer(minLength: 8)
-            Button("Открыть настройки") { Permissions.openFullDiskAccessSettings() }
+            Button("Как дать доступ") { grantAccess(onGrantAccess) }
                 .buttonStyle(PillButtonStyle(kind: .secondary))
             IconButton(symbol: "xmark", help: "Скрыть", size: 22) {
                 withAnimation(Theme.spring) { model.fdaBannerDismissed = true }
@@ -234,11 +249,46 @@ struct UsageBar: View {
 
 // MARK: - Results scaffolding
 
-/// Header of a results screen: small module label, huge number, one-line caption.
+/// One line for results headers when Full Disk Access is missing: the list may be incomplete.
+/// Renders nothing while the app has access.
+struct PartialAccessNote: View {
+    /// «Дать доступ»: the in-app access flow. Nil opens System Settings directly.
+    var onGrantAccess: (() -> Void)? = nil
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        if !model.hasFullDiskAccess {
+            HStack(spacing: 6) {
+                Image(systemName: "exclamationmark.shield.fill")
+                    .foregroundStyle(Theme.warning)
+                    .accessibilityHidden(true)
+                Text("Результаты неполные — нет полного доступа к диску")
+                    .foregroundStyle(Theme.textSecondary)
+                Text("·")
+                    .foregroundStyle(Theme.textSecondary)
+                    .accessibilityHidden(true)
+                Button("Дать доступ") { grantAccess(onGrantAccess) }
+                    .buttonStyle(.plain)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Theme.text)
+                    .pointerStyle(.link)
+                    .help("Открыть настройки полного доступа к диску")
+            }
+            .font(.system(size: 12))
+            .lineLimit(1)
+        }
+    }
+}
+
+/// Header of a results screen: small module label, huge number, one-line caption, and — without
+/// Full Disk Access — the `PartialAccessNote`.
 struct ResultsHeader<Trailing: View>: View {
     let module: AppModule
     let bytes: Int64
     let caption: String
+    /// Show `PartialAccessNote` under the caption when access is missing.
+    var showsAccessNote = true
+    var onGrantAccess: (() -> Void)? = nil
     @ViewBuilder var trailing: Trailing
 
     var body: some View {
@@ -254,6 +304,10 @@ struct ResultsHeader<Trailing: View>: View {
                 Text(caption)
                     .font(.system(size: 14))
                     .foregroundStyle(Theme.textSecondary)
+                if showsAccessNote {
+                    PartialAccessNote(onGrantAccess: onGrantAccess)
+                        .padding(.top, 6)
+                }
             }
             Spacer()
             trailing.padding(.bottom, 6)
@@ -263,7 +317,9 @@ struct ResultsHeader<Trailing: View>: View {
     }
 }
 
-/// Bottom area of review screens: selection summary on the left, the round primary action in the center.
+/// Bottom area of review screens: selection summary on the left, the round primary action in the center,
+/// where it all goes on the right. Prefer the standard init (`selectedBytes:selectedCount:noun:permanent:`):
+/// «Выбрано 12,4 ГБ · 342 объекта» on the left, «↩ Всё попадёт в Корзину» or the permanent warning on the right.
 struct ActionFooter<Leading: View, Trailing: View>: View {
     let title: String
     let tint: ModuleTint
@@ -279,7 +335,9 @@ struct ActionFooter<Leading: View, Trailing: View>: View {
                 Spacer()
                 trailing
             }
-            ScanButton(mode: .action(title), tint: tint, diameter: 80, enabled: enabled, action: action)
+            // Return never starts a destructive confirmation from the review footer.
+            ScanButton(mode: .action(title), tint: tint, diameter: 80, enabled: enabled, action: action,
+                       isDefaultAction: false)
         }
         .padding(.horizontal, Theme.Space.page)
         .frame(height: 118)
@@ -290,6 +348,19 @@ struct ActionFooter<Leading: View, Trailing: View>: View {
     }
 }
 
+extension ActionFooter where Leading == SelectionSummary, Trailing == FooterNote {
+    init(title: String, tint: ModuleTint, enabled: Bool = true,
+         selectedBytes: Int64, selectedCount: Int, noun: Fmt.Noun = .items, permanent: Bool = false,
+         action: @escaping () -> Void) {
+        self.init(title: title, tint: tint, enabled: enabled, action: action) {
+            SelectionSummary(bytes: selectedBytes, count: selectedCount, noun: noun)
+        } trailing: {
+            FooterNote(permanent: permanent)
+        }
+    }
+}
+
+/// «Выбрано» over «12,4 ГБ · 342 объекта».
 struct SelectionSummary: View {
     let bytes: Int64
     let count: Int
@@ -302,12 +373,40 @@ struct SelectionSummary: View {
                 .font(.system(size: 11.5, weight: .medium))
                 .foregroundStyle(Theme.textTertiary)
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                SizeText(bytes: bytes, font: .number(24, weight: .light))
-                Text(count == 0 ? "ничего" : noun(count))
-                    .font(.system(size: 12.5))
-                    .foregroundStyle(Theme.textSecondary)
+                if count == 0 {
+                    Text("ничего")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Theme.textSecondary)
+                } else {
+                    SizeText(bytes: bytes, font: .number(24, weight: .light))
+                    Text("· \(noun(count))")
+                        .font(.system(size: 12.5))
+                        .foregroundStyle(Theme.textSecondary)
+                }
             }
         }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+extension SelectionSummary {
+    init(bytes: Int64, count: Int, label: String = "Выбрано", noun: Fmt.Noun) {
+        self.init(bytes: bytes, count: count, label: label, noun: { Fmt.count($0, noun) })
+    }
+}
+
+/// Right side of `ActionFooter`: where the selection goes.
+struct FooterNote: View {
+    /// Emptying the Trash is part of the action: warn instead of promising the Trash.
+    var permanent = false
+    /// Overrides the standard text.
+    var text: String? = nil
+
+    var body: some View {
+        Label(text ?? ConfirmCopy.footerNote(permanent: permanent),
+              systemImage: permanent ? "exclamationmark.triangle.fill" : "arrow.uturn.backward")
+            .font(.system(size: 12))
+            .foregroundStyle(permanent ? Theme.warning : Theme.textTertiary)
     }
 }
 

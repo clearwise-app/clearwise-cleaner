@@ -1,14 +1,54 @@
 import AppKit
 import CleanerKit
 import Foundation
+import UniformTypeIdentifiers
 
-/// Wraps a MainActor setter into an engine `ProgressHandler`, throttled to ~30 updates/s
-/// so a fast scanner cannot flood the main thread.
+/// Wraps a MainActor setter into an engine `ProgressHandler`, coalesced to ~30 updates/s
+/// so a fast scanner cannot flood the main thread. Only the latest value is kept, and a trailing
+/// flush always delivers it, so the last update before completion is never dropped.
 func progressRelay(_ apply: @escaping @MainActor (ScanProgress) -> Void) -> ProgressHandler {
-    let gate = ThrottleGate(interval: 1.0 / 30.0)
-    return { progress in
-        guard gate.allow(force: progress.fraction >= 1) else { return }
-        Task { @MainActor in apply(progress) }
+    let relay = LatestValueRelay(interval: 1.0 / 30.0, apply: apply)
+    return { progress in relay.push(progress, urgent: progress.fraction >= 1) }
+}
+
+/// Keeps the newest value and hands it to the main thread at most once per `interval`.
+/// One scheduled flush at a time (lock + flag); `DispatchQueue.main` rather than a Task per tick.
+final class LatestValueRelay<Value: Sendable>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var pending: Value?
+    private var scheduled = false
+    private var lastFlush: TimeInterval = 0
+    private let interval: TimeInterval
+    private let apply: @MainActor (Value) -> Void
+
+    init(interval: TimeInterval, apply: @escaping @MainActor (Value) -> Void) {
+        self.interval = interval
+        self.apply = apply
+    }
+
+    /// `urgent` skips the remaining wait (e.g. the final 100 % tick).
+    func push(_ value: Value, urgent: Bool = false) {
+        lock.lock()
+        pending = value
+        guard !scheduled else { lock.unlock(); return }
+        scheduled = true
+        let delay = urgent ? 0 : max(0, lastFlush + interval - ProcessInfo.processInfo.systemUptime)
+        lock.unlock()
+        if delay == 0 {
+            DispatchQueue.main.async { [self] in MainActor.assumeIsolated { flush() } }
+        } else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [self] in MainActor.assumeIsolated { flush() } }
+        }
+    }
+
+    @MainActor private func flush() {
+        lock.lock()
+        let value = pending
+        pending = nil
+        scheduled = false
+        lastFlush = ProcessInfo.processInfo.systemUptime
+        lock.unlock()
+        if let value { apply(value) }
     }
 }
 
@@ -77,15 +117,43 @@ enum Finder {
     }
 }
 
-/// Icons are expensive to fetch, cache them per path.
+/// Icons are expensive to fetch, cache them per path. Bounded, and NSCache also drops entries
+/// under memory pressure.
 @MainActor
 enum IconCache {
-    private static var cache: [String: NSImage] = [:]
+    private static let cache: NSCache<NSString, NSImage> = {
+        let c = NSCache<NSString, NSImage>()
+        c.countLimit = 600
+        return c
+    }()
+    private static let typeIcons: NSCache<NSString, NSImage> = {
+        let c = NSCache<NSString, NSImage>()
+        c.countLimit = 64
+        return c
+    }()
 
     static func icon(for url: URL) -> NSImage {
-        if let hit = cache[url.path] { return hit }
+        let key = url.path as NSString
+        if let hit = cache.object(forKey: key) { return hit }
         let image = NSWorkspace.shared.icon(forFile: url.path)
-        cache[url.path] = image
+        cache.setObject(image, forKey: key)
+        return image
+    }
+
+    /// The Finder icon if it was fetched already; never touches the disk.
+    static func cachedIcon(for url: URL) -> NSImage? {
+        cache.object(forKey: url.path as NSString)
+    }
+
+    /// Generic icon for the file's type (folder when there is no extension), cached per extension.
+    /// Cheap enough for `body`: a stand-in until the real icon arrives.
+    static func genericIcon(for url: URL) -> NSImage {
+        let ext = url.pathExtension.lowercased()
+        let key = ext as NSString
+        if let hit = typeIcons.object(forKey: key) { return hit }
+        let type: UTType = ext.isEmpty ? .folder : (UTType(filenameExtension: ext) ?? .data)
+        let image = NSWorkspace.shared.icon(for: type)
+        typeIcons.setObject(image, forKey: key)
         return image
     }
 }
