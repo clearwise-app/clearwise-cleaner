@@ -21,6 +21,9 @@ echo "==> Assembling $APP"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/MacCleaner" "$APP/Contents/MacOS/MacCleaner"
+# The debug map holds absolute paths of the sources and object files (the builder's home folder); like Xcode's
+# release builds, the shipped binary keeps only what dyld needs.
+strip -S -x "$APP/Contents/MacOS/MacCleaner"
 
 echo "==> Drawing icon"
 mkdir -p build
