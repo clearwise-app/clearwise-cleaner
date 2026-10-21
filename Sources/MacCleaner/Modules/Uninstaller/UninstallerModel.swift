@@ -170,9 +170,13 @@ final class UninstallerModel {
     /// Drag & drop entry point.
     func open(appURL: URL) {
         tab = .apps
+        // The dropped app must be in the list it is selected in (see `keepSelectionVisible`).
+        search = ""
+        filter = .all
         let url = appURL.standardizedFileURL
         Task {
             if let known = allApps.first(where: { $0.url.standardizedFileURL == url }) {
+                if known.isSystemApp { showSystemApps = true }
                 if phase != .results { phase = .results }
                 select(known)
                 return

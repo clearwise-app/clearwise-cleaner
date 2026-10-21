@@ -62,6 +62,18 @@ final class StorageExplorerTests: FixtureTestCase {
         XCTAssertEqual(names(items), [".claude", ".zsh_history", "notes.txt"])
     }
 
+    func testBlockedFoldersAreNeverMeasuredWithoutAccess() async throws {
+        let roots = try makeRoots()
+        let containers = roots.home.appendingPathComponent("Library/Containers")
+        let explorer = StorageExplorer(roots: roots, fullDiskAccess: false)
+        XCTAssertTrue(explorer.children(of: containers).isEmpty)
+        let entries = await explorer.measure([containers])
+        XCTAssertTrue(entries.isEmpty, "a blocked folder passed directly must not be walked")
+        // `/private/var/folders` is spelled `/var/folders` once standardized; both are blocked.
+        XCTAssertFalse(explorer.children(of: URL(fileURLWithPath: "/private/var"))
+            .contains { $0.lastPathComponent == "folders" })
+    }
+
     func testVolumeSpaceUsedReadsTheStartupVolume() {
         XCTAssertGreaterThan(StorageExplorer.volumeSpaceUsed("/") ?? 0, 0)
         XCTAssertNil(StorageExplorer.volumeSpaceUsed("/definitely/not/here"))

@@ -107,6 +107,8 @@ final class AppModel {
     func applyAccess(granted: Bool) {
         let changed = granted != hasFullDiskAccess
         if changed { hasFullDiskAccess = granted }
+        // «Хранилище» fixed its fences (containers or not) when it opened.
+        if changed, storageExplorer != nil { closeStorage() }
         guard granted else { return }
         if let flow = accessFlow, flow.awaitsGrant {
             markOnboardingDone()

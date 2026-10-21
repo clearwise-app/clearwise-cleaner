@@ -382,6 +382,9 @@ struct StorageDetailCard: View {
         .opacity(dim ? 0.55 : 1)
         .contentShape(Rectangle())
         .onTapGesture { if c.bytes > 0 { onSelect?(c.kind) } }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(onSelect != nil && c.bytes > 0 ? .isButton : [])
+        .accessibilityAction { if c.bytes > 0 { onSelect?(c.kind) } }
         .pointerStyle(onSelect != nil && c.bytes > 0 ? .link : nil)
         .onHover { inside in
             if inside { onHover?(c.kind) } else if hovered == c.kind { onHover?(nil) }

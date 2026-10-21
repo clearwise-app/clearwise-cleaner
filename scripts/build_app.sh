@@ -34,7 +34,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key>            <string>app.clearwise.cleaner</string>
-    <key>CFBundleName</key>                  <string>Clearwise</string>
+    <key>CFBundleName</key>                  <string>${APP_NAME}</string>
     <key>CFBundleDisplayName</key>           <string>${APP_NAME}</string>
     <key>CFBundleExecutable</key>            <string>MacCleaner</string>
     <key>CFBundlePackageType</key>           <string>APPL</string>
@@ -81,9 +81,11 @@ cat > "$ENTITLEMENTS" <<ENT
 ENT
 # Default: the first "Apple Development" certificate in the keychain, else ad-hoc. A real certificate keeps the
 # Full Disk Access grant across rebuilds (macOS ties it to the signature; an ad-hoc one changes with every build).
-DEFAULT_IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null | sed -n 's/.*"\(Apple Development: [^"]*\)".*/\1/p' | head -1)"
+# Signed by the certificate's SHA-1, so two certificates with the same name are not ambiguous.
+DEV_CERT="$(security find-identity -v -p codesigning 2>/dev/null | grep '"Apple Development: ' | head -1 || true)"
+DEFAULT_IDENTITY="$(echo "$DEV_CERT" | awk '{print $2}')"
 IDENTITY="${SIGN_IDENTITY:-${DEFAULT_IDENTITY:--}}"
-echo "    identity: $IDENTITY"
+echo "    identity: ${SIGN_IDENTITY:-${DEV_CERT:-ad-hoc}}"
 # A secure timestamp is only needed (and only fetched) for Developer ID builds that go to notarization.
 TIMESTAMP=$([[ "$IDENTITY" == "Developer ID"* ]] && echo "--timestamp" || echo "--timestamp=none")
 codesign --force --options runtime $TIMESTAMP --entitlements "$ENTITLEMENTS" -s "$IDENTITY" "$APP"

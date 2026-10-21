@@ -165,9 +165,10 @@ final class SmartCareModel {
                 guard let self else { return }
                 self.result = app.junk.result
                 self.resultWasPermanent = app.junk.resultWasPermanent
-                app.junk.finish()
                 withAnimation(Theme.spring) { self.phase = .done }
             }
+            // After the removed items are dropped, so Junk goes back to «idle» when nothing is left.
+            app.junk.finish()
         }
     }
 

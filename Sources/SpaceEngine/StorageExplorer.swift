@@ -134,6 +134,10 @@ public struct StorageExplorer: Sendable {
 
     /// Space used by one APFS volume (not the whole container), from `getattrlist(ATTR_VOL_SPACEUSED)`.
     static func volumeSpaceUsed(_ path: String) -> Int64? {
+        // Only a mounted volume of the startup disk's APFS container: an unmounted path would report `/`
+        // (counted twice), and xART / Hardware live in another container on Apple silicon.
+        guard let mount = mountInfo(path), mount.onName == path || path == "/",
+              let root = mountInfo("/"), container(of: mount.fromName) == container(of: root.fromName) else { return nil }
         var attrs = attrlist()
         attrs.bitmapcount = u_short(ATTR_BIT_MAP_COUNT)
         attrs.volattr = attrgroup_t(ATTR_VOL_INFO) | attrgroup_t(ATTR_VOL_SPACEUSED)
@@ -144,9 +148,28 @@ public struct StorageExplorer: Sendable {
         return max(0, buffer.loadUnaligned(fromByteOffset: 4, as: Int64.self))
     }
 
+    private static func mountInfo(_ path: String) -> (onName: String, fromName: String)? {
+        var st = statfs()
+        guard statfs(path, &st) == 0 else { return nil }
+        let on = withUnsafeBytes(of: st.f_mntonname) { String(decoding: $0.prefix { $0 != 0 }, as: UTF8.self) }
+        let from = withUnsafeBytes(of: st.f_mntfromname) { String(decoding: $0.prefix { $0 != 0 }, as: UTF8.self) }
+        return (on, from)
+    }
+
+    /// `/dev/disk3s1s1` → `disk3` (the APFS container's synthesized disk).
+    private static func container(of device: String) -> String {
+        let name = device.split(separator: "/").last.map(String.init) ?? device
+        guard name.hasPrefix("disk") else { return name }
+        let rest = name.dropFirst(4)
+        return "disk" + rest.prefix { $0.isNumber }
+    }
+
     /// Sizes `urls` (folders in parallel, like the breakdown), drops empty ones, biggest first. Cancellable.
     public func measure(_ urls: [URL]) async -> [StorageEntry] {
         let keys: Set<URLResourceKey> = [.isDirectoryKey, .isPackageKey]
+        // A blocked folder is never measured, even when passed in directly (roots are always walked).
+        let fenced = blockedPaths
+        let urls = urls.filter { !fenced.contains($0.standardizedFileURL.path) }
         var folders: [URL] = []
         var openable: [Bool] = []
         var files: [URL] = []
@@ -176,8 +199,11 @@ public struct StorageExplorer: Sendable {
 
     /// Without Full Disk Access: other apps' containers, and the per-app cache folders macOS keeps under
     /// `/private/var/folders` (opening them can bring up the same consent prompt).
+    /// Spelled the way `standardizedFileURL` spells paths (it drops `/private`), so comparisons really match.
     private var blockedPaths: Set<String> {
-        fullDiskAccess ? [] : FileWalker.appDataParents(home: roots.home).union(["/private/var/folders"])
+        guard !fullDiskAccess else { return [] }
+        let raw = FileWalker.appDataParents(home: roots.home).union(["/private/var/folders"])
+        return Set(raw.map { URL(fileURLWithPath: $0).standardizedFileURL.path })
     }
 
     private static func isDirectory(_ url: URL) -> Bool {

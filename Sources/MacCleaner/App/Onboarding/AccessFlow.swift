@@ -137,7 +137,7 @@ final class AccessFlow {
     /// The flow is closing: stop polling and forget the relaunch flag.
     func tearDown() { stopWaiting() }
 
-    /// «Перезапустить MacCleaner»: a new instance resumes the flow (see `OnboardingKeys.awaitingGrant`).
+    /// «Перезапустить»: a new instance resumes the flow (see `OnboardingKeys.awaitingGrant`).
     func relaunch() {
         guard live else { return }
         UserDefaults.standard.set(true, forKey: OnboardingKeys.awaitingGrant)
