@@ -5,6 +5,7 @@ import QuickLook
 
 struct OldFilesView: View {
     @Bindable var model: OldFilesModel
+    @Environment(AppModel.self) private var app
 
     var body: some View {
         switch model.phase {
@@ -12,15 +13,19 @@ struct OldFilesView: View {
             ModuleStage(module: .oldFiles,
                         state: model.phase == .scanning ? .progress(model.progress)
                             : .idle(button: "Сканировать", enabled: !model.activeRoots.isEmpty),
-                        onAction: model.startScan, onStop: model.stop) {
+                        onAction: model.startScan, onStop: model.stop,
+                        onGrantAccess: app.presentAccessSheet) {
                 OldFilesOptionsView(model: model)
             }
-        case .results:
+        case .results, .cleaning:
+            // While files move, the cleaning scene covers this screen; there is no screen of its own.
             OldFilesResults(model: model)
-        case .cleaning:
-            ModuleStage(module: .oldFiles, title: "Перемещаем в Корзину", subtitle: "Ещё пара секунд…", state: .busy(""))
         case .done:
-            CompletionView(tint: .oldFiles, result: model.result ?? RemovalResult(), title: "Место освобождено",
+            CompletionView(tint: .oldFiles, result: model.result ?? RemovalResult(), title: "Перемещено в Корзину",
+                           noun: .files,
+                           onGrantAccess: app.presentAccessSheet,
+                           onRetry: model.retryFailed,
+                           onEmptyTrash: app.requestEmptyTrash,
                            onDone: model.finish)
         }
     }
@@ -31,7 +36,7 @@ private struct OldFilesOptionsView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Segmented(options: [(OldFilesModel.Mode.old, "Давно не использовались"), (.large, "Большие")],
+            Segmented(options: [(OldFilesModel.Mode.old, "Давно не открывались"), (.large, "Большие")],
                       selection: $model.mode, tint: .oldFiles)
 
             HStack(spacing: 22) {
@@ -71,16 +76,22 @@ private struct OldFilesOptionsView: View {
 
 private struct OldFilesResults: View {
     @Bindable var model: OldFilesModel
+    @Environment(AppModel.self) private var app
 
     var body: some View {
         if model.files.isEmpty {
-            EmptyState(symbol: "checkmark.seal.fill", title: "Ничего не найдено",
-                       message: "\(caption.capitalizedFirst). Попробуйте уменьшить порог размера или срок.",
-                       tint: .oldFiles, actionTitle: "Изменить параметры", action: model.newScan)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            VStack(spacing: 0) {
+                EmptyState(symbol: "checkmark.seal.fill", title: "Ничего не нашлось",
+                           message: emptyMessage, tint: .oldFiles,
+                           actionTitle: "Изменить параметры", action: model.newScan)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                PartialAccessNote(onGrantAccess: app.presentAccessSheet)
+                    .padding(.bottom, 26)
+            }
         } else {
             VStack(spacing: 0) {
-                ResultsHeader(module: .oldFiles, bytes: model.totalSize, caption: caption) {
+                ResultsHeader(module: .oldFiles, bytes: model.totalSize, caption: caption,
+                              onGrantAccess: app.presentAccessSheet) {
                     HStack(spacing: 8) {
                         Button { model.newScan() } label: { Label("Параметры", systemImage: "slider.horizontal.3") }
                             .buttonStyle(PillButtonStyle(kind: .quiet))
@@ -100,22 +111,39 @@ private struct OldFilesResults: View {
 
                 ActionFooter(title: "В Корзину", tint: .oldFiles, enabled: !model.selection.isEmpty,
                              action: model.requestTrash) {
-                    SelectionSummary(bytes: model.selectedSize, count: model.selection.count)
+                    SelectionSummary(bytes: model.selectedSize, count: model.selection.count, noun: .files)
                 } trailing: {
-                    Label("Ничего не выбрано заранее — это ваши файлы", systemImage: "hand.raised.fill")
-                        .font(.system(size: 12))
-                        .foregroundStyle(Theme.textTertiary)
+                    // Nothing is ticked for the user: say so while the selection is empty, then say where it goes.
+                    if model.selection.isEmpty {
+                        Label("Ничего не выбрано заранее — это ваши файлы", systemImage: "hand.raised.fill")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.themeTertiary)
+                    } else {
+                        FooterNote()
+                    }
                 }
             }
-            .quickLookPreview($model.quickLookURL, in: model.visibleFiles.map(\.item.url))
+            .quickLookPreview($model.quickLookURL, in: model.visibleURLs)
         }
     }
 
+    /// «1 файл не открывался больше 6 месяцев», «13 файлов крупнее 100 МБ».
     private var caption: String {
-        let n = Fmt.files(model.files.count)
+        let n = model.files.count
         switch model.resultMode {
-        case .old: return model.files.isEmpty ? "нет файлов, которые не открывались больше \(model.months) мес." : "\(n) не открывались больше \(model.months) мес."
-        case .large: return model.files.isEmpty ? "нет файлов крупнее \(Fmt.size(model.largeMinSize))" : "\(n) крупнее \(Fmt.size(model.largeMinSize))"
+        case .old:
+            return "\(Fmt.files(n)) \(Fmt.verb(n, one: "не открывался", other: "не открывались")) больше \(Fmt.months(model.months))"
+        case .large:
+            return "\(Fmt.files(n)) крупнее \(Fmt.size(model.largeMinSize))"
+        }
+    }
+
+    private var emptyMessage: String {
+        switch model.resultMode {
+        case .old:
+            "Нет файлов от \(Fmt.size(model.oldMinSize)), которые не открывались больше \(Fmt.months(model.months)). Уменьшите размер или срок — или добавьте папку."
+        case .large:
+            "Нет файлов крупнее \(Fmt.size(model.largeMinSize)) в выбранных папках. Уменьшите размер или добавьте папку."
         }
     }
 }
@@ -191,12 +219,10 @@ private struct FilesList: View {
         let files = model.visibleFiles
         VStack(spacing: 0) {
             HStack(spacing: 10) {
-                CheckBox(state: CheckState(selected: files.filter { model.selection.contains($0.id) }.count, total: files.count),
-                         tint: .oldFiles) {
-                    let ids = files.map(\.id)
-                    if ids.allSatisfy(model.selection.contains) { model.selection.subtract(ids) } else { model.selection.formUnion(ids) }
+                CheckBox(state: CheckState(selected: model.selectedCount(in: files), total: files.count),
+                         tint: .oldFiles, label: "Выбрать все в списке") {
+                    model.toggleAll(in: files)
                 }
-                .help("Выбрать все в списке")
                 Text(model.kindFilter?.title ?? "Все файлы")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Theme.text)

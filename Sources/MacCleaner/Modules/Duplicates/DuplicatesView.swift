@@ -5,22 +5,27 @@ import QuickLook
 
 struct DuplicatesView: View {
     @Bindable var model: DuplicatesModel
+    @Environment(AppModel.self) private var app
 
     var body: some View {
         switch model.phase {
         case .idle, .scanning:
             ModuleStage(module: .duplicates,
                         state: model.phase == .scanning ? .progress(model.progress)
-                            : .idle(button: "Найти", enabled: !model.activeRoots.isEmpty),
-                        onAction: model.startScan, onStop: model.stop) {
+                            : .idle(button: "Сканировать", enabled: !model.activeRoots.isEmpty),
+                        onAction: model.startScan, onStop: model.stop,
+                        onGrantAccess: app.presentAccessSheet) {
                 DuplicatesOptionsView(model: model)
             }
-        case .results:
+        case .results, .cleaning:
+            // While copies move, the cleaning scene covers this screen; there is no screen of its own.
             DuplicatesResults(model: model)
-        case .cleaning:
-            ModuleStage(module: .duplicates, title: "Перемещаем в Корзину", subtitle: "Ещё пара секунд…", state: .busy(""))
         case .done:
-            CompletionView(tint: .duplicates, result: model.result ?? RemovalResult(), title: "Место освобождено",
+            CompletionView(tint: .duplicates, result: model.result ?? RemovalResult(), title: "Перемещено в Корзину",
+                           noun: .copies,
+                           onGrantAccess: app.presentAccessSheet,
+                           onRetry: model.retryFailed,
+                           onEmptyTrash: app.requestEmptyTrash,
                            onDone: model.finish)
         }
     }
@@ -61,16 +66,22 @@ private struct DuplicatesOptionsView: View {
 
 private struct DuplicatesResults: View {
     @Bindable var model: DuplicatesModel
+    @Environment(AppModel.self) private var app
 
     var body: some View {
         if model.groups.isEmpty {
-            EmptyState(symbol: "checkmark.seal.fill", title: "Дубликатов нет",
-                       message: "Среди файлов от \(Fmt.size(model.minSize)) в выбранных папках одинаковых не нашлось. Попробуйте уменьшить порог или добавить папку.",
-                       tint: .duplicates, actionTitle: "Изменить параметры", action: model.newScan)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            VStack(spacing: 0) {
+                EmptyState(symbol: "checkmark.seal.fill", title: "Дубликатов не нашлось",
+                           message: "Среди файлов от \(Fmt.size(model.minSize)) в выбранных папках одинаковых нет. Уменьшите порог или добавьте папку.",
+                           tint: .duplicates, actionTitle: "Изменить параметры", action: model.newScan)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                PartialAccessNote(onGrantAccess: app.presentAccessSheet)
+                    .padding(.bottom, 26)
+            }
         } else {
             VStack(spacing: 0) {
-                ResultsHeader(module: .duplicates, bytes: model.reclaimable, caption: caption) {
+                ResultsHeader(module: .duplicates, bytes: model.reclaimable, caption: caption,
+                              onGrantAccess: app.presentAccessSheet) {
                     HStack(spacing: 8) {
                         Button { model.newScan() } label: { Label("Параметры", systemImage: "slider.horizontal.3") }
                             .buttonStyle(PillButtonStyle(kind: .quiet))
@@ -88,15 +99,14 @@ private struct DuplicatesResults: View {
                 .padding(.top, 22)
                 .padding(.bottom, 4)
 
-                ActionFooter(title: "В Корзину", tint: .duplicates, enabled: !model.marked.isEmpty,
+                ActionFooter(title: "В Корзину", tint: .duplicates, enabled: model.markedCount > 0,
                              action: model.requestTrash) {
-                    SelectionSummary(bytes: model.markedSize, count: model.markedFiles.count,
-                                     label: "Будет удалено", noun: Fmt.copies)
+                    SelectionSummary(bytes: model.markedBytes, count: model.markedCount, noun: .copies)
                 } trailing: {
                     KeptSummary(bytes: model.keptSize, count: model.keptCount)
                 }
             }
-            .quickLookPreview($model.quickLookURL, in: model.visibleGroups.flatMap { $0.files.map(\.item.url) })
+            .quickLookPreview($model.quickLookURL, in: model.visibleURLs)
         }
     }
 
@@ -112,7 +122,7 @@ private struct KeptSummary: View {
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 1) {
-            Text("Останется")
+            Text("Остаётся на диске")
                 .font(.system(size: 11.5, weight: .medium))
                 .foregroundStyle(Theme.textTertiary)
             HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -122,6 +132,7 @@ private struct KeptSummary: View {
                 SizeText(bytes: bytes, font: .number(24, weight: .light))
             }
         }
+        .accessibilityElement(children: .combine)
         .help("В каждой группе всегда остаётся хотя бы одна копия")
     }
 }
@@ -202,17 +213,17 @@ private struct GroupsList: View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
                 Menu {
-                    Button("Выбрать все дубликаты", systemImage: "checkmark.circle") { model.selectAllDuplicates() }
-                    Button("Снять выбор", systemImage: "circle") { model.clearSelection() }
+                    Button("Отметить все дубликаты", systemImage: "checkmark.circle") { model.selectAllDuplicates() }
+                    Button("Снять отметки", systemImage: "circle") { model.clearSelection() }
                     Divider()
                     Button("Как после сканирования", systemImage: "arrow.uturn.backward") { model.resetToDefault() }
                 } label: {
-                    Label("Выбор", systemImage: "checklist")
+                    Label("Автовыбор", systemImage: "checklist")
                 }
                 .menuStyle(.button)
                 .buttonStyle(PillButtonStyle(kind: .secondary))
                 .fixedSize()
-                .help("Выбрать все копии, кроме одной в каждой группе, или снять выбор")
+                .help("Отметить все копии, кроме одной в каждой группе, или снять отметки")
 
                 Text(model.kindFilter?.title ?? "Все дубликаты")
                     .font(.system(size: 13, weight: .semibold))
@@ -257,7 +268,8 @@ private struct GroupCard: View {
                         .truncationMode(.middle)
                     Text("\(Fmt.copies(group.files.count)) по \(Fmt.size(group.copySize))")
                         .font(.caption12)
-                        .foregroundStyle(Theme.textTertiary)
+                        .foregroundStyle(.themeSecondary)
+                    RuleLine(model: model, group: group)
                 }
                 Spacer(minLength: 8)
                 if showsHint {
@@ -272,17 +284,18 @@ private struct GroupCard: View {
                         .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 } else {
                     VStack(alignment: .trailing, spacing: 0) {
-                        Text("освободится")
+                        Text("в Корзину")
                             .font(.caption11)
-                            .foregroundStyle(Theme.textTertiary)
+                            .foregroundStyle(.themeSecondary)
                         SizeText(bytes: model.markedSize(in: group),
                                  font: .system(size: 14, weight: .semibold, design: .rounded))
                     }
+                    .accessibilityElement(children: .combine)
                     .transition(.opacity)
                 }
             }
             .padding(.horizontal, 14)
-            .frame(height: 58)
+            .padding(.vertical, 10)
 
             Hairline().padding(.horizontal, 14)
 
@@ -299,6 +312,59 @@ private struct GroupCard: View {
     }
 }
 
+/// Why these copies are marked: the rule in one line, with a menu to pick the copy that stays instead.
+private struct RuleLine: View {
+    let model: DuplicatesModel
+    let group: DuplicateGroup
+
+    var body: some View {
+        let kept = model.kept(in: group)
+        HStack(spacing: 5) {
+            Text(rule(kept))
+                .foregroundStyle(.themeSecondary)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("·").foregroundStyle(.themeSecondary).accessibilityHidden(true)
+            Menu {
+                ForEach(group.files) { f in
+                    let title = "Оставить копию в «\(folder(f))»"
+                    let current = kept.count == 1 && kept[0].id == f.id
+                    Button {
+                        model.keepOnly(f, in: group)
+                    } label: {
+                        if current { Label(title, systemImage: "checkmark") } else { Text(title) }
+                    }
+                }
+            } label: {
+                Text("Изменить").fontWeight(.semibold).foregroundStyle(Theme.text)
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help("Выбрать, какая копия останется")
+            .accessibilityLabel("Изменить, какая копия останется")
+        }
+        .font(.system(size: 11.5))
+    }
+
+    private func rule(_ kept: [AnalyzedFile]) -> String {
+        switch kept.count {
+        case 1: "Оставляем копию в «\(folder(kept[0]))», остальные — в Корзину"
+        case group.files.count: "Все копии остаются на диске"
+        default: "Остаётся \(Fmt.copies(kept.count)), остальные — в Корзину"
+        }
+    }
+
+    private func folder(_ file: AnalyzedFile) -> String { DuplicateFolder.title(file) }
+}
+
+enum DuplicateFolder {
+    /// The folder a copy lives in, as the user knows it («Фильмы», «Загрузки»).
+    static func title(_ file: AnalyzedFile) -> String {
+        Fmt.folderTitle(file.item.url.deletingLastPathComponent())
+    }
+}
+
 private struct CopyRow: View {
     let model: DuplicatesModel
     let group: DuplicateGroup
@@ -309,19 +375,27 @@ private struct CopyRow: View {
         let removing = model.isMarked(file)
         let url = file.item.url
         HStack(spacing: 14) {
-            KeepToggle(removing: removing, tint: .duplicates) { model.setRemove($0, file, in: group) }
+            KeepToggle(removing: removing, folder: DuplicateFolder.title(file), tint: .duplicates) {
+                model.setRemove($0, file, in: group)
+            }
             VStack(alignment: .leading, spacing: 2) {
-                pathLine
+                pathLine.opacity(removing ? 0.62 : 1)
                 HStack(spacing: 8) {
                     Label(detail, systemImage: "calendar")
                         .labelStyle(TightLabel(weight: .regular))
-                        .foregroundStyle(Theme.textTertiary)
-                        .lineLimit(1)
+                        .foregroundStyle(.themeSecondary)
+                        .fixedSize()
                         .help("Дата изменения")
-                    if file.id == group.oldest {
+                    if file.id == group.oldestID {
                         Label("самая старая", systemImage: "clock.fill")
                             .labelStyle(TightLabel())
-                            .foregroundStyle(Theme.textSecondary)
+                            .foregroundStyle(.themeSecondary)
+                            .fixedSize()
+                    }
+                    if removing {
+                        Label("в Корзину", systemImage: "trash.fill")
+                            .labelStyle(TightLabel())
+                            .foregroundStyle(Theme.text)
                             .fixedSize()
                     }
                 }
@@ -359,21 +433,23 @@ private struct CopyRow: View {
         }
     }
 
-    /// Full path: the folder (what tells copies apart) wins the space, the repeated file name truncates first.
+    /// Only the folder truncates (it is what tells copies apart). The file name is shown when it differs
+    /// from the group title, so a renamed copy («… (1).dmg») is still recognisable.
     private var pathLine: some View {
-        let full = Fmt.path(file.item.url)
+        let folder = Fmt.path(file.item.url.deletingLastPathComponent()) + "/"
         let name = file.item.name
         return HStack(spacing: 0) {
-            Text(String(full.dropLast(name.count)))
+            Text(folder)
                 .foregroundStyle(Theme.text)
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .layoutPriority(1)
-            Text(name)
-                .foregroundStyle(name == group.name ? Theme.textTertiary : Theme.textSecondary)
-                .lineLimit(1)
-                .truncationMode(.middle)
-                .frame(minWidth: 90, alignment: .leading)
+            if name != group.name {
+                // Gives way to the folder: the folder is what tells the copies apart.
+                Text(name)
+                    .foregroundStyle(Theme.textSecondary)
+                    .lineLimit(1)
+            }
         }
         .font(.rowTitle)
     }
@@ -385,41 +461,55 @@ private struct CopyRow: View {
 }
 
 /// Explicit two-state choice per copy: what happens to this file is always spelled out.
+/// For VoiceOver it is one adjustable element («Копия в Загрузки, В Корзину»); the active segment is also
+/// bold and outlined, so the state never rests on color alone.
 private struct KeepToggle: View {
     let removing: Bool
+    let folder: String
     let tint: ModuleTint
     let onChange: (Bool) -> Void
 
     var body: some View {
         HStack(spacing: 2) {
-            segment("Оставить", symbol: "checkmark", active: !removing) { onChange(false) }
-            segment("Удалить", symbol: "trash.fill", active: removing) { onChange(true) }
+            segment("Оставить", symbol: "checkmark", keep: true, active: !removing) { onChange(false) }
+            segment("В Корзину", symbol: "trash.fill", keep: false, active: removing) { onChange(true) }
         }
         .padding(2)
         .background(Capsule().fill(.black.opacity(0.24)))
         .overlay(Capsule().strokeBorder(.white.opacity(0.08), lineWidth: 0.75))
         .fixedSize()
         .animation(Theme.quick, value: removing)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Копия в \(folder)")
+        .accessibilityValue(removing ? "В Корзину" : "Оставить")
+        .accessibilityHint("Листайте, чтобы выбрать: оставить или в Корзину")
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: onChange(true)
+            case .decrement: onChange(false)
+            @unknown default: break
+            }
+        }
     }
 
-    private func segment(_ title: String, symbol: String, active: Bool, action: @escaping () -> Void) -> some View {
-        let keep = title == "Оставить"
-        return Button(action: action) {
+    private func segment(_ title: String, symbol: String, keep: Bool, active: Bool,
+                         action: @escaping () -> Void) -> some View {
+        Button(action: action) {
             HStack(spacing: 4) {
                 Image(systemName: symbol).font(.system(size: 9.5, weight: .bold))
-                Text(title).font(.system(size: 11.5, weight: .semibold))
+                Text(title).font(.system(size: 11.5, weight: active ? .bold : .medium))
             }
-            .foregroundStyle(active ? (keep ? Theme.success : .white) : Theme.textTertiary)
+            .foregroundStyle(active ? (keep ? Theme.success : .white) : Theme.textSecondary)
             .padding(.horizontal, 9)
             .frame(height: 22)
             .background {
                 if active {
                     if keep {
                         Capsule().fill(Theme.success.opacity(0.16))
-                            .overlay(Capsule().strokeBorder(Theme.success.opacity(0.45), lineWidth: 0.75))
+                            .overlay(Capsule().strokeBorder(Theme.success.opacity(0.65), lineWidth: 1.25))
                     } else {
                         Capsule().fill(tint.horizontal.opacity(0.7))
-                            .overlay(Capsule().strokeBorder(.white.opacity(0.25), lineWidth: 0.75))
+                            .overlay(Capsule().strokeBorder(.white.opacity(0.7), lineWidth: 1.25))
                     }
                 }
             }

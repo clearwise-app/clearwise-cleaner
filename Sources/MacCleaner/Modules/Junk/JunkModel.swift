@@ -25,6 +25,20 @@ final class JunkModel {
     var totalSize: Int64 { categories.reduce(0) { $0 + $1.totalSize } }
     var itemCount: Int { categories.reduce(0) { $0 + $1.items.count } }
 
+    /// Selection totals are kept per category and updated where the selection changes (toggle, select*, apply,
+    /// forget), so a body never walks every item to learn «Выбрано 12 ГБ · 342 объекта».
+    private(set) var selectedBytesByCategory: [String: Int64] = [:]
+    private(set) var selectedCountByCategory: [String: Int] = [:]
+    private(set) var selectedSize: Int64 = 0
+    private(set) var selectedCount = 0
+
+    func selectedSize(in cat: JunkCategory) -> Int64 { selectedBytesByCategory[cat.id] ?? 0 }
+
+    func state(of cat: JunkCategory) -> CheckState {
+        CheckState(selected: selectedCountByCategory[cat.id] ?? 0, total: cat.items.count)
+    }
+
+    /// Selected items grouped by category. Walks every item: for building cleaning plans only, never from a body.
     var selectedPairs: [(JunkCategory, [FileItem])] {
         categories.compactMap { cat in
             let items = cat.items.filter { selection.contains($0.url) }
@@ -32,15 +46,41 @@ final class JunkModel {
         }
     }
 
-    var selectedSize: Int64 { selectedPairs.reduce(0) { $0 + $1.1.reduce(0) { $0 + $1.size } } }
-    var selectedCount: Int { selectedPairs.reduce(0) { $0 + $1.1.count } }
-
-    func selectedSize(in cat: JunkCategory) -> Int64 {
-        cat.items.reduce(0) { selection.contains($1.url) ? $0 + $1.size : $0 }
+    /// Recounts from `selection`: after bulk changes (apply, select*, forget), O(items) once per change.
+    private func rebuildTotals() {
+        var bytes: [String: Int64] = [:]
+        var counts: [String: Int] = [:]
+        var totalBytes: Int64 = 0
+        var totalCount = 0
+        if !selection.isEmpty {
+            for cat in categories {
+                var b: Int64 = 0
+                var c = 0
+                for item in cat.items where selection.contains(item.url) {
+                    b += item.size
+                    c += 1
+                }
+                if c > 0 {
+                    bytes[cat.id] = b
+                    counts[cat.id] = c
+                    totalBytes += b
+                    totalCount += c
+                }
+            }
+        }
+        selectedBytesByCategory = bytes
+        selectedCountByCategory = counts
+        selectedSize = totalBytes
+        selectedCount = totalCount
     }
 
-    func state(of cat: JunkCategory) -> CheckState {
-        CheckState(selected: cat.items.filter { selection.contains($0.url) }.count, total: cat.items.count)
+    private func adjustTotals(_ id: String, bytes: Int64, count: Int) {
+        let newBytes = (selectedBytesByCategory[id] ?? 0) + bytes
+        let newCount = (selectedCountByCategory[id] ?? 0) + count
+        selectedBytesByCategory[id] = newCount > 0 ? newBytes : nil
+        selectedCountByCategory[id] = newCount > 0 ? newCount : nil
+        selectedSize += bytes
+        selectedCount += count
     }
 
     // MARK: Scan
@@ -73,6 +113,7 @@ final class JunkModel {
         categories = found.filter { !$0.items.isEmpty }.sorted { $0.totalSize > $1.totalSize }
         selection = Set(categories.filter(\.isSelectedByDefault).flatMap { $0.items.map(\.url) })
         expanded = []
+        rebuildTotals()
         withAnimation(Theme.spring) { phase = .results }
     }
 
@@ -80,18 +121,41 @@ final class JunkModel {
 
     func toggle(_ cat: JunkCategory) {
         let urls = cat.items.map(\.url)
-        if state(of: cat) == .on { selection.subtract(urls) } else { selection.formUnion(urls) }
+        if state(of: cat) == .on {
+            selection.subtract(urls)
+            adjustTotals(cat.id, bytes: -(selectedBytesByCategory[cat.id] ?? 0), count: -(selectedCountByCategory[cat.id] ?? 0))
+        } else {
+            selection.formUnion(urls)
+            adjustTotals(cat.id, bytes: cat.totalSize - (selectedBytesByCategory[cat.id] ?? 0),
+                         count: cat.items.count - (selectedCountByCategory[cat.id] ?? 0))
+        }
     }
 
-    func toggle(_ item: FileItem) {
-        if selection.contains(item.url) { selection.remove(item.url) } else { selection.insert(item.url) }
+    func toggle(_ item: FileItem, in cat: JunkCategory) {
+        if selection.remove(item.url) != nil {
+            adjustTotals(cat.id, bytes: -item.size, count: -1)
+        } else {
+            selection.insert(item.url)
+            adjustTotals(cat.id, bytes: item.size, count: 1)
+        }
     }
 
     func selectSafeOnly() {
         selection = Set(categories.filter(\.isSelectedByDefault).flatMap { $0.items.map(\.url) })
+        rebuildTotals()
     }
 
-    func selectNone() { selection = [] }
+    func selectNone() {
+        selection = []
+        rebuildTotals()
+    }
+
+    /// «Повторить»: selects exactly what the last clean could not remove.
+    func selectFailed(from result: RemovalResult) {
+        let failed = Set(result.failed.map { $0.url.standardizedFileURL })
+        selection = Set(categories.flatMap(\.items).map(\.url).filter { failed.contains($0.standardizedFileURL) })
+        rebuildTotals()
+    }
 
     func toggleExpanded(_ cat: JunkCategory) {
         withAnimation(Theme.spring) {
@@ -101,28 +165,41 @@ final class JunkModel {
 
     // MARK: Clean
 
-    var includesTrash: Bool { selectedPairs.contains { $0.0.id == JunkCategoryID.trash } }
+    var includesTrash: Bool { (selectedCountByCategory[JunkCategoryID.trash] ?? 0) > 0 }
+    var includesSystemLogs: Bool { (selectedCountByCategory[JunkCategoryID.systemLogs] ?? 0) > 0 }
+
+    /// Round button / confirm verb: «Очистить», or «Удалить навсегда» when the Trash is part of the selection.
+    var cleanVerb: ConfirmCopy.Verb { includesTrash ? .deleteForever : .clean }
+
+    /// The confirmation for the current selection (Smart Care reuses it with its own tint).
+    func confirmation(tint: ModuleTint, action: @escaping @MainActor () -> Void) -> Confirmation? {
+        guard selectedCount > 0 else { return nil }
+        let trashBytes = selectedBytesByCategory[JunkCategoryID.trash] ?? 0
+        let onlyTrash = includesTrash && trashBytes == selectedSize
+        var title: String?
+        var message: String?
+        if includesTrash && !onlyTrash {
+            title = "Очистить \(ConfirmCopy.accusative(selectedCount, .items))?"
+            message = "Остальное попадёт в Корзину — это можно вернуть. Содержимое самой Корзины (\(Fmt.size(trashBytes))) будет удалено навсегда."
+        } else if !includesTrash {
+            title = "Очистить \(ConfirmCopy.accusative(selectedCount, .items))?"
+            message = "Всё попадёт в Корзину — это можно вернуть, пока Корзина не очищена."
+        }
+        return .make(cleanVerb, title: title, message: message, count: selectedCount, bytes: selectedSize,
+                     needsAdmin: includesSystemLogs, tint: tint, action: action)
+    }
 
     func requestClean() {
-        guard let app, selectedCount > 0 else { return }
-        let trashBytes = selectedPairs.filter { $0.0.id == JunkCategoryID.trash }.reduce(0) { $0 + $1.1.reduce(0) { $0 + $1.size } }
-        var message = "Файлы будут перемещены в Корзину — их можно вернуть, пока Корзина не очищена."
-        if includesTrash {
-            message = trashBytes == selectedSize
-                ? "Содержимое Корзины будет удалено безвозвратно. Это действие нельзя отменить."
-                : "Файлы будут перемещены в Корзину. Содержимое самой Корзины (\(Fmt.size(trashBytes))) будет удалено безвозвратно."
-        }
-        app.ask(Confirmation(
-            title: includesTrash && trashBytes == selectedSize ? "Очистить Корзину?" : "Очистить системный мусор?",
-            message: message,
-            count: selectedCount,
-            bytes: selectedSize,
-            confirmTitle: includesTrash ? "Очистить" : "Переместить в Корзину",
-            permanent: includesTrash,
-            needsAdmin: selectedPairs.contains { $0.0.id == JunkCategoryID.systemLogs },
-            tint: .junk,
-            action: { [weak self] in self?.startClean() }
-        ))
+        guard let app, let confirmation = confirmation(tint: .junk, action: { [weak self] in self?.startClean() }) else { return }
+        app.ask(confirmation)
+    }
+
+    /// «Повторить» on the completion screen: back to the results with the refused items selected, and ask again.
+    func retryFailed() {
+        guard let result else { return }
+        selectFailed(from: result)
+        finish()
+        requestClean()
     }
 
     func startClean() {
@@ -141,7 +218,7 @@ final class JunkModel {
         withAnimation(Theme.spring) { phase = .done }
     }
 
-    /// One stage per category, in the order shown; one engine call per item so «Остановить» works between items.
+    /// One stage per category, in the order shown; items go to the engine in chunks, so «Остановить» works between chunks.
     /// Root-owned system logs stay in a single call: one administrator prompt, as before.
     static func plan(_ pairs: [(JunkCategory, [FileItem])], title: String, module: AppModule) -> CleaningPlan {
         var plan = CleaningPlan(title: title, module: module)
@@ -157,8 +234,8 @@ final class JunkModel {
             }
             plan.addStage(cat.title, symbol: cat.symbol, items: unique.map { ($0.url, $0.size) },
                           admin: Set(rootOwned.map(\.url)))
-            plan.addEach(userOwned) { item, progress in
-                await JunkCleaner.clean([item], in: cat, progress: progress)
+            plan.addChunks(userOwned) { chunk, progress in
+                await JunkCleaner.clean(chunk, in: cat, progress: progress)
             }
             if !rootOwned.isEmpty {
                 plan.addUnit { progress in await JunkCleaner.clean(rootOwned, in: cat, progress: progress) }
@@ -167,15 +244,30 @@ final class JunkModel {
         return plan
     }
 
-    /// Drops removed items from the results (after cleaning here or elsewhere).
+    /// Drops removed items from the results (after cleaning here or elsewhere). Does nothing, and notifies
+    /// nobody, when none of them is listed here.
     func forget(_ removed: Set<URL>) {
-        guard !categories.isEmpty else { return }
-        categories = categories.compactMap { cat in
-            var c = cat
-            c.items.removeAll { removed.contains($0.url.standardizedFileURL) }
-            return c.items.isEmpty ? nil : c
+        guard !categories.isEmpty, !removed.isEmpty else { return }
+        var changed = false
+        var next: [JunkCategory] = []
+        next.reserveCapacity(categories.count)
+        for cat in categories {
+            let kept = cat.items.filter { !removed.contains($0.url.standardizedFileURL) }
+            if kept.count == cat.items.count {
+                next.append(cat)
+                continue
+            }
+            changed = true
+            if !kept.isEmpty {
+                var c = cat
+                c.items = kept
+                next.append(c)
+            }
         }
-        selection.subtract(removed)
+        guard changed else { return }
+        categories = next
+        selection = selection.filter { !removed.contains($0.standardizedFileURL) }
+        rebuildTotals()
     }
 
     func finish() {

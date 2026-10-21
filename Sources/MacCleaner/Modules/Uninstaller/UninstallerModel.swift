@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import CleanerKit
 import UninstallEngine
 
@@ -28,6 +29,11 @@ final class UninstallerModel {
     var externalApps: [InstalledApp] = []
     /// Apps whose bundle is being sized after a drop.
     var preparingDrop = false
+    /// Bundles of the apps running right now (standardized), kept current by NSWorkspace launch/quit notifications.
+    var runningURLs: Set<URL> = []
+
+    /// Confident leftovers of every checked app (what a batch removal takes), filled in the background.
+    var batchRemnants: [URL: [AppRemnant]] = [:]
 
     // Leftovers of deleted apps
     var orphanState: OrphanState = .notScanned
@@ -36,14 +42,18 @@ final class UninstallerModel {
     var focusedOrphanID: String?
     var orphanSelection: Set<URL> = []
 
-    // Work / result
-    var workingTitle = ""
+    // Result
     var result: RemovalResult?
     var resultTitle = ""
 
     @ObservationIgnored private let finder = RemnantFinder()
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var remnantsTask: Task<Void, Never>?
+    @ObservationIgnored private var batchTask: Task<Void, Never>?
+    @ObservationIgnored private var orphanTask: Task<Void, Never>?
+    @ObservationIgnored private var workspaceObservers: [NSObjectProtocol] = []
+    /// The last confirmed removal, so «Повторить» can retry exactly what failed.
+    @ObservationIgnored private var lastRequest: RemovalRequest?
     /// The finder has been given the inventory we already loaded (saves it a rescan).
     @ObservationIgnored private var finderSynced = false
 
@@ -57,11 +67,12 @@ final class UninstallerModel {
 
     var allApps: [InstalledApp] { (app?.apps ?? []) + externalApps.filter { e in !(app?.apps ?? []).contains { $0.url == e.url } } }
 
+    /// Filtered and sorted list. Not cached: read it once per body (`let apps = model.visibleApps`).
     var visibleApps: [InstalledApp] {
-        let q = search.trimmingCharacters(in: .whitespaces).lowercased()
+        let q = search.trimmingCharacters(in: .whitespaces)
         var list = allApps.filter { showSystemApps || !$0.isSystemApp }
         if !q.isEmpty {
-            list = list.filter { $0.name.lowercased().contains(q) || ($0.bundleID?.lowercased().contains(q) ?? false) }
+            list = list.filter { $0.name.localizedStandardContains(q) || ($0.bundleID?.localizedStandardContains(q) ?? false) }
         }
         switch filter {
         case .all: break
@@ -70,7 +81,7 @@ final class UninstallerModel {
         }
         switch sort {
         case .size: list.sort { $0.size > $1.size }
-        case .name: list.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        case .name: list.sort { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
         case .lastUsed: list.sort { ($0.lastUsed ?? .distantPast) < ($1.lastUsed ?? .distantPast) }
         }
         return list
@@ -97,7 +108,9 @@ final class UninstallerModel {
     }
 
     /// Shows the list immediately if apps were already loaded elsewhere (e.g. by Smart Care).
-    func onAppear() {
+    /// `observeWorkspace` is off in snapshots so renders don't depend on what runs on this Mac.
+    func onAppear(observeWorkspace: Bool = true) {
+        if observeWorkspace { observeRunningApps() }
         if phase == .idle, app?.appsState == .loaded {
             phase = .results
             if selectedAppID == nil, let first = visibleApps.first { select(first) }
@@ -121,9 +134,21 @@ final class UninstallerModel {
         }
     }
 
-    func toggleChecked(_ a: InstalledApp) {
-        if checkedApps.contains(a.url) { checkedApps.remove(a.url) } else { checkedApps.insert(a.url) }
+    /// Arrow keys in the app list: moves the selection within what is shown.
+    func moveSelection(by delta: Int, in apps: [InstalledApp]) {
+        guard !apps.isEmpty else { return }
+        let current = apps.firstIndex { $0.url == selectedAppID }
+        let next = current.map { min(max($0 + delta, 0), apps.count - 1) } ?? (delta > 0 ? 0 : apps.count - 1)
+        select(apps[next])
     }
+
+    func toggleChecked(_ a: InstalledApp) {
+        guard !a.isSystemApp else { return }
+        if checkedApps.contains(a.url) { checkedApps.remove(a.url) } else { checkedApps.insert(a.url) }
+        loadBatchRemnants()
+    }
+
+    func clearChecked() { checkedApps = [] }
 
     /// Drag & drop entry point.
     func open(appURL: URL) {
@@ -163,14 +188,28 @@ final class UninstallerModel {
         }.value
     }
 
-    // MARK: Remnants
+    // MARK: Running apps
 
-    var remnantGroups: [(kind: RemnantKind, items: [AppRemnant])] {
-        RemnantKind.allCases.compactMap { kind in
-            let items = remnants.filter { $0.kind == kind }
-            return items.isEmpty ? nil : (kind, items)
+    func isRunning(_ a: InstalledApp) -> Bool { runningURLs.contains(a.url.standardizedFileURL) }
+
+    /// Replaces per-body `NSWorkspace.runningApplications` scans with one set updated on launch/quit.
+    private func observeRunningApps() {
+        guard workspaceObservers.isEmpty else { return }
+        refreshRunning()
+        let center = NSWorkspace.shared.notificationCenter
+        for name in [NSWorkspace.didLaunchApplicationNotification, NSWorkspace.didTerminateApplicationNotification] {
+            workspaceObservers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.refreshRunning() }
+            })
         }
     }
+
+    private func refreshRunning() {
+        let now = Set(NSWorkspace.shared.runningApplications.compactMap { $0.bundleURL?.standardizedFileURL })
+        if now != runningURLs { runningURLs = now }
+    }
+
+    // MARK: Remnants
 
     var selectedRemnants: [AppRemnant] { remnants.filter { remnantSelection.contains($0.id) } }
     var selectedRemnantsSize: Int64 { selectedRemnants.reduce(0) { $0 + $1.item.size } }
@@ -185,99 +224,201 @@ final class UninstallerModel {
         if ids.allSatisfy(remnantSelection.contains) { remnantSelection.subtract(ids) } else { remnantSelection.formUnion(ids) }
     }
 
-    func isRunning(_ a: InstalledApp) -> Bool { AppUninstaller.isRunning(a) }
+    // MARK: Batch
+
+    var checkedAppList: [InstalledApp] { allApps.filter { checkedApps.contains($0.url) && !$0.isSystemApp } }
+
+    /// Sizes for the batch summary: bundles, leftovers found so far, and whether the search is still running.
+    struct BatchTotals {
+        var appsSize: Int64 = 0
+        var remnantsSize: Int64 = 0
+        var count = 0
+        var loading = false
+        var total: Int64 { appsSize + remnantsSize }
+    }
+
+    func batchTotals(_ list: [InstalledApp]) -> BatchTotals {
+        var t = BatchTotals()
+        for a in list {
+            t.appsSize += a.size
+            t.count += 1
+            if let found = batchRemnants[a.url] {
+                t.remnantsSize += found.reduce(0) { $0 + $1.item.size }
+                t.count += found.count
+            } else {
+                t.loading = true
+            }
+        }
+        return t
+    }
+
+    /// Finds confident leftovers of checked apps one by one, so the summary can show real totals.
+    private func loadBatchRemnants() {
+        guard batchTask == nil, checkedAppList.contains(where: { batchRemnants[$0.url] == nil }) else { return }
+        batchTask = Task {
+            await syncFinder()
+            while !Task.isCancelled, let next = checkedAppList.first(where: { batchRemnants[$0.url] == nil }) {
+                let found = await finder.remnants(for: next).filter { $0.confidence >= .medium }
+                batchRemnants[next.url] = found.sorted { $0.item.size > $1.item.size }
+            }
+            batchTask = nil
+        }
+    }
 
     // MARK: Actions
 
     func requestUninstall() {
         guard let app, let target = selectedApp, !target.isSystemApp else { return }
         let picked = selectedRemnants
-        app.ask(Confirmation(
-            title: "Удалить «\(target.name)»?",
-            message: "Приложение и выбранные остатки будут перемещены в Корзину — их можно вернуть, пока Корзина не очищена.",
-            count: 1 + picked.count,
-            bytes: target.size + picked.reduce(0) { $0 + $1.item.size },
-            confirmTitle: "Удалить",
+        var c = Confirmation.make(
+            .delete, title: "Удалить «\(target.name)»?",
+            message: "Приложение и выбранные остатки попадут в Корзину — их можно вернуть, пока Корзина не очищена.",
+            count: 1 + picked.count, bytes: target.size + picked.reduce(0) { $0 + $1.item.size },
             needsAdmin: picked.contains(where: \.requiresAdmin),
             warning: isRunning(target) ? "«\(target.name)» сейчас запущено — оно будет закрыто." : nil,
             tint: .uninstaller,
             action: { [weak self] in
-                guard let self else { return }
-                self.run(Self.uninstallPlan(target, remnants: picked, running: self.isRunning(target))) {
-                    "«\(target.name)» удалено"
-                }
-            }
-        ))
+                self?.run(RemovalRequest(apps: [.init(app: target, remnants: picked)], title: "Удаление «\(target.name)»",
+                                         doneTitle: "«\(target.name)» удалено"))
+            })
+        c.confirmTitle = "Удалить приложение"
+        app.ask(c)
     }
 
     func requestReset() {
-        guard let app, let target = selectedApp else { return }
+        guard let app, let target = selectedApp, !target.isSystemApp else { return }
         let picked = selectedRemnants
         guard !picked.isEmpty else { return }
-        app.ask(Confirmation(
-            title: "Сбросить «\(target.name)»?",
-            message: "Приложение останется, а его настройки, кэши и данные будут перемещены в Корзину. При следующем запуске оно начнёт с чистого листа.",
-            count: picked.count,
-            bytes: picked.reduce(0) { $0 + $1.item.size },
-            confirmTitle: "Сбросить",
+        var c = Confirmation.make(
+            .delete, title: "Сбросить данные «\(target.name)»?",
+            message: "Приложение останется, а его настройки, кэши и данные попадут в Корзину. При следующем запуске оно начнёт с чистого листа.",
+            count: picked.count, bytes: picked.reduce(0) { $0 + $1.item.size },
             needsAdmin: picked.contains(where: \.requiresAdmin),
             warning: isRunning(target) ? "Закройте «\(target.name)» перед сбросом, иначе оно может пересоздать файлы." : nil,
             tint: .uninstaller,
             action: { [weak self] in
-                self?.run(Self.removalPlan(picked, title: "Сброс «\(target.name)»", byApp: false)) { "«\(target.name)» сброшено" }
-            }
-        ))
+                self?.run(RemovalRequest(loose: picked, title: "Сброс «\(target.name)»", doneTitle: "Данные «\(target.name)» сброшены"))
+            })
+        c.confirmTitle = "Сбросить данные"
+        app.ask(c)
     }
 
-    var checkedAppList: [InstalledApp] { allApps.filter { checkedApps.contains($0.url) && !$0.isSystemApp } }
-
-    /// Batch uninstall: gathers confident leftovers for every checked app, then asks once.
+    /// Batch uninstall: confident leftovers of every checked app (found in the background), one confirmation.
     func requestBatchUninstall() {
         let targets = checkedAppList
-        guard let app, !targets.isEmpty else { return }
+        guard app != nil, !targets.isEmpty else { return }
         task = Task {
-            workingTitle = "Ищем остатки…"
-            var plan: [(InstalledApp, [AppRemnant])] = []
             await syncFinder()
+            var plan: [RemovalRequest.AppEntry] = []
             for t in targets {
-                let found = await finder.remnants(for: t).filter { $0.confidence >= .medium }
-                plan.append((t, found))
+                let found: [AppRemnant]
+                if let known = batchRemnants[t.url] {
+                    found = known
+                } else {
+                    found = await finder.remnants(for: t).filter { $0.confidence >= .medium }
+                    batchRemnants[t.url] = found
+                }
+                plan.append(.init(app: t, remnants: found))
             }
-            workingTitle = ""
-            let bytes = plan.reduce(Int64(0)) { $0 + $1.0.size + $1.1.reduce(0) { $0 + $1.item.size } }
-            let count = plan.reduce(0) { $0 + 1 + $1.1.count }
-            let running = plan.map(\.0).filter(isRunning)
-            app.ask(Confirmation(
-                title: "Удалить \(Fmt.apps(targets.count))?",
-                message: "Приложения и их остатки (только точные совпадения) будут перемещены в Корзину — их можно вернуть, пока Корзина не очищена.",
-                count: count,
-                bytes: bytes,
-                confirmTitle: "Удалить",
-                needsAdmin: plan.contains { $0.1.contains(where: \.requiresAdmin) },
+            guard !Task.isCancelled, let app else { return }
+            let bytes = plan.reduce(Int64(0)) { $0 + $1.app.size + $1.remnants.reduce(0) { $0 + $1.item.size } }
+            let count = plan.reduce(0) { $0 + 1 + $1.remnants.count }
+            let running = targets.filter(isRunning)
+            let n = targets.count
+            var c = Confirmation.make(
+                .delete, title: "Удалить \(Fmt.apps(n))?",
+                message: "Приложения и их остатки (только точные совпадения) попадут в Корзину — их можно вернуть, пока Корзина не очищена.",
+                count: count, bytes: bytes,
+                needsAdmin: plan.contains { $0.remnants.contains(where: \.requiresAdmin) },
                 warning: running.isEmpty ? nil : "Будут закрыты: \(running.map(\.name).joined(separator: ", ")).",
                 tint: .uninstaller,
-                action: { self.run(Self.batchPlan(plan)) { "Удалено \(Fmt.apps(targets.count))" } }
-            ))
+                action: {
+                    self.run(RemovalRequest(apps: plan, title: "Удаление \(Fmt.apps(n))",
+                                            doneTitle: "Удалено \(Fmt.apps(n))"))
+                })
+            c.confirmTitle = "Удалить \(Fmt.apps(n))"
+            app.ask(c)
         }
     }
 
-    private func run(_ plan: CleaningPlan, done: @escaping @MainActor () -> String) {
+    private func run(_ request: RemovalRequest) {
+        lastRequest = request
+        let plan = Self.plan(for: request, running: isRunning)
         task = Task {
-            workingTitle = plan.title
-            withAnimation(Theme.spring) { phase = .cleaning }
+            // The cleaning overlay covers the module; the screen underneath stays as it was.
             let r = await app?.runCleaning(plan) ?? RemovalResult()
             // Straight after the scene returns (no suspension) so it fades into the completion screen.
             result = r
-            resultTitle = done()
+            resultTitle = request.doneTitle
             app?.didRemove(r)
             withAnimation(Theme.spring) { phase = .done }
             // Files moved: the finder's index of what exists is stale now.
             finderSynced = false
+            batchTask?.cancel()
+            batchTask = nil
+            batchRemnants = [:]
             await finder.invalidate()
         }
     }
 
+    /// «Повторить» on the completion screen: only what failed last time, no new confirmation.
+    var canRetry: Bool { retryRequest != nil }
+
+    private var retryRequest: RemovalRequest? {
+        guard let lastRequest, let result, !result.failed.isEmpty else { return nil }
+        return lastRequest.retrying(failed: Set(result.failed.map(\.url.standardizedFileURL)))
+    }
+
+    func retry() {
+        guard let again = retryRequest else { return }
+        run(again)
+    }
+
     // MARK: Cleaning plans
+
+    /// One confirmed removal: whole apps (quit, leftovers, bundle — one engine call each) and/or loose leftovers.
+    struct RemovalRequest {
+        struct AppEntry { var app: InstalledApp; var remnants: [AppRemnant] }
+        var apps: [AppEntry] = []
+        var loose: [AppRemnant] = []
+        /// Orphans: loose leftovers staged per deleted app.
+        var groups: [OrphanGroup] = []
+        var title: String
+        var doneTitle: String
+
+        var isEmpty: Bool { apps.isEmpty && loose.isEmpty }
+
+        /// What is left to do after `failed`: an app whose bundle is still there is retried whole
+        /// (with its failed leftovers); leftovers of an app already in the Trash become loose items.
+        func retrying(failed: Set<URL>) -> RemovalRequest? {
+            func didFail(_ url: URL) -> Bool { failed.contains(url.standardizedFileURL) }
+            var next = RemovalRequest(groups: groups, title: title, doneTitle: doneTitle)
+            for e in apps {
+                let left = e.remnants.filter { didFail($0.item.url) }
+                if didFail(e.app.url) && !e.app.isSystemApp {
+                    next.apps.append(AppEntry(app: e.app, remnants: left))
+                } else {
+                    next.loose += left
+                }
+            }
+            next.loose += loose.filter { didFail($0.item.url) }
+            return next.isEmpty ? nil : next
+        }
+    }
+
+    static func plan(for r: RemovalRequest, running: (InstalledApp) -> Bool) -> CleaningPlan {
+        var plan: CleaningPlan
+        if r.apps.count == 1, let e = r.apps.first {
+            plan = uninstallPlan(e.app, remnants: e.remnants, running: running(e.app))
+        } else if !r.apps.isEmpty {
+            plan = batchPlan(r.apps.map { ($0.app, $0.remnants) })
+        } else {
+            plan = CleaningPlan(title: r.title, module: .uninstaller)
+        }
+        plan.title = r.title
+        if !r.loose.isEmpty { addLeftovers(&plan, r.loose, groups: r.groups) }
+        return plan
+    }
 
     /// Single app: «Завершение приложения» (if running), leftovers by kind, root-owned leftovers, then the app.
     /// Still one engine call — it quits the app first and moves the bundle last.
@@ -285,7 +426,7 @@ final class UninstallerModel {
         var plan = CleaningPlan(title: "Удаление «\(target.name)»", module: .uninstaller)
         let quit = running ? plan.addStage("Завершение приложения", symbol: "power", items: []) : nil
         let ordered = byKind(picked)
-        addRemnantStages(&plan, ordered, byApp: false)
+        addRemnantStages(&plan, ordered)
         plan.addStage("Приложение", symbol: "app.fill", iconURL: target.url, items: [(target.url, target.size)],
                       admin: bundleNeedsAdmin(target) ? [target.url] : [])
         plan.addUnit(activating: quit) { progress in
@@ -310,29 +451,45 @@ final class UninstallerModel {
         return plan
     }
 
-    /// Leftovers only (reset, orphans): user-owned items one call each (stoppable), root-owned ones together
-    /// at the end so the administrator password is asked once, exactly as a single `remove` call would.
+    /// Leftovers only (reset, orphans).
     static func removalPlan(_ picked: [AppRemnant], title: String, byApp: Bool, groups: [OrphanGroup] = []) -> CleaningPlan {
         var plan = CleaningPlan(title: title, module: .uninstaller)
-        let ordered = byApp ? picked : byKind(picked)
-        if byApp {
-            let ids = Set(ordered.map(\.id))
+        addLeftovers(&plan, picked, groups: byApp ? groups : [])
+        return plan
+    }
+
+    /// User-owned leftovers go in chunks (a stop request lands between chunks); root-owned ones together
+    /// at the end so the administrator password is asked once. Nested URLs are dropped up front, so
+    /// chunking never moves a folder and then fails on a file that was inside it.
+    private static func addLeftovers(_ plan: inout CleaningPlan, _ picked: [AppRemnant], groups: [OrphanGroup]) {
+        let kept = Set(CleaningPrep.dedupe(picked.map(\.item.url)).map(\.standardizedFileURL))
+        let deduped = picked.filter { kept.contains($0.item.url.standardizedFileURL) }
+        let ordered: [AppRemnant]
+        if groups.isEmpty {
+            ordered = byKind(deduped)
+            addRemnantStages(&plan, ordered)
+        } else {
+            let ids = Set(deduped.map(\.id))
+            var staged: [AppRemnant] = []
             for g in groups {
                 let items = g.remnants.filter { ids.contains($0.id) && !$0.requiresAdmin }
                 guard !items.isEmpty else { continue }
                 plan.addStage(g.displayName, symbol: "app.dashed", items: items.map { ($0.item.url, $0.item.size) })
+                staged += items
             }
+            // Anything not in a known group still gets removed, after the grouped ones.
+            let stagedIDs = Set(staged.map(\.id))
+            let rest = deduped.filter { !$0.requiresAdmin && !stagedIDs.contains($0.id) }
+            if !rest.isEmpty { addRemnantStages(&plan, byKind(rest), adminToo: false) }
+            ordered = staged + rest + deduped.filter(\.requiresAdmin)
             addAdminStage(&plan, ordered)
-        } else {
-            addRemnantStages(&plan, ordered, byApp: false)
         }
         let user = ordered.filter { !$0.requiresAdmin }
         let admin = ordered.filter(\.requiresAdmin)
-        plan.addEach(user) { r, progress in await AppUninstaller.remove([r], progress: progress) }
+        plan.addChunks(user) { chunk, progress in await AppUninstaller.remove(chunk, progress: progress) }
         if !admin.isEmpty {
             plan.addUnit { progress in await AppUninstaller.remove(admin, progress: progress) }
         }
-        return plan
     }
 
     private static func byKind(_ remnants: [AppRemnant]) -> [AppRemnant] {
@@ -343,13 +500,13 @@ final class UninstallerModel {
         }.map(\.element)
     }
 
-    private static func addRemnantStages(_ plan: inout CleaningPlan, _ ordered: [AppRemnant], byApp: Bool) {
+    private static func addRemnantStages(_ plan: inout CleaningPlan, _ ordered: [AppRemnant], adminToo: Bool = true) {
         for kind in RemnantKind.allCases {
             let items = ordered.filter { $0.kind == kind && !$0.requiresAdmin }
             guard !items.isEmpty else { continue }
             plan.addStage(kind.title, symbol: kind.symbol, items: items.map { ($0.item.url, $0.item.size) })
         }
-        addAdminStage(&plan, ordered)
+        if adminToo { addAdminStage(&plan, ordered) }
     }
 
     private static func addAdminStage(_ plan: inout CleaningPlan, _ ordered: [AppRemnant]) {
@@ -367,16 +524,18 @@ final class UninstallerModel {
 
     func finish() {
         result = nil
+        lastRequest = nil
         withAnimation(Theme.spring) { phase = .results }
         if let selected = selectedApp { selectedAppID = nil; select(selected) }
         else if let first = visibleApps.first { select(first) }
+        loadBatchRemnants()
     }
 
     func forget(_ removed: Set<URL>) {
         if let app {
             let before = app.apps.count
             app.apps.removeAll { removed.contains($0.url.standardizedFileURL) }
-            if app.apps.count != before { checkedApps.subtract(removed) }
+            if app.apps.count != before { checkedApps = checkedApps.filter { !removed.contains($0.standardizedFileURL) } }
         }
         externalApps.removeAll { removed.contains($0.url.standardizedFileURL) }
         if let id = selectedAppID, removed.contains(id.standardizedFileURL) {
@@ -393,8 +552,15 @@ final class UninstallerModel {
 
     // MARK: Orphans
 
+    /// Buttons call this; a second click while scanning does nothing.
+    func startOrphanScan() {
+        guard orphanState != .scanning else { return }
+        orphanTask?.cancel()
+        orphanTask = Task { await scanOrphans() }
+    }
+
     func scanOrphans() async {
-        guard let app else { return }
+        guard let app, orphanState != .scanning else { return }
         orphanState = .scanning
         orphanProgress = ScanProgress(phase: "Ищем приложения", fraction: 0)
         let installed = await app.loadApps()
@@ -427,21 +593,32 @@ final class UninstallerModel {
         if orphanSelection.contains(r.id) { orphanSelection.remove(r.id) } else { orphanSelection.insert(r.id) }
     }
 
+    func toggleOrphanItems(_ items: [AppRemnant]) {
+        let ids = items.map(\.id)
+        if ids.allSatisfy(orphanSelection.contains) { orphanSelection.subtract(ids) } else { orphanSelection.formUnion(ids) }
+    }
+
+    /// Arrow keys in the leftovers list.
+    func moveOrphanFocus(by delta: Int) {
+        guard !orphans.isEmpty else { return }
+        let current = orphans.firstIndex { $0.id == focusedOrphanID }
+        let next = current.map { min(max($0 + delta, 0), orphans.count - 1) } ?? (delta > 0 ? 0 : orphans.count - 1)
+        focusedOrphanID = orphans[next].id
+    }
+
     func requestRemoveOrphans() {
         let picked = selectedOrphanRemnants
         guard let app, !picked.isEmpty else { return }
-        app.ask(Confirmation(
-            title: "Удалить остатки?",
-            message: "Файлы удалённых приложений будут перемещены в Корзину — их можно вернуть, пока Корзина не очищена.",
-            count: picked.count,
-            bytes: picked.reduce(0) { $0 + $1.item.size },
-            confirmTitle: "Переместить в Корзину",
-            needsAdmin: picked.contains(where: \.requiresAdmin),
-            tint: .uninstaller,
+        var c = Confirmation.make(
+            .delete, title: "Удалить остатки?",
+            message: "Файлы удалённых приложений попадут в Корзину — их можно вернуть, пока Корзина не очищена.",
+            count: picked.count, bytes: picked.reduce(0) { $0 + $1.item.size },
+            needsAdmin: picked.contains(where: \.requiresAdmin), tint: .uninstaller,
             action: { [weak self] in
                 guard let self else { return }
-                self.run(Self.removalPlan(picked, title: "Удаление остатков", byApp: true, groups: self.orphans)) { "Остатки удалены" }
-            }
-        ))
+                self.run(RemovalRequest(loose: picked, groups: self.orphans, title: "Удаление остатков", doneTitle: "Остатки удалены"))
+            })
+        c.confirmTitle = "Удалить остатки"
+        app.ask(c)
     }
 }

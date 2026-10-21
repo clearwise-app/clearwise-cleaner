@@ -54,6 +54,9 @@ final class DiskMapModel {
 
     @ObservationIgnored private let mapper = SpaceMapper()
     @ObservationIgnored private var task: Task<Void, Never>?
+    /// The on-demand map of a branch that is being zoomed into. Cancelled by every other navigation, so a late
+    /// result can never be appended to a zoom path it no longer belongs to.
+    @ObservationIgnored private var zoomTask: Task<Void, Never>?
 
     static let mapDepth = 6
 
@@ -91,6 +94,7 @@ final class DiskMapModel {
 
     func startScan() {
         app?.storage.noteUserScan()
+        cancelZoom()
         task?.cancel()
         task = Task { await scan() }
     }
@@ -109,6 +113,7 @@ final class DiskMapModel {
     }
 
     func apply(_ node: DirectoryNode) {
+        cancelZoom()
         root = node
         stack = [node]
         removedBytes = [:]
@@ -117,35 +122,49 @@ final class DiskMapModel {
     }
 
     func stop() {
+        cancelZoom()
         task?.cancel()
         withAnimation(Theme.spring) { phase = root == nil ? .idle : .results }
     }
 
-    func chooseFolder() {
+    /// «Другая папка…»: asks for a folder and makes it the scan target. False when the user cancelled.
+    @discardableResult
+    func chooseFolder() -> Bool {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.prompt = "Выбрать"
-        if panel.runModal() == .OK, let url = panel.url {
-            location = .custom(url)
-        }
+        guard panel.runModal() == .OK, let url = panel.url else { return false }
+        location = .custom(url)
+        return true
     }
 
     // MARK: Navigation
 
+    private func cancelZoom() {
+        zoomTask?.cancel()
+        zoomTask = nil
+        zoomLoading = false
+    }
+
     func zoom(into node: DirectoryNode, from segment: SunSegment? = nil) {
         guard node.isDirectory, node.isActionable, size(of: node) > 0 else { return }
+        cancelZoom()
         zoomOrigin = segment.map { ZoomOrigin(start: $0.start, end: $0.end, depth: $0.depth) }
         if node.children.isEmpty {
-            // Deeper than the initial map: map this branch on demand.
+            // Deeper than the initial map: map this branch on demand. The result is appended only if the zoom
+            // path is still the one it was started from and nothing cancelled it meanwhile.
+            let parentID = stack.last?.id
             zoomLoading = true
-            Task {
+            zoomTask = Task { [weak self] in
+                guard let self else { return }
                 let mapped = await mapper.map(node.url, depth: Self.mapDepth, progress: nil)
+                guard !Task.isCancelled else { return }
+                zoomTask = nil
                 zoomLoading = false
-                if !mapped.children.isEmpty {
-                    stack.append(mapped)
-                    animateZoom()
-                }
+                guard stack.last?.id == parentID, !mapped.children.isEmpty else { return }
+                stack.append(mapped)
+                animateZoom()
             }
         } else {
             stack.append(node)
@@ -162,6 +181,7 @@ final class DiskMapModel {
     }
 
     func zoomOut(to index: Int) {
+        cancelZoom()
         guard index >= 0, index < stack.count - 1 else { return }
         zoomOrigin = nil
         stack.removeSubrange((index + 1)...)
@@ -195,22 +215,32 @@ final class DiskMapModel {
         // Never collect a folder that is on the current zoom path (e.g. the scanned root itself).
         if stack.contains(where: { $0.url.standardizedFileURL == item.url.standardizedFileURL }) {
             NSSound.beep()
-            lastRefusal = "«\(item.name)» сейчас открыта на карте — выберите отдельные объекты внутри."
+            lastRefusal = Refusal(title: "«\(item.name)» сейчас открыта на карте",
+                                  detail: "Выберите отдельные папки и файлы внутри неё.")
             return
         }
         if let reason = SafetyGuard.refusalReason(for: item.url) {
             NSSound.beep()
-            lastRefusal = "«\(item.name)» нельзя удалить: \(reason.lowercased())."
+            lastRefusal = Refusal(title: "«\(item.name)» нельзя переместить в Корзину",
+                                  detail: reason.hasSuffix(".") ? reason : reason + ".")
             return
         }
-        lastRefusal = nil
+        if lastRefusal != nil { withAnimation(Theme.quick) { lastRefusal = nil } }
         // A folder swallows anything already collected inside it.
         collector.removeAll { $0.url.path.hasPrefix(item.url.path + "/") }
         guard !collector.contains(where: { item.url.path.hasPrefix($0.url.path + "/") }) else { return }
         withAnimation(Theme.spring) { collector.append(item) }
     }
 
-    var lastRefusal: String?
+    /// Why the last «+» or drop was refused. Shown as an inline warning until dismissed or the next success.
+    struct Refusal: Equatable {
+        var title: String
+        var detail: String
+    }
+
+    var lastRefusal: Refusal?
+
+    func dismissRefusal() { withAnimation(Theme.quick) { lastRefusal = nil } }
 
     func collect(urls: [URL]) {
         for url in urls {
@@ -238,20 +268,22 @@ final class DiskMapModel {
     func requestTrash() {
         let picked = collector
         guard let app, !picked.isEmpty else { return }
-        app.ask(Confirmation(
-            title: "Переместить в Корзину?",
-            message: "Собранные объекты будут перемещены в Корзину — их можно вернуть, пока Корзина не очищена.",
-            count: picked.count,
-            bytes: picked.reduce(0) { $0 + $1.size },
-            confirmTitle: "Переместить в Корзину",
-            tint: .diskMap,
-            action: { [weak self] in self?.startTrash(picked) }
-        ))
+        app.ask(.make(.trash, count: picked.count, bytes: picked.reduce(0) { $0 + $1.size },
+                      noun: .items, tint: .diskMap) { [weak self] in self?.startTrash(picked) })
     }
 
+    /// «Повторить» on the completion screen: what stayed in the collector goes again.
+    func retryFailed() {
+        let failed = Set((result?.failed ?? []).map { $0.url.standardizedFileURL })
+        let again = collector.filter { failed.contains($0.url.standardizedFileURL) }
+        guard !again.isEmpty else { return }
+        startTrash(again)
+    }
+
+    /// The cleaning scene covers the screen while this runs, so the module stays on its map underneath.
     private func startTrash(_ picked: [CollectedItem]) {
+        task?.cancel()
         task = Task {
-            withAnimation(Theme.spring) { phase = .cleaning }
             let sizes = Dictionary(picked.map { ($0.url, $0.size) }, uniquingKeysWith: { a, _ in a })
             let r = await app?.runCleaning(Self.plan(picked)) ?? RemovalResult()
             for url in r.removed { removedBytes[url.standardizedFileURL] = sizes[url] ?? 0 }
@@ -262,7 +294,7 @@ final class DiskMapModel {
         }
     }
 
-    /// The collector as one stage, one Trash call per object so «Остановить» works between objects.
+    /// The collector as one stage; Trash calls go in chunks, so «Остановить» works between chunks.
     static func plan(_ picked: [CollectedItem]) -> CleaningPlan {
         var plan = CleaningPlan(title: "Удаление собранных объектов", module: .diskMap)
         let sizes = CleaningPrep.sizes(picked.map { ($0.url, $0.size) })

@@ -5,7 +5,15 @@ import SpaceEngine
 /// Byte-identical copies of one file. `id` is the first path at scan time and never changes.
 struct DuplicateGroup: Identifiable, Hashable {
     let id: URL
-    var files: [AnalyzedFile]
+    var files: [AnalyzedFile] { didSet { oldestID = DuplicateRules.byAge(files).first?.id } }
+    /// Oldest by modification date, stored: rows ask for it on every body and must not re-sort the group.
+    private(set) var oldestID: URL?
+
+    init(id: URL, files: [AnalyzedFile]) {
+        self.id = id
+        self.files = files
+        self.oldestID = DuplicateRules.byAge(files).first?.id
+    }
 
     var kind: FileKind { files.first?.kind ?? .other }
     var name: String { files.first?.item.name ?? "" }
@@ -14,8 +22,6 @@ struct DuplicateGroup: Identifiable, Hashable {
     /// Everything except one copy.
     var reclaimable: Int64 { copySize * Int64(max(0, files.count - 1)) }
     var extraCopies: Int { max(0, files.count - 1) }
-    /// Oldest by modification date (the engine already sorts this way; kept explicit for safety).
-    var oldest: URL? { DuplicateRules.byAge(files).first?.id }
 }
 
 /// Which copy stays by default. Pure, so it is easy to reason about.
@@ -58,9 +64,18 @@ final class DuplicatesModel {
 
     var phase: ModulePhase = .idle
     var progress = ScanProgress(phase: "", fraction: 0)
-    var groups: [DuplicateGroup] = []
+    var groups: [DuplicateGroup] = [] {
+        didSet { groupsGeneration &+= 1; recountFiles() }
+    }
     /// Copies that will go to the Trash. Invariant: never every copy of a group.
-    var marked: Set<URL> = []
+    /// Mutated only through `mark`/`unmark`/`clearSelection`, which keep the counters below current.
+    private(set) var marked: Set<URL> = []
+    /// Size and number of the marked copies, kept in step with `marked` (never recomputed per body).
+    private(set) var markedBytes: Int64 = 0
+    private(set) var markedCount = 0
+    /// All copies in all groups.
+    private(set) var fileCount = 0
+    private(set) var fileBytes: Int64 = 0
     var kindFilter: FileKind?
     var sort: Sort = .size
     var quickLookURL: URL?
@@ -71,6 +86,16 @@ final class DuplicatesModel {
     @ObservationIgnored private let analyzer = FileAnalyzer()
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var hintTask: Task<Void, Never>?
+    /// Bumped whenever `groups` changes; with `kindFilter` and `sort` it keys the visible-list cache.
+    @ObservationIgnored private var groupsGeneration = 0
+    @ObservationIgnored private var sizeByID: [URL: Int64] = [:]
+    @ObservationIgnored private var visibleCache: (key: VisibleKey, groups: [DuplicateGroup], urls: [URL])?
+
+    private struct VisibleKey: Equatable {
+        var generation: Int
+        var kind: FileKind?
+        var sort: Sort
+    }
 
     static let sizeOptions: [Int64] = [1_000_000, 10_000_000, 100_000_000]
 
@@ -80,7 +105,6 @@ final class DuplicatesModel {
 
     var reclaimable: Int64 { groups.reduce(0) { $0 + $1.reclaimable } }
     var extraCopies: Int { groups.reduce(0) { $0 + $1.extraCopies } }
-    var fileCount: Int { groups.reduce(0) { $0 + $1.files.count } }
 
     var kinds: [(kind: FileKind, groups: Int, size: Int64)] {
         FileKind.allCases.compactMap { kind in
@@ -90,25 +114,76 @@ final class DuplicatesModel {
         .sorted { $0.size > $1.size }
     }
 
-    var visibleGroups: [DuplicateGroup] {
-        var list = kindFilter.map { k in groups.filter { $0.kind == k } } ?? groups
-        switch sort {
+    /// Filtered and sorted once per change of `groups`, `kindFilter` or `sort`, not once per body.
+    var visibleGroups: [DuplicateGroup] { visible().groups }
+    /// URLs of every copy in `visibleGroups`, in the same order (Quick Look).
+    var visibleURLs: [URL] { visible().urls }
+
+    private func visible() -> (groups: [DuplicateGroup], urls: [URL]) {
+        let key = VisibleKey(generation: groupsGeneration, kind: kindFilter, sort: sort)
+        if let c = visibleCache, c.key == key { return (c.groups, c.urls) }
+        var list = key.kind.map { k in groups.filter { $0.kind == k } } ?? groups
+        switch key.sort {
         case .size: list.sort { $0.reclaimable != $1.reclaimable ? $0.reclaimable > $1.reclaimable : $0.name < $1.name }
         case .name: list.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         }
-        return list
+        let urls = list.flatMap { $0.files.map(\.item.url) }
+        visibleCache = (key, list, urls)
+        return (list, urls)
     }
 
+    /// For the snapshot driver and the cleaning plan; the footer reads the counters instead.
     var markedFiles: [AnalyzedFile] { groups.flatMap { $0.files.filter { marked.contains($0.id) } } }
-    var markedSize: Int64 { markedFiles.reduce(0) { $0 + $1.item.size } }
-    var keptCount: Int { fileCount - markedFiles.count }
-    var keptSize: Int64 { groups.reduce(0) { $0 + $1.files.reduce(0) { $0 + $1.item.size } } - markedSize }
+    var markedSize: Int64 { markedBytes }
+    var keptCount: Int { fileCount - markedCount }
+    var keptSize: Int64 { fileBytes - markedBytes }
 
     func markedSize(in group: DuplicateGroup) -> Int64 {
-        group.files.filter { marked.contains($0.id) }.reduce(0) { $0 + $1.item.size }
+        group.files.reduce(0) { marked.contains($1.id) ? $0 + $1.item.size : $0 }
     }
 
     func isMarked(_ file: AnalyzedFile) -> Bool { marked.contains(file.id) }
+
+    /// Copies of the group that stay on disk.
+    func kept(in group: DuplicateGroup) -> [AnalyzedFile] { group.files.filter { !marked.contains($0.id) } }
+
+    // MARK: Marked counters
+
+    private func recountFiles() {
+        var bytes: Int64 = 0
+        var count = 0
+        var sizes: [URL: Int64] = [:]
+        for g in groups {
+            for f in g.files {
+                bytes += f.item.size
+                count += 1
+                sizes[f.id] = f.item.size
+            }
+        }
+        fileBytes = bytes
+        fileCount = count
+        sizeByID = sizes
+    }
+
+    private func mark(_ id: URL) {
+        if marked.insert(id).inserted {
+            markedCount += 1
+            markedBytes += sizeByID[id] ?? 0
+        }
+    }
+
+    private func unmark(_ id: URL) {
+        if marked.remove(id) != nil {
+            markedCount -= 1
+            markedBytes -= sizeByID[id] ?? 0
+        }
+    }
+
+    /// Rebuilds the counters from scratch (after groups changed under the selection).
+    private func recountMarked() {
+        markedCount = marked.count
+        markedBytes = marked.reduce(0) { $0 + (sizeByID[$1] ?? 0) }
+    }
 
     // MARK: Scan
 
@@ -185,15 +260,15 @@ final class DuplicatesModel {
         if remove {
             let othersKept = group.files.contains { $0.id != file.id && !marked.contains($0.id) }
             guard othersKept else { flashRule(group); return }
-            marked.insert(file.id)
+            mark(file.id)
         } else {
-            marked.remove(file.id)
+            unmark(file.id)
         }
     }
 
     /// This copy stays, every other copy of the group goes to the Trash.
     func keepOnly(_ file: AnalyzedFile, in group: DuplicateGroup) {
-        for f in group.files { if f.id == file.id { marked.remove(f.id) } else { marked.insert(f.id) } }
+        for f in group.files { if f.id == file.id { unmark(f.id) } else { mark(f.id) } }
     }
 
     /// Every copy except one per group. A copy the user already chose to keep wins over the default.
@@ -202,17 +277,21 @@ final class DuplicatesModel {
             let kept = g.files.filter { !marked.contains($0.id) }.map(\.id)
             let def = DuplicateRules.defaultKeep(g.files)
             let keep = kept.contains(where: { $0 == def }) ? def : (kept.first ?? def)
-            for f in g.files { if f.id == keep { marked.remove(f.id) } else { marked.insert(f.id) } }
+            for f in g.files { if f.id == keep { unmark(f.id) } else { mark(f.id) } }
         }
     }
 
-    func clearSelection() { marked = [] }
+    func clearSelection() {
+        marked = []
+        markedCount = 0
+        markedBytes = 0
+    }
 
     func resetToDefault() {
-        marked = []
+        clearSelection()
         for g in groups {
             let keep = DuplicateRules.defaultKeep(g.files)
-            for f in g.files where f.id != keep { marked.insert(f.id) }
+            for f in g.files where f.id != keep { mark(f.id) }
         }
     }
 
@@ -220,8 +299,9 @@ final class DuplicatesModel {
     private func normalize() {
         let all = Set(groups.flatMap { $0.files.map(\.id) })
         marked.formIntersection(all)
+        recountMarked()
         for g in groups where g.files.allSatisfy({ marked.contains($0.id) }) {
-            if let keep = DuplicateRules.defaultKeep(g.files) { marked.remove(keep) }
+            if let keep = DuplicateRules.defaultKeep(g.files) { unmark(keep) }
         }
     }
 
@@ -250,23 +330,26 @@ final class DuplicatesModel {
     func requestTrash() {
         let picked = safePicked
         guard let app, !picked.isEmpty else { return }
-        app.ask(Confirmation(
-            title: "Переместить копии в Корзину?",
-            message: "Лишние копии будут перемещены в Корзину, в каждой группе останется хотя бы одна. Их можно вернуть, пока Корзина не очищена.",
-            count: picked.count,
-            bytes: picked.reduce(0) { $0 + $1.item.size },
-            confirmTitle: "Переместить в Корзину",
-            tint: .duplicates,
-            noun: Fmt.copies,
-            action: { [weak self] in self?.startTrash(picked) }
-        ))
+        app.ask(.make(.trash,
+                      message: "Лишние копии попадут в Корзину, в каждой группе останется хотя бы одна. Их можно вернуть, пока Корзина не очищена.",
+                      count: picked.count, bytes: picked.reduce(0) { $0 + $1.item.size },
+                      noun: .copies, tint: .duplicates) { [weak self] in self?.startTrash(picked) })
+    }
+
+    /// «Повторить» on the completion screen: the copies that stayed (they are still listed and marked) go again.
+    func retryFailed() {
+        let failed = Set((result?.failed ?? []).map { $0.url.standardizedFileURL })
+        let again = safePicked.filter { failed.contains($0.id.standardizedFileURL) }
+        guard !again.isEmpty else { return }
+        startTrash(again)
     }
 
     private func startTrash(_ picked: [AnalyzedFile]) {
         let pickedIDs = Set(picked.map(\.id))
         let plan = groups.map { g in (g, g.files.filter { pickedIDs.contains($0.id) }, g.files.filter { !pickedIDs.contains($0.id) }) }
+        // The cleaning scene covers the screen while this runs; the module stays on its results underneath.
+        task?.cancel()
         task = Task {
-            withAnimation(Theme.spring) { phase = .cleaning }
             // A copy we keep must still be on disk right now; otherwise trashing the rest could lose the file.
             var skipped: [RemovalFailure] = []
             var urls: [URL] = []
@@ -285,7 +368,7 @@ final class DuplicatesModel {
         }
     }
 
-    /// One stage per kind of file (largest first), one Trash call per copy so «Остановить» works between copies.
+    /// One stage per kind of file (largest first); Trash calls go in chunks, so «Остановить» works between chunks.
     static func plan(_ picked: [AnalyzedFile], urls: [URL]) -> CleaningPlan {
         var plan = CleaningPlan(title: "Удаление дубликатов", module: .duplicates)
         let sizes = CleaningPrep.sizes(picked.map { ($0.item.url, $0.item.size) })
@@ -310,10 +393,13 @@ final class DuplicatesModel {
 
     func forget(_ removed: Set<URL>) {
         guard !removed.isEmpty else { return }
-        for i in groups.indices {
-            groups[i].files.removeAll { removed.contains($0.id.standardizedFileURL) }
+        // One assignment: `groups` has observers that rebuild the caches.
+        var updated = groups
+        for i in updated.indices {
+            updated[i].files.removeAll { removed.contains($0.id.standardizedFileURL) }
         }
-        groups.removeAll { $0.files.count < 2 }
+        updated.removeAll { $0.files.count < 2 }
+        groups = updated
         normalize()
     }
 

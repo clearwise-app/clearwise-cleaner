@@ -4,21 +4,26 @@ import SpaceEngine
 
 struct DiskMapView: View {
     let model: DiskMapModel
+    @Environment(AppModel.self) private var app
 
     var body: some View {
         switch model.phase {
         case .idle, .scanning:
             ModuleStage(module: .diskMap,
                         state: model.phase == .scanning ? .progress(model.progress) : .idle(button: "Сканировать", enabled: true),
-                        onAction: model.startScan, onStop: model.stop) {
+                        onAction: model.startScan, onStop: model.stop,
+                        onGrantAccess: app.presentAccessSheet) {
                 LocationPicker(model: model)
             }
-        case .results:
+        case .results, .cleaning:
+            // While objects move, the cleaning scene covers this screen; there is no screen of its own.
             DiskMapResults(model: model)
-        case .cleaning:
-            ModuleStage(module: .diskMap, title: "Перемещаем в Корзину", subtitle: "Ещё пара секунд…", state: .busy(""))
         case .done:
-            CompletionView(tint: .diskMap, result: model.result ?? RemovalResult(), title: "Место освобождено",
+            CompletionView(tint: .diskMap, result: model.result ?? RemovalResult(), title: "Перемещено в Корзину",
+                           noun: .items,
+                           onGrantAccess: app.presentAccessSheet,
+                           onRetry: model.retryFailed,
+                           onEmptyTrash: app.requestEmptyTrash,
                            onDone: model.finish)
         }
     }
@@ -52,10 +57,13 @@ private struct DiskMapResults: View {
             HStack(spacing: 12) {
                 Breadcrumbs(model: model)
                 Spacer()
-                Button { model.startScan() } label: { Label("Обновить", systemImage: "arrow.clockwise") }
+                Button { model.startScan() } label: { Label("Сканировать заново", systemImage: "arrow.clockwise") }
                     .buttonStyle(PillButtonStyle(kind: .secondary))
-                Button { withAnimation(Theme.spring) { model.phase = .idle } } label: {
-                    Label("Другое место", systemImage: "folder")
+                Button {
+                    // Pick, then scan: the label promises a folder dialog, not a detour through the start screen.
+                    if model.chooseFolder() { model.startScan() }
+                } label: {
+                    Label("Другая папка…", systemImage: "folder")
                 }
                 .buttonStyle(PillButtonStyle(kind: .quiet))
             }
@@ -65,6 +73,14 @@ private struct DiskMapResults: View {
             HStack(alignment: .top, spacing: 18) {
                 SunburstView(model: model, segments: segments)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    // Floats over the map's bottom edge (the list stays clear), so nothing jumps when a refusal appears.
+                    .overlay(alignment: .bottom) {
+                        if let refusal = model.lastRefusal {
+                            RefusalBanner(refusal: refusal, onDismiss: model.dismissRefusal)
+                                .padding(.bottom, 6)
+                                .transition(Theme.motion(.move(edge: .bottom).combined(with: .opacity)))
+                        }
+                    }
                 ChildrenList(model: model, colors: Dictionary(segments.filter { $0.depth == 1 }.map { ($0.id, $0.color) },
                                                                uniquingKeysWith: { a, _ in a }))
                     .frame(width: 330)
@@ -76,6 +92,45 @@ private struct DiskMapResults: View {
             CollectorTray(model: model)
                 .padding(.horizontal, 28)
                 .padding(.bottom, 22)
+        }
+    }
+}
+
+/// Why «+» or a drop was refused: a warning of its own with a close button, not text squeezed into the hint.
+private struct RefusalBanner: View {
+    let refusal: DiskMapModel.Refusal
+    let onDismiss: () -> Void
+    @Environment(\.isSnapshot) private var isSnapshot
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Theme.warning)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(refusal.title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Theme.text)
+                    .lineLimit(2)
+                Text(refusal.detail)
+                    .font(.caption12)
+                    .foregroundStyle(Theme.textSecondary)
+                    .lineLimit(2)
+            }
+            .accessibilityElement(children: .combine)
+            Spacer(minLength: 8)
+            IconButton(symbol: "xmark", help: "Закрыть", size: 22, action: onDismiss)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.black.opacity(0.55)))
+        .glass(radius: 14, shadow: false)
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Theme.warning.opacity(0.55), lineWidth: 1))
+        .frame(maxWidth: 640)
+        .onAppear {
+            guard !isSnapshot else { return }
+            AccessibilityNotification.Announcement("\(refusal.title). \(refusal.detail)").post()
         }
     }
 }
@@ -121,6 +176,9 @@ private struct ChildrenList: View {
     let colors: [UUID: Color]
 
     var body: some View {
+        // Read once, hand down as plain values: rows must not each observe the hover or the collector.
+        let hovered = model.hoveredID
+        let collectedURLs = Set(model.collector.map(\.url))
         VStack(spacing: 0) {
             if let focus = model.focus {
                 HStack(alignment: .firstTextBaseline) {
@@ -137,12 +195,14 @@ private struct ChildrenList: View {
                 Hairline()
                 ScrollView {
                     LazyVStack(spacing: 0) {
-                        let kids = model.children(of: focus)
+                        let kids = model.children(of: focus).map { ($0, model.size(of: $0)) }
                         let total = max(1, model.size(of: focus))
-                        ForEach(Array(kids.prefix(150).enumerated()), id: \.element.id) { _, child in
+                        ForEach(kids.prefix(150), id: \.0.id) { child, size in
                             ChildRow(model: model, node: child, actionable: model.isActionable(child, in: focus),
                                      color: colors[child.id] ?? .white.opacity(0.3),
-                                     fraction: Double(model.size(of: child)) / Double(total))
+                                     fraction: Double(size) / Double(total), size: size,
+                                     highlighted: hovered == child.id,
+                                     collected: collectedURLs.contains(child.url))
                         }
                     }
                     .padding(.vertical, 4)
@@ -154,17 +214,26 @@ private struct ChildrenList: View {
     }
 }
 
+/// One child of the focused folder. Takes plain values only (`size`, `highlighted`, `collected`), so a hover on
+/// the map re-runs `ChildrenList` once instead of every row. Keyboard: the row is focusable, Return opens the
+/// folder on the map, «+» puts it into the collector; VoiceOver gets the same as actions.
 private struct ChildRow: View {
     let model: DiskMapModel
     let node: DirectoryNode
     let actionable: Bool
     let color: Color
     let fraction: Double
+    let size: Int64
+    /// The segment on the map under the pointer is this row's.
+    let highlighted: Bool
+    let collected: Bool
     @State private var hover = false
+    @FocusState private var focused: Bool
+
+    private var active: Bool { hover || highlighted || focused }
+    private var title: String { actionable ? node.name : SpaceMapper.otherName }
 
     var body: some View {
-        let highlighted = hover || model.hoveredID == node.id
-        let collected = model.collector.contains { $0.url == node.url }
         let row = HStack(spacing: 10) {
             RoundedRectangle(cornerRadius: 3).fill(actionable ? color : .white.opacity(0.2)).frame(width: 4, height: 26)
             Group {
@@ -177,7 +246,7 @@ private struct ChildRow: View {
             }
             .frame(width: 20, height: 20)
             VStack(alignment: .leading, spacing: 3) {
-                Text(actionable ? node.name : SpaceMapper.otherName)
+                Text(title)
                     .font(.system(size: 12.5, weight: .medium))
                     .foregroundStyle(actionable ? Theme.text : Theme.textSecondary)
                     .lineLimit(1)
@@ -192,36 +261,82 @@ private struct ChildRow: View {
                 .frame(height: 3)
             }
             Spacer(minLength: 4)
-            if actionable && highlighted && !collected {
-                IconButton(symbol: "plus", help: "В сборщик", size: 22) { model.collect(node, parent: model.focus) }
+            if actionable && active && !collected {
+                IconButton(symbol: "plus", help: "В сборщик (+)", size: 22) { model.collect(node, parent: model.focus) }
+                    .focusable(false)
             } else if collected {
                 Image(systemName: "tray.full.fill").font(.system(size: 11)).foregroundStyle(ModuleTint.diskMap.accent)
             }
-            SizeText(bytes: model.size(of: node), font: .system(size: 12, weight: .medium, design: .rounded),
+            SizeText(bytes: size, font: .system(size: 12, weight: .medium, design: .rounded),
                      color: Theme.textSecondary)
                 .frame(minWidth: 58, alignment: .trailing)
         }
         .padding(.horizontal, 14)
         .frame(height: 44)
-        .background(Rectangle().fill(.white.opacity(highlighted && actionable ? 0.06 : 0)))
+        .background(Rectangle().fill(.white.opacity(active && actionable ? 0.06 : 0)))
+        .overlay {
+            if focused {
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .strokeBorder(ModuleTint.diskMap.accent.opacity(0.85), lineWidth: 1.5)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .allowsHitTesting(false)
+            }
+        }
         .contentShape(Rectangle())
         .onHover { h in
             hover = h
             model.hoveredID = h && actionable ? node.id : nil
         }
-        .help(actionable ? node.url.path : "Много мелких объектов вместе — их нельзя удалить одним действием")
+        .help(actionable ? node.url.path : "Много мелких объектов вместе — их нельзя убрать одним действием")
 
         if actionable {
             row
-                .onTapGesture(count: 2) { if node.isDirectory { model.zoom(into: node) } }
+                .onTapGesture(count: 2) { open() }
+                .focusable()
+                .focusEffectDisabled()
+                .focused($focused)
+                .onKeyPress(characters: CharacterSet(charactersIn: "+=")) { _ in
+                    model.collect(node, parent: model.focus)
+                    return .handled
+                }
+                .onKeyPress(.return) {
+                    guard node.isDirectory else { return .ignored }
+                    open()
+                    return .handled
+                }
                 .draggable(node.url)
                 .contextMenu {
-                    if node.isDirectory { Button("Открыть на карте") { model.zoom(into: node) } }
+                    if node.isDirectory { Button("Открыть на карте") { open() } }
                     Button("Добавить в сборщик") { model.collect(node, parent: model.focus) }
                     Button("Показать в Finder") { Finder.reveal(node.url) }
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityValue(collected ? "в сборщике" : "")
+                .accessibilityAction { if node.isDirectory { open() } else { model.collect(node, parent: model.focus) } }
+                .accessibilityAction(named: "Добавить в сборщик") { model.collect(node, parent: model.focus) }
+                .modifier(OpenOnMapAction(isDirectory: node.isDirectory, open: open))
+                .accessibilityAction(named: "Показать в Finder") { Finder.reveal(node.url) }
         } else {
-            row
+            row.accessibilityElement(children: .combine)
+        }
+    }
+
+    private func open() {
+        if node.isDirectory { model.zoom(into: node) }
+    }
+}
+
+private struct OpenOnMapAction: ViewModifier {
+    let isDirectory: Bool
+    let open: () -> Void
+
+    func body(content: Content) -> some View {
+        if isDirectory {
+            content.accessibilityAction(named: "Открыть на карте", open)
+        } else {
+            content
         }
     }
 }
@@ -237,17 +352,17 @@ private struct CollectorTray: View {
                 Text("Сборщик")
                     .font(.system(size: 13.5, weight: .semibold))
                     .foregroundStyle(Theme.text)
-                Text(model.lastRefusal ?? (model.collector.isEmpty
-                     ? "Перетащите сюда папки и файлы, которые хотите удалить, или нажмите «+» в списке."
-                     : "\(Fmt.items(model.collector.count).capitalizedFirst) · \(Fmt.size(model.collectorSize))"))
+                Text(model.collector.isEmpty
+                     ? "Перетащите сюда папки и файлы или нажмите «+» в списке — потом всё сразу уйдёт в Корзину."
+                     : "\(Fmt.items(model.collector.count).capitalizedFirst) · \(Fmt.size(model.collectorSize))")
                     .font(.caption12)
-                    .foregroundStyle(model.lastRefusal == nil ? Theme.textSecondary : Theme.warning)
+                    .foregroundStyle(Theme.textSecondary)
                     .lineLimit(2)
             }
             .frame(width: model.collector.isEmpty ? nil : 190, alignment: .leading)
 
             if !model.collector.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
+                ScrollView(.horizontal) {
                     HStack(spacing: 8) {
                         ForEach(model.collector) { item in
                             CollectedChip(item: item) { model.uncollect(item) }
@@ -255,6 +370,7 @@ private struct CollectorTray: View {
                     }
                     .padding(.vertical, 4)
                 }
+                .scrollIndicators(.hidden)
                 Button("В Корзину") { model.requestTrash() }
                     .buttonStyle(PillButtonStyle(kind: .primary(.diskMap), large: true))
             } else {

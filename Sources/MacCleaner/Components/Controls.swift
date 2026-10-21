@@ -167,21 +167,40 @@ struct PillButtonStyle: ButtonStyle {
         @State private var hover = false
 
         var body: some View {
+            let height: CGFloat = large ? 38 : 30
+            // A rounded rectangle with radius = height / 2, not `Capsule`: stroking a Capsule leaves thin
+            // vertical hairlines just outside both ends (degenerate straight segments in its path), which
+            // showed on every large pill. Same outline, no artifacts.
+            let shape = RoundedRectangle(cornerRadius: height / 2, style: .circular)
             configuration.label
                 .font(.system(size: large ? 14 : 12.5, weight: .semibold))
                 .foregroundStyle(foreground)
                 .padding(.horizontal, large ? 20 : 14)
-                .frame(height: large ? 38 : 30)
-                .background(background)
-                .clipShape(Capsule())
-                .overlay(Capsule().strokeBorder(.white.opacity(strokeOpacity), lineWidth: 0.75))
+                .frame(height: height)
+                .background {
+                    ZStack {
+                        background
+                        // Hover wash for the gradient kinds (secondary/quiet brighten their own fill);
+                        // a fill rather than `.brightness`, which re-filtered the whole layer.
+                        if hover && isEnabled && isFilled { Color.white.opacity(0.08) }
+                    }
+                    .clipShape(shape)
+                }
+                .overlay(shape.strokeBorder(.white.opacity(strokeOpacity), lineWidth: 0.75))
+                .contentShape(shape)
                 .shadow(color: shadowColor, radius: 10, y: 4)
                 .scaleEffect(configuration.isPressed ? 0.97 : 1)
-                .brightness(hover && isEnabled ? 0.06 : 0)
                 .opacity(isEnabled ? 1 : 0.4)
                 .onHover { hover = $0 }
                 .animation(Theme.quick, value: configuration.isPressed)
                 .animation(Theme.quick, value: hover)
+        }
+
+        private var isFilled: Bool {
+            switch kind {
+            case .primary, .destructive: true
+            case .secondary, .quiet: false
+            }
         }
 
         private var foreground: Color {

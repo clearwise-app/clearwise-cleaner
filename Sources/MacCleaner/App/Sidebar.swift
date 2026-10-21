@@ -12,11 +12,13 @@ struct Sidebar: View {
 
             HStack(spacing: 10) {
                 AppGlyph(size: 30)
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 0) {
                     Text("MacCleaner").font(.system(size: 14, weight: .bold)).foregroundStyle(Theme.text)
-                    Text("Чисто и безопасно").font(.system(size: 11)).foregroundStyle(Theme.textTertiary)
+                    Text("Чисто и безопасно").font(.system(size: 11)).foregroundStyle(.themeTertiary)
                 }
             }
+            .accessibilityElement(children: .combine)
             .padding(.horizontal, 18)
             .padding(.bottom, 22)
 
@@ -33,16 +35,11 @@ struct Sidebar: View {
             Spacer(minLength: 12)
 
             SidebarStorage().padding(.horizontal, 14).padding(.bottom, 10)
-            FDAPill().padding(.horizontal, 14).padding(.bottom, 16)
+            FDAPill().padding(.horizontal, 12).padding(.bottom, 16)
         }
         .frame(width: Theme.sidebarWidth)
         .frame(maxHeight: .infinity)
-        .background(
-            ZStack {
-                Color.black.opacity(0.34)
-                LinearGradient(colors: [.white.opacity(0.04), .clear], startPoint: .top, endPoint: .bottom)
-            }
-        )
+        .background(SidebarBackground())
         .overlay(alignment: .trailing) {
             Rectangle().fill(Theme.hairline).frame(width: 1)
         }
@@ -54,44 +51,43 @@ struct Sidebar: View {
         Text(title.uppercased())
             .font(.system(size: 10.5, weight: .semibold))
             .tracking(0.7)
-            .foregroundStyle(Theme.textTertiary)
+            .foregroundStyle(.themeTertiary)
             .padding(.horizontal, 22)
             .padding(.top, 18)
             .padding(.bottom, 6)
+            .accessibilityAddTraits(.isHeader)
     }
 
     private func item(_ module: AppModule) -> some View {
-        SidebarItem(module: module, selected: model.selection == module, badge: badge(for: module)) {
+        SidebarItem(module: module, selected: model.selection == module) {
+            ModuleBadge(module: module)
+        } action: {
             model.select(module)
         }
         .padding(.horizontal, 10)
     }
+}
 
-    private func badge(for module: AppModule) -> String? {
-        switch module {
-        case .smartCare:
-            return model.smartCare.phase == .scanning ? "…" : nil
-        case .junk:
-            if model.junk.phase == .scanning { return "\(Int(model.junk.progress.fraction * 100))%" }
-            return model.junk.phase == .results && model.junk.totalSize > 0 ? Fmt.size(model.junk.totalSize) : nil
-        case .uninstaller:
-            return model.appsState == .loaded ? "\(model.apps.filter { !$0.isSystemApp }.count)" : nil
-        case .oldFiles:
-            return model.oldFiles.phase == .results && model.oldFiles.totalSize > 0 ? Fmt.size(model.oldFiles.totalSize) : nil
-        case .duplicates:
-            let d = model.duplicates
-            if d.phase == .scanning { return "\(Int(d.progress.fraction * 100))%" }
-            return d.phase == .results && d.reclaimable > 0 ? Fmt.size(d.reclaimable) : nil
-        case .diskMap:
-            return nil
+/// Reduce Transparency: an opaque sidebar instead of the translucent dark wash.
+private struct SidebarBackground: View {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    var body: some View {
+        if reduceTransparency {
+            Color(hex: 0x0E0C14)
+        } else {
+            ZStack {
+                Color.black.opacity(0.34)
+                LinearGradient(colors: [.white.opacity(0.04), .clear], startPoint: .top, endPoint: .bottom)
+            }
         }
     }
 }
 
-private struct SidebarItem: View {
+private struct SidebarItem<Badge: View>: View {
     let module: AppModule
     let selected: Bool
-    let badge: String?
+    @ViewBuilder let badge: Badge
     let action: () -> Void
     @State private var hover = false
 
@@ -99,19 +95,13 @@ private struct SidebarItem: View {
         Button(action: action) {
             HStack(spacing: 9) {
                 IconTile(symbol: module.symbol, tint: module.tint, size: 26)
+                    .accessibilityHidden(true)
                 Text(module.sidebarTitle)
                     .font(.system(size: 13, weight: selected ? .semibold : .medium))
                     .foregroundStyle(selected ? Theme.text : Theme.text.opacity(0.82))
                     .lineLimit(1)
                 Spacer(minLength: 0)
-                if let badge {
-                    Text(badge)
-                        .font(.system(size: 10.5, weight: .medium, design: .rounded))
-                        .lineLimit(1)
-                        .fixedSize()
-                        .monospacedDigit()
-                        .foregroundStyle(Theme.textTertiary)
-                }
+                badge
             }
             .padding(.horizontal, 8)
             .frame(height: 38)
@@ -126,13 +116,117 @@ private struct SidebarItem: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? .isSelected : [])
         .onHover { hover = $0 }
         .animation(Theme.quick, value: hover)
     }
 }
 
+// MARK: - Badges
+
+/// Each badge is its own view that reads only its module, so a scan tick in one module re-renders
+/// one small badge — not the whole sidebar. Percentages are whole numbers: the text changes ≤ 100 times.
+private struct ModuleBadge: View {
+    let module: AppModule
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        switch module {
+        case .smartCare: SmartCareBadge(model: model.smartCare)
+        case .junk: JunkBadge(model: model.junk)
+        case .uninstaller: AppsBadge()
+        case .oldFiles: OldFilesBadge(model: model.oldFiles)
+        case .duplicates: DuplicatesBadge(model: model.duplicates)
+        case .diskMap: EmptyView()
+        }
+    }
+}
+
+private struct SmartCareBadge: View {
+    let model: SmartCareModel
+    var body: some View {
+        if model.phase == .scanning { BadgeText(text: "…", spoken: "сканирование") }
+    }
+}
+
+private struct JunkBadge: View {
+    let model: JunkModel
+    var body: some View {
+        if model.phase == .scanning {
+            PercentBadge(percent: Int(model.progress.fraction * 100))
+        } else if model.phase == .results, model.totalSize > 0 {
+            SizeBadge(bytes: model.totalSize)
+        }
+    }
+}
+
+private struct AppsBadge: View {
+    @Environment(AppModel.self) private var model
+    var body: some View {
+        if model.appsState == .loaded {
+            let n = model.nonSystemAppCount
+            BadgeText(text: Fmt.integer(n), spoken: Fmt.apps(n))
+        }
+    }
+}
+
+private struct OldFilesBadge: View {
+    let model: OldFilesModel
+    var body: some View {
+        if model.phase == .scanning {
+            PercentBadge(percent: Int(model.progress.fraction * 100))
+        } else if model.phase == .results, model.totalSize > 0 {
+            SizeBadge(bytes: model.totalSize)
+        }
+    }
+}
+
+private struct DuplicatesBadge: View {
+    let model: DuplicatesModel
+    var body: some View {
+        if model.phase == .scanning {
+            PercentBadge(percent: Int(model.progress.fraction * 100))
+        } else if model.phase == .results, model.reclaimable > 0 {
+            SizeBadge(bytes: model.reclaimable)
+        }
+    }
+}
+
+private struct PercentBadge: View, Equatable {
+    let percent: Int
+    var body: some View {
+        BadgeText(text: Fmt.percent(Double(percent) / 100), spoken: "сканирование \(Fmt.percent(Double(percent) / 100))")
+    }
+}
+
+private struct SizeBadge: View, Equatable {
+    let bytes: Int64
+    var body: some View {
+        BadgeText(text: Fmt.size(bytes), spoken: "найдено \(Fmt.size(bytes))")
+    }
+}
+
+private struct BadgeText: View, Equatable {
+    let text: String
+    /// What VoiceOver reads after the module name: «найдено 28,1 ГБ», «сканирование 47 %».
+    let spoken: String
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 10.5, weight: .medium, design: .rounded))
+            .lineLimit(1)
+            .fixedSize()
+            .monospacedDigit()
+            .foregroundStyle(.themeTertiary)
+            .accessibilityLabel(spoken)
+    }
+}
+
+// MARK: - Storage widget
+
 /// Bottom-left disk widget: free space, the disk as coloured category segments, the top categories in percent.
-/// Hovering a segment shows its share and size; hovering (or clicking) the widget opens the full breakdown.
+/// A real button: click, Space or Return pins the full breakdown card (Esc closes it); hovering opens it too,
+/// and hovering a segment shows its share and size. VoiceOver reads it as a list of categories.
 private struct SidebarStorage: View {
     @Environment(AppModel.self) private var model
     @State private var hoveredSegment: StorageCategory.Kind?
@@ -143,6 +237,7 @@ private struct SidebarStorage: View {
     @State private var cardTask: Task<Void, Never>?
     @State private var tooltipSize = CGSize(width: 160, height: 42)
     @State private var titleHeight: CGFloat = 30
+    @FocusState private var focused: Bool
 
     private static let barHeight: CGFloat = 8
     private var storage: StorageModel { model.storage }
@@ -150,6 +245,32 @@ private struct SidebarStorage: View {
     private var showsCard: Bool { cardVisible || pinned || storage.debugShowsDetails }
 
     var body: some View {
+        Button(action: activate) {
+            widget
+        }
+        .buttonStyle(StorageWidgetStyle(highlighted: hoverWidget || showsCard, outlined: showsCard || focused))
+        .focused($focused)
+        .onHover { inside in
+            hoverWidget = inside
+            if !inside { hoveredSegment = nil }
+            scheduleCard()
+        }
+        .onExitCommand { if showsCard { close() } }
+        .overlay(alignment: .bottomLeading) { card }
+        .animation(Theme.quick, value: hoverWidget)
+        .animation(Theme.spring, value: showsCard)
+        .help(storage.breakdown == nil ? "Показать, что занимает место на диске" : "")
+        .accessibilityRepresentation {
+            VStack {
+                Button(accessibilityTitle, action: activate)
+                    .accessibilityHint(storage.breakdown == nil ? "Измерить, что занимает место"
+                                                                : (showsCard ? "Закрыть подробности" : "Показать подробности"))
+                ForEach(accessibilityRows, id: \.self) { Text($0) }
+            }
+        }
+    }
+
+    private var widget: some View {
         VStack(alignment: .leading, spacing: 8) {
             titleRow
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { titleHeight = $0 }
@@ -165,10 +286,10 @@ private struct SidebarStorage: View {
                 StorageShimmerBar(height: Self.barHeight)
                 Text("Считаем, что занимает место…")
                     .font(.system(size: 10.5))
-                    .foregroundStyle(Theme.textTertiary)
+                    .foregroundStyle(.themeTertiary)
                     .lineLimit(1)
             } else {
-                // Not measured yet (no Full Disk Access, nothing scanned): plain used/free bar + an explicit action.
+                // Not measured yet (no Full Disk Access, nothing scanned): plain used/free bar + what a click does.
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         Capsule().fill(.white.opacity(0.08))
@@ -177,34 +298,26 @@ private struct SidebarStorage: View {
                     }
                 }
                 .frame(height: Self.barHeight)
-                Button { storage.requestMeasure() } label: {
-                    Label("Показать, чем занят диск", systemImage: "chart.bar.xaxis")
-                        .font(.system(size: 11, weight: .medium))
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(ModuleTint.smartCare.accent)
+                Label("Показать, чем занят диск", systemImage: "chart.bar.xaxis")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(ModuleTint.smartCare.accent)
             }
         }
         .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(.white.opacity(hoverWidget || showsCard ? 0.085 : 0.06))
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(.white.opacity(showsCard ? 0.1 : 0), lineWidth: 0.75))
-        )
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .onTapGesture { if storage.breakdown == nil { storage.requestMeasure() } else { togglePinned() } }
-        .onHover { inside in
-            hoverWidget = inside
-            if !inside { hoveredSegment = nil }
-            scheduleCard()
-        }
-        .overlay(alignment: .bottomLeading) { card }
-        .animation(Theme.quick, value: hoverWidget)
-        .animation(Theme.spring, value: showsCard)
-        .accessibilityElement(children: .contain)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityHint("Показать, что занимает место на диске")
+    }
+
+    // MARK: Accessibility
+
+    private var accessibilityTitle: String {
+        "\(name): свободно \(Fmt.size(free)) из \(Fmt.size(total))"
+    }
+
+    /// «Приложения — 14 %, 71,3 ГБ», in the bar's order, then free space.
+    private var accessibilityRows: [String] {
+        guard let b = storage.breakdown else { return [] }
+        return StorageSegmentBar.order(b).map { "\($0.title) — \(StorageFmt.percent(b.share($0.bytes))), \(Fmt.size($0.bytes))" }
+            + ["Свободно — \(StorageFmt.percent(b.share(b.free))), \(Fmt.size(b.free))"]
     }
 
     // MARK: Parts
@@ -218,7 +331,7 @@ private struct SidebarStorage: View {
         let nameLabel = HStack(spacing: 5) {
             Image(systemName: "internaldrive.fill")
                 .font(.system(size: 10.5))
-                .foregroundStyle(Theme.textSecondary)
+                .foregroundStyle(.themeSecondary)
             Text(name)
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(Theme.text)
@@ -227,7 +340,7 @@ private struct SidebarStorage: View {
         let freeLabel = Text(freeText)
             .font(.system(size: 10.5, design: .rounded))
             .monospacedDigit()
-            .foregroundStyle(Theme.textTertiary)
+            .foregroundStyle(.themeTertiary)
             .lineLimit(1)
         return ViewThatFits(in: .horizontal) {
             HStack(spacing: 6) {
@@ -242,9 +355,10 @@ private struct SidebarStorage: View {
         }
     }
 
-    /// Top four categories in two content-sized columns: "● Приложения 12%".
+    /// Top four categories in the bar's order, two content-sized columns: category icon, name, «12 %».
+    /// Icons, not colour dots: several palette pairs merge under colour-vision deficiencies.
     private func legend(_ b: StorageBreakdown) -> some View {
-        let top = Array(b.categories.filter { $0.bytes > 0 }.prefix(4))
+        let top = Array(StorageSegmentBar.order(b).prefix(4))
         let rows = stride(from: 0, to: top.count, by: 2).map { Array(top[$0..<min($0 + 2, top.count)]) }
         return Grid(alignment: .leading, horizontalSpacing: 4, verticalSpacing: 4) {
             ForEach(rows.indices, id: \.self) { r in
@@ -263,9 +377,13 @@ private struct SidebarStorage: View {
     @ViewBuilder
     private func legendCell(_ c: StorageCategory, share: Double, gap: Bool) -> some View {
         let opacity = hovered != nil && hovered != c.kind ? 0.45 : 1
-        Circle().fill(c.kind.color).frame(width: 6, height: 6).opacity(opacity)
+        Image(systemName: c.kind.symbol)
+            .font(.system(size: 8.5, weight: .bold))
+            .foregroundStyle(c.kind.color)
+            .frame(width: 11)
+            .opacity(opacity)
         Text(c.kind.shortTitle)
-            .foregroundStyle(Theme.textSecondary)
+            .foregroundStyle(.themeSecondary)
             .lineLimit(1)
             .fixedSize()
             .opacity(opacity)
@@ -303,27 +421,37 @@ private struct SidebarStorage: View {
         if showsCard, let b = storage.breakdown {
             StorageDetailCard(breakdown: b, hovered: hovered,
                               onHover: { hoveredSegment = $0 },
-                              onClose: pinned ? { togglePinned() } : nil)
+                              onClose: pinned ? { close() } : nil,
+                              onGrantAccess: { close(); model.presentAccessSheet() })
                 .onHover { inside in
                     hoverCard = inside
                     if !inside { hoveredSegment = nil }
                     scheduleCard()
                 }
+                // Esc closes the card from anywhere in the window, not only with the widget focused.
+                .background {
+                    Button("Закрыть", action: close)
+                        .keyboardShortcut(.cancelAction)
+                        .opacity(0)
+                        .frame(width: 0, height: 0)
+                        .accessibilityHidden(true)
+                }
                 // Past the sidebar's right edge (the widget is inset 14 pt), bottom-aligned with the widget.
                 .offset(x: Theme.sidebarWidth - 14 + 10)
-                .transition(.opacity.combined(with: .offset(x: -8)))
+                .transition(Theme.motion(.opacity.combined(with: .offset(x: -8))))
         }
     }
 
     // MARK: Behaviour
 
-    private func togglePinned() {
-        if pinned {
-            pinned = false
-            cardVisible = false
-        } else {
-            pinned = true
-        }
+    private func activate() {
+        if storage.breakdown == nil { storage.requestMeasure() } else if showsCard { close() } else { pinned = true }
+    }
+
+    private func close() {
+        cardTask?.cancel()
+        pinned = false
+        cardVisible = false
     }
 
     /// Opens the card after a short hover over the widget (not while pointing at a segment, which has its own
@@ -349,36 +477,106 @@ private struct SidebarStorage: View {
     }
 }
 
+private struct StorageWidgetStyle: ButtonStyle {
+    let highlighted: Bool
+    let outlined: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(.white.opacity(configuration.isPressed ? 0.1 : (highlighted ? 0.085 : 0.06)))
+                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(.white.opacity(outlined ? 0.1 : 0), lineWidth: 0.75))
+            )
+    }
+}
+
+// MARK: - Access pill
+
+/// «Нет полного доступа · Дать доступ» (yellow) opens the access sheet; with access, a green status
+/// that shows «Доступ открыт» in a popover. A revoked access only turns this pill yellow — no dialogs.
 private struct FDAPill: View {
     @Environment(AppModel.self) private var model
+    @State private var showsPopover = false
+    @State private var hover = false
 
     var body: some View {
+        let granted = model.hasFullDiskAccess
+        // Radius = height / 2 on a rounded rectangle: a stroked `Capsule` leaves hairlines at both ends.
+        let shape = RoundedRectangle(cornerRadius: 15, style: .circular)
         Button {
-            if model.hasFullDiskAccess { model.refreshSystemState() } else { Permissions.openFullDiskAccessSettings() }
+            if granted { showsPopover.toggle() } else { model.presentAccessSheet() }
         } label: {
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(model.hasFullDiskAccess ? Theme.success : Theme.warning)
-                    .frame(width: 7, height: 7)
-                    .shadow(color: (model.hasFullDiskAccess ? Theme.success : Theme.warning).opacity(0.8), radius: 4)
-                Text(model.hasFullDiskAccess ? "Полный доступ к диску" : "Доступ к диску")
-                    .font(.system(size: 11.5, weight: .medium))
-                    .foregroundStyle(Theme.textSecondary)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
-                if !model.hasFullDiskAccess {
-                    Text("Настроить")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Theme.warning)
+            HStack(spacing: 6) {
+                Image(systemName: granted ? "checkmark.shield.fill" : "exclamationmark.shield.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(granted ? Theme.success : Theme.warning)
+                if granted {
+                    Text("Полный доступ к диску")
+                        .foregroundStyle(.themeSecondary)
+                } else {
+                    // «Нет полного доступа · Дать доступ»; the dot goes first when the sidebar is tight.
+                    ViewThatFits(in: .horizontal) {
+                        missingLabel(separator: true)
+                        missingLabel(separator: false)
+                    }
                 }
+                Spacer(minLength: 0)
             }
-            .padding(.horizontal, 12)
+            .font(.system(size: 11.5, weight: .medium))
+            .lineLimit(1)
+            .padding(.horizontal, 10)
             .frame(height: 30)
-            .background(Capsule().fill(.white.opacity(0.06)))
-            .contentShape(Capsule())
+            .background(
+                shape.fill(granted ? Color.white.opacity(hover ? 0.09 : 0.06)
+                                   : Theme.warning.opacity(hover ? 0.2 : 0.14))
+            )
+            .overlay(shape.strokeBorder(granted ? Color.clear : Theme.warning.opacity(0.4), lineWidth: 0.75))
+            .contentShape(shape)
         }
         .buttonStyle(.plain)
-        .help(model.hasFullDiskAccess ? "MacCleaner видит все файлы, которые нужны для сканирования." : "Откройте Настройки → Конфиденциальность → Полный доступ к диску и включите MacCleaner.")
+        .onHover { hover = $0 }
+        .popover(isPresented: $showsPopover, arrowEdge: .top) { AccessGrantedPopover() }
+        .help(granted ? "MacCleaner видит все файлы, которые нужны для сканирования."
+                      : "Системные настройки → Конфиденциальность и безопасность → Полный доступ к диску")
+        .accessibilityLabel(granted ? "Полный доступ к диску включён" : "Нет полного доступа к диску")
+        .accessibilityHint(granted ? "Показать подробности" : "Показать, как дать доступ")
+        .animation(Theme.quick, value: granted)
+    }
+}
+
+private extension FDAPill {
+    func missingLabel(separator: Bool) -> some View {
+        HStack(spacing: separator ? 4 : 8) {
+            Text("Нет полного доступа")
+                .foregroundStyle(Theme.text.opacity(0.9))
+                .fixedSize()
+            if separator { Text("·").foregroundStyle(.themeTertiary) }
+            Text("Дать доступ")
+                .fontWeight(.semibold)
+                .foregroundStyle(Theme.warning)
+                .fixedSize()
+        }
+    }
+}
+
+private struct AccessGrantedPopover: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Доступ открыт", systemImage: "checkmark.shield.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Theme.success)
+            Text("MacCleaner видит все файлы, которые нужны для сканирования. Отключить доступ можно в Системных настройках.")
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("Открыть Системные настройки") { Permissions.openFullDiskAccessSettings() }
+                .buttonStyle(.link)
+                .font(.system(size: 12))
+        }
+        .padding(14)
+        .frame(width: 270)
     }
 }
 

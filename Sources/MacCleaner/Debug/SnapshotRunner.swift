@@ -138,9 +138,7 @@ enum SnapshotRunner {
                 loadApps(m)
                 m.uninstaller.phase = .results
                 selectChrome(m)
-                m.uninstaller.checkedApps = [URL(fileURLWithPath: "/Applications/Xcode-beta.app"),
-                                             URL(fileURLWithPath: "/Applications/GarageBand.app"),
-                                             URL(fileURLWithPath: "/Applications/iMovie.app")]
+                checkApps(m, ["Xcode-beta", "GarageBand", "iMovie"])
             },
             Scene(name: "12b_uninstaller_confirm") { m in
                 m.selection = .uninstaller
@@ -162,6 +160,30 @@ enum SnapshotRunner {
                 m.uninstaller.resultTitle = "«Google Chrome» удалено"
                 m.uninstaller.result = RemovalResult(removed: Array(repeating: MockData.h("x"), count: 11),
                                                      failed: [], freedBytes: 4_431_000_000)
+            },
+            // Batch at the compact size: one app still being searched for leftovers, one running.
+            Scene(name: "uninstaller_batch_summary", size: NSSize(width: 1100, height: 720)) { m in
+                m.selection = .uninstaller
+                loadApps(m)
+                m.uninstaller.phase = .results
+                selectChrome(m)
+                checkApps(m, ["Xcode-beta", "GarageBand", "iMovie", "Google Chrome", "TokenWatch"], pending: ["TokenWatch"])
+            },
+            Scene(name: "orphans_empty") { m in
+                m.selection = .uninstaller
+                loadApps(m)
+                m.uninstaller.phase = .results
+                m.uninstaller.tab = .leftovers
+                m.uninstaller.applyOrphans([])
+            },
+            Scene(name: "uninstaller_system_app") { m in
+                m.selection = .uninstaller
+                loadApps(m)
+                m.uninstaller.phase = .results
+                m.uninstaller.showSystemApps = true
+                m.uninstaller.sort = .name
+                m.uninstaller.selectedAppID = URL(fileURLWithPath: "/Applications/Safari.app")
+                m.uninstaller.remnantsLoading = false
             },
             Scene(name: "15_oldfiles_idle") { m in m.selection = .oldFiles },
             Scene(name: "16_oldfiles_results") { m in
@@ -243,6 +265,22 @@ enum SnapshotRunner {
                 m.smartCare.phase = .results
             },
             Scene(name: "22_compact_oldfiles_idle", size: NSSize(width: 1100, height: 720)) { m in m.selection = .oldFiles },
+            // Wave 2D: empty results of Старые файлы / Дубликаты, and a refused «+» in Карта диска.
+            Scene(name: "oldfiles_empty") { m in
+                m.selection = .oldFiles
+                m.oldFiles.apply([], mode: .old)
+            },
+            Scene(name: "dup_empty") { m in
+                m.selection = .duplicates
+                m.duplicates.apply([])
+            },
+            Scene(name: "diskmap_refusal") { m in
+                m.selection = .diskMap
+                m.diskMap.apply(MockData.diskTree)
+                m.diskMap.hoveredID = m.diskMap.root?.children.first { $0.name == "Library" }?.id
+                // A protected folder, refused by the real SafetyGuard rule.
+                m.diskMap.collect(CollectedItem(url: URL(fileURLWithPath: "/System/Library"), size: 9_000_000_000, isDirectory: true))
+            },
             Scene(name: "23_compact_uninstaller", size: NSSize(width: 1100, height: 720)) { m in
                 m.selection = .uninstaller
                 loadApps(m)
@@ -279,6 +317,35 @@ enum SnapshotRunner {
                 m.selection = .junk
                 m.junk.apply(MockData.junk)
             },
+            // Empty states: nothing found (Smart Care: «Mac в порядке»; Junk: «Мусора не найдено»), with and without access.
+            Scene(name: "smartcare_empty") { m in
+                m.selection = .smartCare
+                m.smartCare.phase = .results
+            },
+            Scene(name: "smartcare_empty_noFDA", fullDiskAccess: false) { m in
+                m.selection = .smartCare
+                m.smartCare.phase = .results
+            },
+            Scene(name: "junk_empty") { m in
+                m.selection = .junk
+                m.junk.apply([])
+            },
+            Scene(name: "junk_empty_noFDA", fullDiskAccess: false) { m in
+                m.selection = .junk
+                m.junk.apply([])
+            },
+            // Trash in the selection: «Удалить навсегда» on the round button and in the confirmation.
+            Scene(name: "junk_trash_selected") { m in
+                m.selection = .junk
+                m.junk.apply(MockData.junk)
+                if let trash = m.junk.categories.first(where: { $0.id == "trash" }) { m.junk.toggle(trash) }
+            },
+            Scene(name: "junk_trash_confirm") { m in
+                m.selection = .junk
+                m.junk.apply(MockData.junk)
+                if let trash = m.junk.categories.first(where: { $0.id == "trash" }) { m.junk.toggle(trash) }
+                m.junk.requestClean()
+            },
             Scene(name: "clean_compact_junk_40", size: NSSize(width: 1100, height: 720)) { m in MockCleaning.junk(m, fraction: 0.4) },
             Scene(name: "clean_compact_uninstall_admin", size: NSSize(width: 1100, height: 720)) { m in MockCleaning.uninstallAdmin(m) },
             // Sidebar disk widget: category segments, a hovered segment's tooltip, the full breakdown card.
@@ -302,6 +369,104 @@ enum SnapshotRunner {
             Scene(name: "storage_loading") { m in
                 m.selection = .junk
                 m.storage.apply(nil)
+            },
+        ] + accessScenes
+    }
+
+    /// The Settings window's content on the window background (the real window sizes itself to the form).
+    private static var settingsScene: some View {
+        SettingsView()
+            .frame(maxHeight: .infinity, alignment: .top)
+            .background(Color(nsColor: .windowBackgroundColor))
+            .preferredColorScheme(.dark)
+    }
+
+    /// Wave 2A: first-run onboarding (steps 1, 2, 2a, 2b, 3 at both window sizes), the access sheet
+    /// from the sidebar pill, toasts, Settings, emptying the Trash (mock items only — never the real Trash).
+    static var accessScenes: [Scene] {
+        let compact = NSSize(width: 1100, height: 720)
+        func onboarding(_ name: String, _ step: AccessFlow.Step, size: NSSize = NSSize(width: 1280, height: 800),
+                        access: Bool = false, relaunch: Bool = false) -> Scene {
+            Scene(name: name, fullDiskAccess: access, size: size) { m in
+                m.presentFlow(.onboarding, step: step)
+                m.accessFlow?.showsRelaunch = relaunch
+            }
+        }
+        return [
+            onboarding("onb_1_welcome", .welcome),
+            onboarding("onb_1_welcome_hasAccess", .welcome, access: true),
+            onboarding("onb_2_prime", .prime),
+            onboarding("onb_2a_waiting", .waiting),
+            onboarding("onb_2a_waiting_relaunch", .waiting, relaunch: true),
+            onboarding("onb_2b_without", .withoutAccess),
+            onboarding("onb_3_granted", .granted, access: true),
+            onboarding("onb_compact_1_welcome", .welcome, size: compact),
+            onboarding("onb_compact_2_prime", .prime, size: compact),
+            onboarding("onb_compact_2a_relaunch", .waiting, size: compact, relaunch: true),
+            onboarding("onb_compact_2b_without", .withoutAccess, size: compact),
+            onboarding("onb_compact_3_granted", .granted, size: compact, access: true),
+            Scene(name: "access_sheet_pill", fullDiskAccess: false) { m in
+                m.selection = .junk
+                m.junk.apply(MockData.junk)
+                m.presentAccessSheet()
+            },
+            Scene(name: "access_sheet_waiting_compact", fullDiskAccess: false, size: compact) { m in
+                m.selection = .oldFiles
+                m.presentAccessSheet()
+                m.accessFlow?.go(.waiting)
+                m.accessFlow?.showsRelaunch = true
+            },
+            Scene(name: "access_sheet_granted", fullDiskAccess: false) { m in
+                m.selection = .junk
+                m.presentAccessSheet()
+                m.applyAccess(granted: true)
+            },
+            Scene(name: "toast_access_granted", fullDiskAccess: false) { m in
+                m.selection = .junk
+                m.junk.apply(MockData.junk)
+                m.applyAccess(granted: true)
+            },
+            Scene(name: "toast_trash_unreadable", fullDiskAccess: false, size: compact) { m in
+                m.selection = .duplicates
+                m.duplicates.apply(MockData.duplicates)
+                m.showToast(Toast(text: "Нет доступа к Корзине — macOS показывает её только с полным доступом к диску",
+                                  symbol: "lock.shield.fill", kind: .warning, actionTitle: "Дать доступ", action: {}))
+            },
+            Scene(name: "sidebar_pill_noFDA", fullDiskAccess: false) { m in
+                m.selection = .oldFiles
+                var b = MockData.storage
+                b.fullDiskAccess = false
+                m.storage.apply(b)
+                m.storage.debugShowsDetails = true
+            },
+            Scene(name: "settings_window", size: NSSize(width: 520, height: 600),
+                  content: { _ in AnyView(settingsScene) }) { _ in },
+            Scene(name: "settings_window_noFDA", fullDiskAccess: false, size: NSSize(width: 520, height: 600),
+                  content: { _ in AnyView(settingsScene) }) { _ in },
+            Scene(name: "empty_trash_confirm") { m in
+                m.selection = .duplicates
+                m.duplicates.phase = .done
+                m.duplicates.result = RemovalResult(removed: Array(repeating: MockData.h("x"), count: 14),
+                                                    failed: [], freedBytes: 12_620_000_000)
+                m.confirmEmptyTrash(MockData.trashItems)
+            },
+            Scene(name: "empty_trash_cleaning", size: compact) { m in
+                m.selection = .duplicates
+                var plan = CleaningPlan(title: "Очистка Корзины", module: .duplicates)
+                plan.symbol = "trash.fill"
+                plan.addStage("Корзина", symbol: "trash.fill", items: MockData.trashItems.map { (url: $0.url, size: $0.size) })
+                let session = CleaningSession(plan: plan)
+                session.simulate(to: 0.6)
+                session.canCancel = true
+                session.frozenTime = MockCleaning.sweepTime
+                m.cleaning = session
+            },
+            Scene(name: "empty_trash_done") { m in
+                m.selection = .duplicates
+                m.trashCompletion = TrashCompletion(
+                    result: RemovalResult(removed: MockData.trashItems.map(\.url), failed: [],
+                                          freedBytes: MockData.trashItems.reduce(0) { $0 + $1.size }),
+                    tint: .duplicates)
             },
         ]
     }
@@ -391,6 +556,18 @@ enum SnapshotRunner {
         m.uninstaller.remnants = rem.sorted { $0.item.size > $1.item.size }
         m.uninstaller.remnantSelection = Set(rem.filter { $0.confidence >= .medium }.map(\.id))
         m.uninstaller.remnantsLoading = false
+        m.uninstaller.runningURLs = [chrome]
+    }
+
+    /// Checks apps by name for the batch scenes; `pending` ones are still being searched for leftovers.
+    private static func checkApps(_ m: AppModel, _ names: [String], pending: Set<String> = []) {
+        let picked = MockData.apps.filter { names.contains($0.name) }
+        m.uninstaller.checkedApps = Set(picked.map(\.url))
+        for a in picked where !pending.contains(a.name) {
+            m.uninstaller.batchRemnants[a.url] = a.name == "Google Chrome"
+                ? MockData.remnants().filter { $0.confidence >= .medium }
+                : MockData.batchRemnants(for: a)
+        }
     }
 
     private static func fillAll(_ m: AppModel) {

@@ -33,6 +33,8 @@ struct SunburstView: View {
                     ProgressView().controlSize(.small).position(x: g.center.x, y: g.center.y + g.hole * 0.62)
                 }
             }
+            // The list next to the chart carries the same data with real controls; the picture is decoration.
+            .accessibilityHidden(true)
             .contentShape(Rectangle())
             .onContinuousHover { phase in
                 switch phase {
@@ -149,7 +151,7 @@ private struct CenterLabel: View {
                     .multilineTextAlignment(.center)
                 BigSize(bytes: h.size, size: 24, weight: .light)
                 if let focus = model.focus {
-                    Text("\(percent(h.size, of: model.size(of: focus))) от «\(model.stack.count == 1 ? model.location.title : focus.name)»")
+                    Text("\(share(h.size, of: model.size(of: focus))) · \(model.stack.count == 1 ? model.location.title : focus.name)")
                         .font(.caption11)
                         .foregroundStyle(Theme.textTertiary)
                         .lineLimit(1)
@@ -175,9 +177,8 @@ private struct CenterLabel: View {
         .minimumScaleFactor(0.7)
     }
 
-    private func percent(_ part: Int64, of total: Int64) -> String {
-        guard total > 0 else { return "0 %" }
-        let v = Double(part) / Double(total) * 100
-        return v < 1 ? "<1 %" : "\(Int(v.rounded())) %"
+    /// «22 %» of the folder in the middle; a sliver reads «<1 %», never «0 %».
+    private func share(_ part: Int64, of total: Int64) -> String {
+        total > 0 ? Fmt.percent(Double(part) / Double(total)) : Fmt.percent(0)
     }
 }

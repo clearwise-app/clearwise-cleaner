@@ -8,40 +8,43 @@ struct SmartCareView: View {
     var body: some View {
         switch model.phase {
         case .idle, .scanning:
+            // `areas` reads three models: once per body, then passed on.
+            let areas = model.areas
+            let scanning = model.phase == .scanning
             ModuleStage(module: .smartCare,
-                        state: model.phase == .scanning
-                            ? .progress(ScanProgress(phase: phaseText, fraction: model.fraction, currentPath: model.currentPath))
+                        state: scanning
+                            ? .progress(ScanProgress(phase: SmartCareModel.phaseText(of: areas),
+                                                     fraction: SmartCareModel.fraction(of: areas),
+                                                     currentPath: model.currentPath))
                             : .idle(button: "Сканировать", enabled: true),
-                        onAction: model.startScan, onStop: model.stop, dimsOptionsWhileWorking: false) {
+                        onAction: model.startScan, onStop: model.stop, dimsOptionsWhileWorking: false,
+                        onGrantAccess: { app.presentAccessSheet() }) {
                 DiskCapsule(disk: app.disk)
             } options: {
-                AreaPills(model: model, scanning: model.phase == .scanning)
+                AreaPills(areas: areas, scanning: scanning)
             }
-        case .results:
+        case .results, .cleaning:
+            // While cleaning, the overlay covers this screen; the overview stays underneath.
             SmartCareResults(model: model)
-        case .cleaning:
-            ModuleStage(module: .smartCare, title: "Очистка", subtitle: "Убираем выбранный системный мусор…",
-                        state: .busy("Файлы перемещаются в Корзину"))
         case .done:
             CompletionView(tint: .smartCare, result: model.result ?? RemovalResult(), title: "Mac стал чище",
-                           permanent: false, onDone: model.finish)
+                           permanent: model.resultWasPermanent,
+                           onGrantAccess: { app.presentAccessSheet() },
+                           onRetry: model.retryFailed,
+                           onEmptyTrash: { app.requestEmptyTrash() },
+                           onDone: model.finish)
         }
-    }
-
-    private var phaseText: String {
-        let active = model.areas.filter { !$0.done }
-        return active.isEmpty ? "Завершаем" : "Проверяем: " + active.map { $0.title.lowercased() }.joined(separator: ", ")
     }
 }
 
 /// What Smart Care checks; turns into live status while scanning.
 private struct AreaPills: View {
-    let model: SmartCareModel
+    let areas: [SmartCareModel.AreaStatus]
     let scanning: Bool
 
     var body: some View {
         HStack(spacing: 10) {
-            ForEach(model.areas, id: \.title) { area in
+            ForEach(areas, id: \.title) { area in
                 HStack(spacing: 8) {
                     if scanning {
                         ZStack {
@@ -85,9 +88,16 @@ private struct SmartCareResults: View {
 
     var body: some View {
         let junk = app.junk
-        let un = app.uninstaller
-        let old = app.oldFiles
-        let unused = un.unusedApps
+        let digest = model.digest()
+        if junk.categories.isEmpty && digest.isEmpty {
+            SmartCareAllClear(onRescan: model.startScan, onOpenDiskMap: { app.select(.diskMap) },
+                              onGrantAccess: { app.presentAccessSheet() })
+        } else {
+            overview(junk: junk, digest: digest)
+        }
+    }
+
+    private func overview(junk: JunkModel, digest: SmartCareModel.Digest) -> some View {
         GeometryReader { geo in
         let compact = geo.size.height < 780
         VStack(spacing: 0) {
@@ -101,12 +111,14 @@ private struct SmartCareResults: View {
                     BigSize(bytes: junk.selectedSize, size: compact ? 52 : 64)
                         .padding(.top, 2)
                     Text(model.reviewing
-                         ? "будет удалено · останется \(Fmt.size(max(0, junk.totalSize - junk.selectedSize)))"
+                         ? "выбрано для очистки · ещё \(Fmt.size(max(0, junk.totalSize - junk.selectedSize))) не выбрано"
                          : junk.selectedSize > 0
-                         ? "можно освободить прямо сейчас — только безопасный мусор"
+                         ? "можно очистить прямо сейчас — только безопасный мусор"
                          : "безопасного мусора не найдено — загляните в разделы ниже")
                         .font(.system(size: 14))
                         .foregroundStyle(Theme.textSecondary)
+                    PartialAccessNote(onGrantAccess: { app.presentAccessSheet() })
+                        .padding(.top, 6)
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 10) {
@@ -129,56 +141,18 @@ private struct SmartCareResults: View {
             } else {
             Grid(horizontalSpacing: 14, verticalSpacing: 14) {
                 GridRow {
-                    SmartTile(module: .junk, title: "Системный мусор", bytes: junk.totalSize,
-                              caption: junk.totalSize > 0
-                                ? "из них \(Fmt.size(junk.selectedSize)) — безопасно и выбрано"
-                                : "Кэши и журналы в порядке",
-                              included: junk.selectedSize > 0, showsPreview: !compact) {
-                        app.select(.junk)
-                    } preview: {
-                        ForEach(junk.categories.prefix(3)) { c in PreviewLine(title: c.title, bytes: c.totalSize) }
-                    }
-                    SmartTile(module: .uninstaller, title: "Остатки удалённых приложений", bytes: un.orphansSize,
-                              caption: un.orphans.isEmpty
-                                ? "Следов удалённых приложений не найдено"
-                                : "\(Fmt.apps(un.orphans.count).capitalizedFirst) оставили после себя файлы",
-                              included: false, showsPreview: !compact) {
-                        un.tab = .leftovers
+                    JunkTile(junk: junk, digest: digest, showsPreview: !compact) { app.select(.junk) }
+                    LeftoversTile(uninstaller: app.uninstaller, digest: digest, showsPreview: !compact) {
+                        app.uninstaller.tab = .leftovers
                         app.select(.uninstaller)
-                    } preview: {
-                        ForEach(un.orphans.prefix(3)) { g in PreviewLine(title: g.displayName, bytes: g.totalSize) }
                     }
                 }
                 GridRow {
-                    SmartTile(module: .oldFiles, title: "Давно не открывались", bytes: old.totalSize,
-                              caption: old.files.isEmpty
-                                ? "Крупных забытых файлов нет"
-                                : "\(Fmt.files(old.files.count).capitalizedFirst) не открывались больше \(old.months) мес.",
-                              included: false, showsPreview: !compact) {
-                        app.select(.oldFiles)
-                    } preview: {
-                        ForEach(old.files.sorted { $0.item.size > $1.item.size }.prefix(3)) { f in
-                            PreviewLine(title: f.item.name, bytes: f.item.size)
-                        }
-                    }
-                    SmartTile(module: .diskMap, symbol: "app.badge.fill", title: "Неиспользуемые приложения",
-                              bytes: unused.reduce(0) { $0 + $1.size },
-                              caption: unused.isEmpty
-                                ? "Все приложения в ходу"
-                                : "\(Fmt.apps(unused.count).capitalizedFirst) не открывались полгода и дольше",
-                              included: false, showsPreview: !compact) {
-                        un.tab = .apps
-                        un.filter = .unused
+                    OldFilesTile(oldFiles: app.oldFiles, digest: digest, showsPreview: !compact) { app.select(.oldFiles) }
+                    UnusedAppsTile(oldFiles: app.oldFiles, digest: digest, showsPreview: !compact) {
+                        app.uninstaller.tab = .apps
+                        app.uninstaller.filter = .unused
                         app.select(.uninstaller)
-                    } preview: {
-                        HStack(spacing: 6) {
-                            ForEach(unused.sorted { $0.size > $1.size }.prefix(7)) { a in
-                                Image(nsImage: IconCache.icon(for: a.url)).resizable().interpolation(.high)
-                                    .frame(width: 30, height: 30)
-                                    .shadow(color: .black.opacity(0.3), radius: 3, y: 2)
-                            }
-                        }
-                        .padding(.top, 4)
                     }
                 }
             }
@@ -190,27 +164,61 @@ private struct SmartCareResults: View {
             }
 
             if model.reviewing {
-                ActionFooter(title: "Очистить", tint: .smartCare, enabled: junk.selectedCount > 0, action: model.requestClean) {
-                    SelectionSummary(bytes: junk.selectedSize, count: junk.selectedCount, label: "Будет удалено")
+                ActionFooter(title: junk.cleanVerb.button, tint: .smartCare, enabled: junk.selectedCount > 0, action: model.requestClean) {
+                    SelectionSummary(bytes: junk.selectedSize, count: junk.selectedCount)
                 } trailing: {
-                    VStack(alignment: .trailing, spacing: 1) {
-                        Text("Останется")
+                    VStack(alignment: .trailing, spacing: 3) {
+                        if junk.includesTrash { FooterNote(permanent: true) }
+                        Text("Не выбрано")
                             .font(.system(size: 11.5, weight: .medium))
                             .foregroundStyle(Theme.textTertiary)
                         SizeText(bytes: max(0, junk.totalSize - junk.selectedSize), font: .number(24, weight: .light))
                     }
                 }
             } else {
-                ActionFooter(title: "Выбрать", tint: .smartCare, enabled: !junk.categories.isEmpty, action: model.openReview) {
-                    SelectionSummary(bytes: junk.selectedSize, count: junk.selectedCount, label: "Предлагаем удалить")
+                ActionFooter(title: "Проверить", tint: .smartCare, enabled: !junk.categories.isEmpty, action: model.openReview) {
+                    SelectionSummary(bytes: junk.selectedSize, count: junk.selectedCount, label: "Безопасно очистить")
                 } trailing: {
-                    Label("Дальше вы выберете, что удалить, а что оставить", systemImage: "hand.raised.fill")
+                    Label("Дальше вы выберете, что очистить, а что оставить", systemImage: "hand.raised.fill")
                         .font(.system(size: 12))
                         .foregroundStyle(Theme.textTertiary)
                 }
             }
         }
         }
+    }
+}
+
+/// Nothing found anywhere: a calm result with two ways forward instead of a disabled round button.
+private struct SmartCareAllClear: View {
+    let onRescan: () -> Void
+    let onOpenDiskMap: () -> Void
+    let onGrantAccess: () -> Void
+
+    var body: some View {
+        VStack(spacing: 14) {
+            IconTile(symbol: "checkmark.seal.fill", tint: .smartCare, size: 64)
+            Text("Mac в порядке")
+                .font(.system(size: 19, weight: .semibold))
+                .foregroundStyle(Theme.text)
+            Text("Мусора, следов удалённых приложений и забытых файлов не нашли. Загляните позже — со временем они накопятся снова.")
+                .font(.system(size: 13.5))
+                .foregroundStyle(Theme.textSecondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 400)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 10) {
+                Button(action: onRescan) { Label("Сканировать заново", systemImage: "arrow.clockwise") }
+                    .buttonStyle(PillButtonStyle(kind: .primary(.smartCare)))
+                Button("Открыть Карту диска", action: onOpenDiskMap)
+                    .buttonStyle(PillButtonStyle(kind: .secondary))
+            }
+            .padding(.top, 4)
+            PartialAccessNote(onGrantAccess: onGrantAccess)
+                .padding(.top, 6)
+        }
+        .padding(30)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -221,7 +229,7 @@ private struct SmartCareReview: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
-                Label("Отмеченное будет удалено в Корзину, снятые галочки — останется", systemImage: "checklist")
+                Label("Отмеченное попадёт в Корзину, остальное останется на месте", systemImage: "checklist")
                     .font(.system(size: 12.5))
                     .foregroundStyle(Theme.textSecondary)
                 Spacer()
@@ -261,6 +269,87 @@ private struct PreviewLine: View {
     }
 }
 
+// MARK: Tiles
+
+private struct JunkTile: View {
+    let junk: JunkModel
+    let digest: SmartCareModel.Digest
+    let showsPreview: Bool
+    let onOpen: () -> Void
+
+    var body: some View {
+        SmartTile(module: .junk, title: "Системный мусор", bytes: junk.totalSize,
+                  caption: junk.totalSize > 0
+                    ? "из них \(Fmt.size(junk.selectedSize)) — безопасно и выбрано"
+                    : "Кэши и журналы в порядке",
+                  included: junk.selectedSize > 0, showsPreview: showsPreview, onOpen: onOpen) {
+            ForEach(digest.junkTop) { PreviewLine(title: $0.title, bytes: $0.bytes) }
+        }
+    }
+}
+
+private struct LeftoversTile: View {
+    let uninstaller: UninstallerModel
+    let digest: SmartCareModel.Digest
+    let showsPreview: Bool
+    let onOpen: () -> Void
+
+    var body: some View {
+        let n = uninstaller.orphans.count
+        SmartTile(module: .uninstaller, title: "Остатки удалённых приложений", bytes: digest.orphansBytes,
+                  caption: n == 0
+                    ? "Следов удалённых приложений не найдено"
+                    : "\(Fmt.apps(n)) \(Fmt.verb(n, one: "оставило", other: "оставили")) после себя файлы",
+                  included: false, opens: .uninstaller, showsPreview: showsPreview, onOpen: onOpen) {
+            ForEach(digest.orphanTop) { PreviewLine(title: $0.title, bytes: $0.bytes) }
+        }
+    }
+}
+
+private struct OldFilesTile: View {
+    let oldFiles: OldFilesModel
+    let digest: SmartCareModel.Digest
+    let showsPreview: Bool
+    let onOpen: () -> Void
+
+    var body: some View {
+        let n = digest.oldCount
+        SmartTile(module: .oldFiles, title: "Старые файлы", bytes: digest.oldBytes,
+                  caption: n == 0
+                    ? "Крупных забытых файлов нет"
+                    : "\(Fmt.files(n)) \(Fmt.verb(n, one: "не открывался", other: "не открывались")) больше \(Fmt.months(oldFiles.months))",
+                  included: false, opens: .oldFiles, showsPreview: showsPreview, onOpen: onOpen) {
+            ForEach(digest.oldTop) { PreviewLine(title: $0.title, bytes: $0.bytes) }
+        }
+    }
+}
+
+private struct UnusedAppsTile: View {
+    let oldFiles: OldFilesModel
+    let digest: SmartCareModel.Digest
+    let showsPreview: Bool
+    let onOpen: () -> Void
+
+    var body: some View {
+        let n = digest.unusedCount
+        SmartTile(module: .uninstaller, symbol: "app.badge.fill", title: "Неиспользуемые приложения",
+                  bytes: digest.unusedBytes,
+                  caption: n == 0
+                    ? "Все приложения в ходу"
+                    : "\(Fmt.apps(n)) \(Fmt.verb(n, one: "не открывалось", other: "не открывались")) больше \(Fmt.months(6))",
+                  included: false, opens: .uninstaller, showsPreview: showsPreview, onOpen: onOpen) {
+            HStack(spacing: 6) {
+                ForEach(digest.unusedTop) { a in
+                    Image(nsImage: IconCache.icon(for: a.url)).resizable().interpolation(.high)
+                        .frame(width: 30, height: 30)
+                        .shadow(color: .black.opacity(0.3), radius: 3, y: 2)
+                }
+            }
+            .padding(.top, 4)
+        }
+    }
+}
+
 private struct SmartTile<Preview: View>: View {
     let module: AppModule
     var symbol: String? = nil
@@ -268,10 +357,16 @@ private struct SmartTile<Preview: View>: View {
     let bytes: Int64
     let caption: String
     let included: Bool
+    /// The section a tile that is not part of the cleaning leads to: «Откроется в разделе «…»».
+    var opens: AppModule? = nil
     var showsPreview = true
     let onOpen: () -> Void
     @ViewBuilder var preview: Preview
     @State private var hover = false
+
+    private var openText: String {
+        opens.map { "Откроется в разделе «\($0.sidebarTitle)»" } ?? "Просмотреть"
+    }
 
     var body: some View {
         Button(action: onOpen) {
@@ -295,6 +390,7 @@ private struct SmartTile<Preview: View>: View {
                     .font(.caption12)
                     .foregroundStyle(Theme.textSecondary)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.85)
                     .padding(.top, 2)
                 if showsPreview {
                     VStack(alignment: .leading, spacing: 5) { preview }
@@ -302,7 +398,8 @@ private struct SmartTile<Preview: View>: View {
                 }
                 Spacer(minLength: 10)
                 HStack(spacing: 4) {
-                    Text("Просмотреть")
+                    Text(openText)
+                        .lineLimit(1)
                     Image(systemName: "arrow.right").font(.system(size: 10, weight: .bold))
                         .offset(x: hover ? 3 : 0)
                 }

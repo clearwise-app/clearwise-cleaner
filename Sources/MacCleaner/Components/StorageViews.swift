@@ -25,20 +25,14 @@ extension StorageCategory.Kind {
 }
 
 enum StorageFmt {
-    /// "18%", "<1%", "0%".
+    /// "18 %", "<1 %", "0 %" — `Fmt.percent`, so the non-breaking space matches the rest of the app.
     static func percent(_ share: Double) -> String {
-        let p = share * 100
-        if p <= 0 { return "0%" }
-        if p < 1 { return "<1%" }
-        return "\(Int(p.rounded()))%"
+        Fmt.percent(share)
     }
 
-    /// One decimal below 10 %: "4,2%", "18%".
+    /// One decimal below 10 %: "4,2 %", "18 %", "<0,1 %".
     static func precisePercent(_ share: Double) -> String {
-        let p = share * 100
-        if p <= 0 { return "0%" }
-        if p < 0.1 { return "<0,1%" }
-        return Fmt.number(p, digits: p < 10 ? 1 : 0) + "%"
+        Fmt.percent(share, digits: share * 100 < 10 ? 1 : 0)
     }
 }
 
@@ -92,8 +86,11 @@ struct StorageSegmentBar: View {
                     UnevenRoundedRectangle(topLeadingRadius: lead, bottomLeadingRadius: lead,
                                            bottomTrailingRadius: trail, topTrailingRadius: trail, style: .continuous)
                         .fill(s.kind.gradient)
+                        // A white wash, not `.brightness`: that filter smears the layer's edge pixels.
+                        .overlay(Color.white.opacity(hovered == s.kind ? 0.1 : 0))
+                        .clipShape(UnevenRoundedRectangle(topLeadingRadius: lead, bottomLeadingRadius: lead,
+                                                          bottomTrailingRadius: trail, topTrailingRadius: trail, style: .continuous))
                         .opacity(dim ? 0.32 : 1)
-                        .brightness(hovered == s.kind ? 0.08 : 0)
                         .shadow(color: s.kind.color.opacity(hovered == s.kind ? 0.75 : 0), radius: 5)
                         .frame(width: max(1, (s.width - (isLast ? 0 : Self.gap)) * progress), height: height)
                         .offset(x: s.x * progress)
@@ -120,6 +117,9 @@ struct StorageSegmentBar: View {
         }
         .accessibilityElement()
         .accessibilityLabel("Занято \(StorageFmt.percent(breakdown.share(breakdown.used))) диска")
+        .accessibilityValue(Self.order(breakdown).prefix(4)
+            .map { "\($0.title) \(StorageFmt.percent(breakdown.share($0.bytes))), \(Fmt.size($0.bytes))" }
+            .joined(separator: "; "))
     }
 
     private func grow() {
@@ -130,27 +130,43 @@ struct StorageSegmentBar: View {
 }
 
 /// Placeholder while the first measurement runs: a soft highlight sweeping along an empty track.
+/// Under Reduce Motion (or with decorative animations paused) the highlight rests and the track breathes instead.
 struct StorageShimmerBar: View {
     var height: CGFloat = 8
     @Environment(\.isSnapshot) private var isSnapshot
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.animationsPaused) private var animationsPaused
     @State private var phase: CGFloat = -0.4
+    @State private var dim = false
+
+    private var still: Bool { isSnapshot || reduceMotion || animationsPaused }
 
     var body: some View {
         GeometryReader { geo in
-            Capsule().fill(.white.opacity(0.09))
+            Capsule().fill(.white.opacity(dim ? 0.06 : 0.09))
                 .overlay(alignment: .leading) {
                     LinearGradient(colors: [.clear, .white.opacity(0.28), .clear], startPoint: .leading, endPoint: .trailing)
                         .frame(width: geo.size.width * 0.45)
-                        .offset(x: geo.size.width * (isSnapshot ? 0.3 : phase))
+                        .offset(x: geo.size.width * (still ? 0.3 : phase))
                 }
                 .clipShape(Capsule())
         }
         .frame(height: height)
-        .onAppear {
-            guard !isSnapshot else { return }
+        .onAppear(perform: start)
+        .onChange(of: still) { _, _ in start() }
+        .accessibilityLabel("Считаем, что занимает место")
+    }
+
+    private func start() {
+        var reset = Transaction()
+        reset.disablesAnimations = true
+        withTransaction(reset) { phase = -0.4; dim = false }
+        guard !isSnapshot, !animationsPaused else { return }
+        if reduceMotion {
+            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) { dim = true }
+        } else {
             withAnimation(.easeInOut(duration: 1.3).repeatForever(autoreverses: false)) { phase = 1.0 }
         }
-        .accessibilityLabel("Считаем, что занимает место")
     }
 }
 
@@ -231,6 +247,8 @@ struct StorageDetailCard: View {
     var hovered: StorageCategory.Kind?
     var onHover: ((StorageCategory.Kind?) -> Void)?
     var onClose: (() -> Void)?
+    /// «Дать доступ» in the no-access note: the in-app access flow.
+    var onGrantAccess: (() -> Void)?
 
     var body: some View {
         let b = breakdown
@@ -287,8 +305,19 @@ struct StorageDetailCard: View {
             if !b.fullDiskAccess {
                 HStack(alignment: .top, spacing: 6) {
                     Image(systemName: "lock.fill").font(.system(size: 9.5)).padding(.top, 2)
-                    Text("Без полного доступа к диску данные других приложений входят в «Система и прочее».")
-                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Без полного доступа к диску данные других приложений входят в «Система и прочее».")
+                            .fixedSize(horizontal: false, vertical: true)
+                        if let onGrantAccess {
+                            Button("Дать доступ", action: onGrantAccess)
+                                .buttonStyle(.plain)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(Theme.warning)
+                                .pointerStyle(.link)
+                                .help("Как дать MacCleaner полный доступ к диску")
+                        }
+                    }
                 }
                 .font(.system(size: 10.5))
                 .foregroundStyle(Theme.warning.opacity(0.85))

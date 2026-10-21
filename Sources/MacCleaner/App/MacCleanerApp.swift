@@ -23,7 +23,7 @@ struct MacCleanerApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView()
+            MainWindow()
                 .environment(model)
                 .frame(minWidth: 1100, minHeight: 720)
                 .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
@@ -33,8 +33,63 @@ struct MacCleanerApp: App {
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentMinSize)
         .defaultSize(width: 1280, height: 800)
-        .commands {
-            CommandGroup(replacing: .newItem) {}
+        .commands { CleanerCommands(model: model) }
+
+        Settings {
+            SettingsView()
+                .environment(model)
+        }
+    }
+}
+
+/// The main window: restores the selected module per window (`@SceneStorage`).
+private struct MainWindow: View {
+    @Environment(AppModel.self) private var model
+    @SceneStorage("selectedModule") private var storedModule = AppModule.smartCare.rawValue
+
+    var body: some View {
+        RootView()
+            .onAppear {
+                if let module = AppModule(rawValue: storedModule), module != model.selection {
+                    model.selection = module
+                }
+            }
+            .onChange(of: model.selection) { _, module in storedModule = module.rawValue }
+    }
+}
+
+/// Menus: «Разделы» (⌘1…⌘6), «Очистка» (⌘R, ⌘⌫, ⌘F) and «Полный доступ к диску…» in the app menu.
+/// Every item is disabled while a confirmation, the cleaning scene or the access flow is up.
+struct CleanerCommands: Commands {
+    let model: AppModel
+
+    var body: some Commands {
+        CommandGroup(replacing: .newItem) {}
+
+        CommandGroup(after: .appSettings) {
+            Button("Полный доступ к диску…") { model.presentAccessSheet() }
+                .disabled(model.isModalActive)
+        }
+
+        CommandMenu("Разделы") {
+            ForEach(Array(AppModule.allCases.enumerated()), id: \.element) { index, module in
+                Button(module.title) { model.select(module) }
+                    .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .command)
+                    .disabled(model.isModalActive)
+            }
+        }
+
+        CommandMenu("Очистка") {
+            Button("Сканировать заново") { model.rescanCurrent() }
+                .keyboardShortcut("r", modifiers: .command)
+                .disabled(!model.canRescan)
+            Button(model.primaryActionTitle) { model.primaryActionCurrent() }
+                .keyboardShortcut(.delete, modifiers: .command)
+                .disabled(!model.canPerformPrimaryAction)
+            Divider()
+            Button("Найти") { model.requestSearchFocus() }
+                .keyboardShortcut("f", modifiers: .command)
+                .disabled(model.isModalActive)
         }
     }
 }

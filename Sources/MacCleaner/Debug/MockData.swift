@@ -152,6 +152,28 @@ enum MockData {
         ]
     }
 
+    /// Confident leftovers for the batch-uninstall scenes (Xcode-beta, GarageBand, iMovie…), keyed by bundle.
+    static func batchRemnants(for app: InstalledApp) -> [AppRemnant] {
+        func r(_ path: String, _ size: Int64, _ kind: RemnantKind) -> AppRemnant {
+            AppRemnant(item: FileItem(url: h(path), size: size, isDirectory: true), kind: kind, confidence: .high, requiresAdmin: false)
+        }
+        let id = app.bundleID ?? app.name
+        switch app.name {
+        case "Xcode-beta":
+            return [r("Library/Developer/Xcode/UserData/Previews", 1_840 * MB, .applicationSupport),
+                    r("Library/Caches/\(id)", 412 * MB, .caches),
+                    r("Library/Saved Application State/\(id).savedState", 2 * MB, .savedState)]
+        case "GarageBand":
+            return [r("Library/Containers/\(id)", 864 * MB, .containers),
+                    r("Library/Application Support/GarageBand", 1_120 * MB, .applicationSupport)]
+        case "iMovie":
+            return [r("Library/Containers/\(id)", 238 * MB, .containers),
+                    r("Library/Caches/\(id)", 96 * MB, .caches)]
+        default:
+            return [r("Library/Caches/\(id)", 24 * MB, .caches)]
+        }
+    }
+
     // MARK: Old files
 
     static var oldFiles: [AnalyzedFile] {
@@ -299,5 +321,13 @@ enum MockData {
         RemovalFailure(url: h("Desktop/Скан диплома.pdf"), reason: "“Скан диплома.pdf” couldn’t be moved to the Trash because it’s locked."),
         RemovalFailure(url: URL(fileURLWithPath: "/Applications/Spotify.app"), reason: "Приложение запущено"),
     ]
+
+    /// Top-level items of a pretend ~/.Trash (snapshots only; the real Trash is never listed here).
+    static var trashItems: [TrashItem] {
+        [("Старые скриншоты", 512 * MB), ("presentation-draft.key", 228 * MB), ("Docker.dmg", 1_820 * MB),
+         ("IMG_4021.MOV", 3_410 * MB), ("node_modules", 640 * MB), ("Отчёт 2024.pdf", 12 * MB)]
+            .map { TrashItem(url: h(".Trash/\($0.0)"), size: $0.1) }
+            .sorted { $0.size > $1.size }
+    }
 }
 #endif

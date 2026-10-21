@@ -63,7 +63,7 @@ enum SunburstLayout {
             }
             let smallSpan = span * Double(smallSize) / Double(nodeSize)
             if smallSpan >= minSpan * 0.6 {
-                out.append(SunSegment(id: UUID(), node: nil, name: SpaceMapper.otherName, size: smallSize, depth: depth,
+                out.append(SunSegment(id: aggregateID(parent: node.id, depth: depth), node: nil, name: SpaceMapper.otherName, size: smallSize, depth: depth,
                                       start: cursor, end: cursor + smallSpan,
                                       color: Color.white.opacity(0.16 - Double(depth) * 0.02), isAggregate: true))
             }
@@ -71,6 +71,17 @@ enum SunburstLayout {
 
         visit(focus, depth: 1, start: 0, span: Double(size(focus)) / Double(total), branchHue: nil)
         return out
+    }
+
+    /// Stable id of the «мелкие объекты» segment under `parent` at `depth`: the same layout pass after pass
+    /// gives the same id, so hover and identity survive a re-run of the body.
+    static func aggregateID(parent: UUID, depth: Int) -> UUID {
+        var bytes = parent.uuid
+        // Mix in the depth and a fixed salt so the id never equals the parent's own or a sibling's.
+        bytes.0 ^= 0xA7
+        bytes.15 ^= UInt8(truncatingIfNeeded: depth &* 31 &+ 0x5C)
+        bytes.14 ^= UInt8(truncatingIfNeeded: depth)
+        return UUID(uuid: bytes)
     }
 
     /// Branch hues, biggest branch first: pink, violet, blue, teal, green, amber, coral, indigo.

@@ -2,23 +2,27 @@ import SwiftUI
 
 struct RootView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.controlActiveState) private var controlActiveState
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.isSnapshot) private var isSnapshot
+    @AppStorage(OnboardingKeys.done) private var onboardingDone = false
+    /// The cleaning scene has finished fading in: the screens underneath are hidden and paused.
+    @State private var overlayIn = false
+
+    /// Content under a modal layer is neither clickable nor visible to VoiceOver.
+    private var blocked: Bool { model.isModalActive }
+    private var fullScreenFlow: Bool { model.accessFlow?.mode == .onboarding }
 
     var body: some View {
         ZStack {
             ModuleBackground(tint: model.selection.tint)
                 .id(model.selection)
                 .transition(.opacity)
+                .opacity(overlayIn ? 0 : 1)
 
-            HStack(spacing: 0) {
-                Sidebar()
-                content
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            .ignoresSafeArea()
-            .blur(radius: model.cleaning == nil ? 0 : 24)
-            .allowsHitTesting(model.cleaning == nil)
+            mainUI
 
-            if model.isDropTargeted && model.selection != .diskMap && model.cleaning == nil {
+            if model.isDropTargeted && model.selection != .diskMap && !blocked {
                 DropOverlay()
                     .transition(.opacity)
                     .allowsHitTesting(false)
@@ -29,25 +33,88 @@ struct RootView: View {
                     model.dismissConfirmation()
                     c.action()
                 }
-                .transition(.opacity.combined(with: .scale(scale: 0.97)))
+                .transition(Theme.motion(.opacity.combined(with: .scale(scale: 0.97))))
                 .zIndex(10)
+            }
+
+            if let flow = model.accessFlow, flow.mode == .sheet {
+                AccessSheet(flow: flow)
+                    .transition(Theme.motion(.opacity.combined(with: .scale(scale: 0.97))))
+                    .zIndex(15)
             }
 
             if let session = model.cleaning {
                 CleaningOverlay(session: session)
-                    .transition(.asymmetric(insertion: .opacity.combined(with: .scale(scale: 1.03)),
-                                            removal: .opacity.combined(with: .scale(scale: 1.08))))
+                    // The scene's own animations never pause for "overlay is in" (only the screens below do).
+                    .environment(\.animationsPaused, false)
+                    .transition(Theme.motion(.asymmetric(insertion: .opacity.combined(with: .scale(scale: 1.03)),
+                                                         removal: .opacity.combined(with: .scale(scale: 1.08)))))
                     .zIndex(20)
+            }
+
+            if let flow = model.accessFlow, flow.mode == .onboarding {
+                OnboardingView(flow: flow)
+                    .environment(\.animationsPaused, controlActiveState == .inactive)
+                    .transition(.opacity)
+                    .zIndex(30)
             }
         }
         .environment(\.moduleTint, model.selection.tint)
         .dropDestination(for: URL.self) { urls, _ in
-            model.cleaning == nil && model.handleDrop(urls)
+            model.handleDrop(urls)
         } isTargeted: { targeted in
             withAnimation(Theme.quick) { model.isDropTargeted = targeted }
         }
+        .task(id: model.cleaning != nil) {
+            guard model.cleaning != nil else {
+                overlayIn = false
+                return
+            }
+            // Insertion runs ~0.45 s; after it the blurred screens are fully covered.
+            try? await Task.sleep(for: .milliseconds(isSnapshot ? 0 : 500))
+            guard !Task.isCancelled, model.cleaning != nil else { return }
+            overlayIn = true
+        }
+        .onAppear {
+            guard !isSnapshot else { return }
+            model.startAccessFlowIfNeeded(onboardingDone: onboardingDone)
+        }
         .preferredColorScheme(.dark)
         .environment(\.locale, Locale(identifier: "ru_RU"))
+    }
+
+    private var mainUI: some View {
+        let covered = model.cleaning != nil
+        return HStack(spacing: 0) {
+            Sidebar()
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay {
+                    if let done = model.trashCompletion {
+                        TrashCompletionScreen(completion: done)
+                            .transition(.opacity)
+                    }
+                }
+                .overlay(alignment: .bottom) {
+                    // Above the modules' footer (selection summary and the round button).
+                    ToastHost()
+                        .padding(.bottom, 116)
+                }
+        }
+        .ignoresSafeArea()
+        // Decorative loops stop when the window is in the background or fully covered by the cleaning scene.
+        .environment(\.animationsPaused, controlActiveState == .inactive || overlayIn || fullScreenFlow)
+        // Reduce Transparency: a flat dim instead of the blur.
+        .blur(radius: covered && !reduceTransparency ? 24 : 0)
+        .overlay {
+            if covered && reduceTransparency {
+                Color.black.opacity(0.6).ignoresSafeArea().transition(.opacity)
+            }
+        }
+        // Once the scene is fully in, nothing underneath needs to be drawn (no per-frame blur of hidden UI).
+        .opacity(overlayIn || fullScreenFlow ? 0 : 1)
+        .disabled(blocked)
+        .accessibilityHidden(blocked)
     }
 
     @ViewBuilder private var content: some View {
@@ -62,7 +129,82 @@ struct RootView: View {
             }
         }
         .id(model.selection)
-        .transition(.opacity.combined(with: .offset(y: 8)))
+        .transition(Theme.motion(.opacity.combined(with: .offset(y: 8))))
+    }
+}
+
+/// «Корзина очищена» over the content area after `requestEmptyTrash()`.
+private struct TrashCompletionScreen: View {
+    let completion: TrashCompletion
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        ZStack {
+            ModuleBackground(tint: completion.tint)
+            CompletionView(tint: completion.tint, result: completion.result, title: "Корзина очищена",
+                           permanent: true, noun: .items,
+                           onGrantAccess: { model.dismissTrashCompletion(); model.presentAccessSheet() },
+                           onDone: { model.dismissTrashCompletion() })
+        }
+        .environment(\.moduleTint, completion.tint)
+    }
+}
+
+// MARK: - Toasts
+
+private struct ToastHost: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        ZStack {
+            if let toast = model.toast {
+                ToastView(toast: toast)
+                    .id(toast.id)
+                    .transition(Theme.motion(.opacity.combined(with: .move(edge: .bottom))))
+            }
+        }
+        .animation(Theme.spring, value: model.toast?.id)
+    }
+}
+
+struct ToastView: View {
+    let toast: Toast
+    @Environment(AppModel.self) private var model
+
+    private var color: Color {
+        switch toast.kind {
+        case .success: Theme.success
+        case .info: Theme.textSecondary
+        case .warning: Theme.warning
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: toast.symbol)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(color)
+                .accessibilityHidden(true)
+            Text(toast.text)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Theme.text)
+                .fixedSize(horizontal: false, vertical: true)
+            if let title = toast.actionTitle, let action = toast.action {
+                Button(title) {
+                    model.dismissToast()
+                    action()
+                }
+                .buttonStyle(PillButtonStyle(kind: .secondary))
+            }
+            IconButton(symbol: "xmark", help: "Закрыть", size: 22) { model.dismissToast() }
+        }
+        .padding(.leading, 16)
+        .padding(.trailing, 10)
+        .padding(.vertical, 9)
+        .frame(maxWidth: 620)
+        .background(PopoverSurface(radius: 16))
+        .padding(.horizontal, 24)
+        .accessibilityElement(children: .contain)
     }
 }
 
