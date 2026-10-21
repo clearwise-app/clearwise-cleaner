@@ -80,12 +80,23 @@ final class Fixture {
         try fm.setAttributes([.modificationDate: date], ofItemAtPath: url.path)
     }
 
-    func finder(known: [InstalledApp]?, groups: [String: [String]] = [:],
+    /// `groups` / `teams`: code-signature facts by app path. `mounted`: which `<root>/Volumes/<name>` count as attached.
+    func finder(known: [InstalledApp]?, groups: [String: [String]] = [:], teams: [String: String] = [:],
+                mounted: @escaping @Sendable (String) -> Bool = { _ in false },
                 locator: @escaping @Sendable (String) -> URL? = { _ in nil }) -> RemnantFinder {
-        let byPath = groups
+        let byPath = groups, teamByPath = teams
         return RemnantFinder(roots: roots, knownApps: known, appLocator: locator, signProvider: { url in
-            CodeSignInfo(teamID: nil, appGroups: byPath[url.standardizedFileURL.path] ?? [])
-        })
+            let p = url.standardizedFileURL.path
+            return CodeSignInfo(teamID: teamByPath[p], appGroups: byPath[p] ?? [])
+        }, volumeMounted: mounted)
+    }
+
+    /// A non-app bundle (plug-in, prefpane, input method…) with Contents/Info.plist.
+    @discardableResult
+    func makeBundle(_ base: URL, _ rel: String, id: String) throws -> URL {
+        let url = base.appendingPathComponent(rel, isDirectory: true)
+        try writePlist(["CFBundleIdentifier": id], to: url.appendingPathComponent("Contents/Info.plist"))
+        return url
     }
 }
 

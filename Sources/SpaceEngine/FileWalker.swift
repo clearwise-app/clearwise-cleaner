@@ -82,9 +82,47 @@ enum FileWalker {
 
     /// Other apps' data folders. Opening them without Full Disk Access makes macOS ask the user for consent
     /// (the call blocks until answered), and nothing in there is a file the user would clean up by hand.
-    static var appDataParents: Set<String> {
-        let lib = SafetyGuard.home.appendingPathComponent("Library").path
+    static var appDataParents: Set<String> { appDataParents(home: SafetyGuard.home) }
+
+    static func appDataParents(home: URL) -> Set<String> {
+        let lib = home.appendingPathComponent("Library").path
         return [lib + "/Containers", lib + "/Group Containers"]
+    }
+
+    // MARK: Protected areas
+
+    /// Home-relative folders whose whole subtree is off limits to the walk. `SafetyGuard` protects these
+    /// as *prefixes* ("everything inside"); the folders such as `~/Documents` that it merely refuses to
+    /// remove *themselves* are NOT areas: the walk must go through them to reach the user's files.
+    private static let protectedHomeAreas = [
+        "Library/Keychains", "Library/Mobile Documents", "Library/CloudStorage", "Library/Messages",
+        "Library/Mail", "Library/Accounts", "Library/Calendars", "Library/Photos",
+        "Library/Application Support/AddressBook", "Library/Application Support/com.apple.TCC",
+    ]
+    private static let protectedSystemAreas = [
+        "/System", "/bin", "/sbin", "/usr/bin", "/usr/lib", "/usr/libexec", "/usr/sbin", "/usr/share",
+        "/private/etc", "/private/var/vm", "/Library/Apple",
+    ]
+
+    /// True when `url` is a protected area or lies inside one (Keychains, Mail, Messages, iCloud Drive,
+    /// CloudStorage, system folders…). The walk neither descends into nor reports anything there.
+    ///
+    /// This is deliberately NOT `SafetyGuard.isProtected(url)`, which answers a different question —
+    /// "may this exact folder be removed?" — and is true for `~/Documents`, `~/Desktop`, `~/Downloads`…
+    static func isInProtectedArea(_ url: URL, home: URL = SafetyGuard.home) -> Bool {
+        let path = url.standardizedFileURL.path
+        let withSlash = path.hasSuffix("/") ? path : path + "/"
+        let h = home.standardizedFileURL.path
+        let prefixes = protectedHomeAreas.map { h + "/" + $0 + "/" } + protectedSystemAreas.map { $0 + "/" }
+        if prefixes.contains(where: { withSlash.hasPrefix($0) || withSlash.hasPrefix("/private" + $0) }) { return true }
+        // Whatever else SafetyGuard protects *inside* a folder (it also resolves symlinks / `/private`).
+        return SafetyGuard.isProtected(url.appendingPathComponent("_probe_"))
+    }
+
+    /// `~/Library` is app data, hidden by macOS, and never a place for user files; when its "hidden" flag
+    /// was cleared the walk must still not wander into it from a parent root such as `~`.
+    static func isLibraryOfHome(_ url: URL, home: URL) -> Bool {
+        url.standardizedFileURL.path == home.standardizedFileURL.appendingPathComponent("Library").path
     }
 
     private static let keys: [URLResourceKey] = [
@@ -100,6 +138,8 @@ enum FileWalker {
         var includePackages: Bool
         /// Label for progress.
         var phase: String
+        /// The user's home folder, used to recognise protected areas. Tests point it at a fake home.
+        var home: URL = SafetyGuard.home
     }
 
     static func displayPhase(for root: URL) -> String {
@@ -129,7 +169,7 @@ enum FileWalker {
         var isDir: ObjCBool = false
         guard fm.fileExists(atPath: root.path, isDirectory: &isDir), isDir.boolValue else { return }
         // A root that itself lies in a protected area (Keychains, iCloud Drive, Mail…) is never scanned.
-        if SafetyGuard.isProtected(root.appendingPathComponent("_probe_")) { return }
+        if isInProtectedArea(root, home: options.home) { return }
 
         let rootVolume = try? root.resourceValues(forKeys: [.volumeIdentifierKey]).volumeIdentifier
         guard let enumerator = fm.enumerator(
@@ -137,7 +177,7 @@ enum FileWalker {
             options: [.skipsHiddenFiles], errorHandler: { _, _ in true }
         ) else { return }
 
-        let appData = appDataParents
+        let appData = appDataParents(home: options.home)
         var visited = 0
         while let url = enumerator.nextObject() as? URL {
             visited += 1
@@ -159,7 +199,7 @@ enum FileWalker {
                     enumerator.skipDescendants()
                     guard options.includePackages else { continue }
                     if skippedPackageExtensions.contains(url.pathExtension.lowercased()) { continue }
-                    if SafetyGuard.isProtected(url) { continue }
+                    if isInProtectedArea(url, home: options.home) || SafetyGuard.isProtected(url) { continue }
                     let size = FileSizer.allocatedSize(of: url)
                     guard size >= options.minAllocatedSize else { continue }
                     visit(WalkedFile(url: url, allocatedSize: size, logicalSize: 0,
@@ -167,8 +207,12 @@ enum FileWalker {
                     continue
                 }
 
-                // Plain folder: keep out of protected areas and other volumes.
-                if SafetyGuard.isProtected(url) { enumerator.skipDescendants(); continue }
+                // Plain folder: keep out of protected areas and other volumes. Descent is decided by the AREA a
+                // folder belongs to — not by `SafetyGuard.isProtected`, which also flags ~/Documents, ~/Desktop…
+                // (folders that must not be removed, but whose contents are exactly what we are looking for).
+                if isInProtectedArea(url, home: options.home) || isLibraryOfHome(url, home: options.home) {
+                    enumerator.skipDescendants(); continue
+                }
                 if let rootVolume,
                    let vol = (try? url.resourceValues(forKeys: [.volumeIdentifierKey]))?.volumeIdentifier,
                    !vol.isEqual(rootVolume) {

@@ -11,9 +11,21 @@ struct InstalledOwnership: Sendable {
     let vendorTokens: Set<String>
     let names: Set<String>
 
-    init(_ sigs: [AppSignature]) {
+    /// `bundles`: installed non-app bundles (audio plug-ins, prefpanes, input methods…), which keep
+    /// their preferences/caches just like apps do.
+    init(_ sigs: [AppSignature], bundles: [InstalledBundles.Bundle] = []) {
         var ids = Set<String>(), groups = Set<String>(), teams = Set<String>()
         var prefixes = Set<String>(), tokens = Set<String>(), names = Set<String>()
+        for b in bundles {
+            ids.insert(b.id)
+            let comps = b.id.split(separator: ".")
+            if comps.count >= 3 {
+                prefixes.insert(comps.prefix(2).joined(separator: "."))
+                let v = NameRules.normalize(String(comps[1]))
+                if v.count >= 3 { tokens.insert(v) }
+            }
+            if b.name.count >= 5, !NameRules.genericNames.contains(b.name) { names.insert(b.name) }
+        }
         for s in sigs {
             ids.formUnion(s.ownedIDs)
             for g in s.appGroups {
@@ -65,6 +77,96 @@ struct InstalledOwnership: Sendable {
         guard n.count >= 5 else { return false }
         if vendorTokens.contains(n) || names.contains(n) { return true }
         return names.contains { $0.count >= 5 && (n.contains($0) || $0.contains(n)) }
+    }
+}
+
+/// Installed non-app bundles (plug-ins, prefpanes, screen savers, input methods…).
+enum InstalledBundles {
+    struct Bundle: Sendable, Hashable {
+        /// Lowercased CFBundleIdentifier.
+        let id: String
+        /// Normalised file name without extension.
+        let name: String
+    }
+
+    static func scan(_ dirs: [URL]) -> [Bundle] {
+        concurrentMap(dirs) { list($0, depthLeft: 1) }.flatMap { $0 }
+    }
+
+    /// Bundles directly in `dir`, plus one level of plain vendor folders (VST3/FabFilter/Pro-Q 3.vst3).
+    private static func list(_ dir: URL, depthLeft: Int) -> [Bundle] {
+        let fm = FileManager.default
+        guard let names = try? fm.contentsOfDirectory(atPath: dir.path) else { return [] }
+        var out: [Bundle] = []
+        for name in names where !name.hasPrefix(".") {
+            let url = dir.appendingPathComponent(name)
+            var isDir: ObjCBool = false
+            guard fm.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue else { continue }
+            if let id = BundleInfo.bundleIdentifier(of: url)?.lowercased() {
+                guard !NameRules.isAppleID(id) else { continue }
+                out.append(Bundle(id: id, name: NameRules.normalize(url.deletingPathExtension().lastPathComponent)))
+            } else if depthLeft > 0, url.pathExtension.isEmpty {
+                out += list(url, depthLeft: depthLeft - 1)
+            }
+        }
+        return out
+    }
+}
+
+/// Read-only facts about paths that may point to unplugged drives or privacy-protected folders.
+enum PathFacts {
+    /// True when `path` is the mount point of a mounted file system (`/Volumes/Macintosh HD` → "/" counts).
+    static func isMountPoint(_ path: String) -> Bool {
+        var st = statfs()
+        guard statfs(path, &st) == 0 else { return false }
+        let mnt = withUnsafeBytes(of: st.f_mntonname) { raw in
+            String(decoding: raw.prefix { $0 != 0 }, as: UTF8.self)
+        }
+        return mnt == path || mnt == URL(fileURLWithPath: path).resolvingSymlinksInPath().path
+    }
+
+    /// `/Volumes/<name>` for a path on an external volume, nil otherwise.
+    static func volumeRoot(of path: String, volumes: String) -> String? {
+        guard path.hasPrefix(volumes + "/"),
+              let name = path.dropFirst(volumes.count + 1).split(separator: "/").first else { return nil }
+        return volumes + "/" + name
+    }
+
+    static func isOnUnmountedVolume(_ path: String, volumes: String, mounted: (String) -> Bool) -> Bool {
+        guard let root = volumeRoot(of: path, volumes: volumes) else { return false }
+        return !mounted(root)
+    }
+
+    enum Presence { case present, missing, unknown }
+
+    /// Folders macOS guards with privacy prompts; never probed (a missing-looking file may just be hidden).
+    static func isPrivacyProtected(_ path: String, home: String) -> Bool {
+        ["Desktop", "Documents", "Downloads", "Library/Mobile Documents", "Library/CloudStorage"].contains {
+            let p = home + "/" + $0
+            return path == p || path.hasPrefix(p + "/")
+        }
+    }
+
+    /// `.missing` only when it is certain: an absolute path whose nearest existing ancestor is a directory
+    /// we can list, on a mounted volume, outside privacy-protected folders. Anything doubtful is `.unknown`.
+    static func presence(of rawPath: String, volumes: String, home: String, mounted: (String) -> Bool) -> Presence {
+        guard rawPath.hasPrefix("/") else { return .unknown } // PATH-relative ("sh") or "~/…": cannot tell
+        let path = URL(fileURLWithPath: rawPath).standardizedFileURL.path
+        if isOnUnmountedVolume(path, volumes: volumes, mounted: mounted) { return .unknown }
+        if isPrivacyProtected(path, home: home) { return .unknown }
+        var st = stat()
+        if lstat(path, &st) == 0 { return .present }
+        guard errno == ENOENT || errno == ENOTDIR else { return .unknown }
+        var current = (path as NSString).deletingLastPathComponent
+        while true {
+            if lstat(current, &st) == 0 {
+                guard let dir = opendir(current) else { return .unknown } // unreadable: cannot verify
+                closedir(dir)
+                return .missing
+            }
+            guard errno == ENOENT || errno == ENOTDIR, current != "/" else { return .unknown }
+            current = (current as NSString).deletingLastPathComponent
+        }
     }
 }
 
@@ -133,14 +235,16 @@ extension RemnantFinder {
     public func orphans(installed: [InstalledApp], progress: ProgressHandler? = nil) async -> [OrphanGroup] {
         progress?(ScanProgress(phase: "Сбор сведений о приложениях", fraction: 0))
         if !installed.isEmpty { setInstalledApps(installed) }
-        let apps = installed.isEmpty ? installedApps() : installed
+        let apps = ownershipApps(installed.isEmpty ? nil : installed)
         prefetchSignatures(apps)
-        let ownership = InstalledOwnership(apps.map { signature(for: $0) })
+        let ownership = InstalledOwnership(apps.map { signature(for: $0) },
+                                           bundles: InstalledBundles.scan(roots.installedBundleDirs))
 
         progress?(ScanProgress(phase: "Поиск остатков удалённых приложений", fraction: 0.2))
         let index = currentIndex()
         let candidates = Self.orphanCandidates(index: index, ownership: ownership, appLocator: appLocator,
-                                               now: Date(), roots: roots, quietPeriod: orphanQuietPeriodValue)
+                                               now: Date(), roots: roots, quietPeriod: orphanQuietPeriodValue,
+                                               volumeMounted: volumeMounted)
 
         progress?(ScanProgress(phase: "Подсчёт размера", fraction: 0.6))
         let flat = candidates.flatMap { group in group.entries.map { (group.key, $0.0, $0.1) } }
@@ -169,18 +273,33 @@ extension RemnantFinder {
 
     static func orphanCandidates(index: LocationIndex, ownership: InstalledOwnership,
                                  appLocator: (String) -> URL?, now: Date, roots: SearchRoots,
-                                 quietPeriod: TimeInterval = orphanQuietPeriod) -> [OrphanCandidate] {
+                                 quietPeriod: TimeInterval = orphanQuietPeriod,
+                                 volumeMounted: (String) -> Bool = { PathFacts.isMountPoint($0) }) -> [OrphanCandidate] {
         var groups: [String: OrphanCandidate] = [:]
         var locatorCache: [String: Bool] = [:]
+        let volumes = roots.volumes.standardizedFileURL.path
+        let home = roots.home.standardizedFileURL.path
         func installedSomewhere(_ id: String) -> Bool {
             if let cached = locatorCache[id] { return cached }
             var found = false
-            if let url = appLocator(id), FileManager.default.fileExists(atPath: url.path),
-               !url.path.contains("/.Trash/"), !SafetyGuard.isInsideTrash(url) {
-                found = true
+            if let url = appLocator(id), !url.path.contains("/.Trash/"), !SafetyGuard.isInsideTrash(url) {
+                let path = url.standardizedFileURL.path
+                // An app on an unplugged drive is still installed.
+                found = PathFacts.isOnUnmountedVolume(path, volumes: volumes, mounted: volumeMounted)
+                    || FileManager.default.fileExists(atPath: path)
             }
             locatorCache[id] = found
             return found
+        }
+        func presence(_ path: String) -> PathFacts.Presence {
+            if SafetyGuard.isInsideTrash(URL(fileURLWithPath: path)) { return .missing }
+            return PathFacts.presence(of: path, volumes: volumes, home: home, mounted: volumeMounted)
+        }
+        /// High only for a job whose Label is an exact bundle-style ID and whose program lived in a now-missing app.
+        func launchJobIsSurelyOrphaned(_ entry: IndexEntry, program: String, id: String) -> Bool {
+            guard let label = entry.label?.lowercased(), label == id, NameRules.isReverseDNS(label),
+                  let r = program.range(of: ".app/", options: .caseInsensitive) else { return false }
+            return presence(String(program[..<r.lowerBound]) + ".app") == .missing
         }
 
         for (location, entries) in index.entries where location.orphanScan {
@@ -188,9 +307,10 @@ extension RemnantFinder {
                 if let modified = entry.modified, now.timeIntervalSince(modified) < quietPeriod { continue }
                 if SafetyGuard.isProtected(entry.url) { continue }
                 if NameRules.isUUID(entry.stem) { continue }
-                if location.style == .launchd, let program = entry.programPath,
-                   FileManager.default.fileExists(atPath: program), !SafetyGuard.isInsideTrash(URL(fileURLWithPath: program)) {
-                    continue // the job's program is still on disk: something installed owns it
+                // A launch job is a leftover only when its program is verifiably gone. Present, PATH-relative,
+                // unreadable (privacy-protected) or on an unplugged drive: something may still own it.
+                if location.style == .launchd {
+                    guard let program = entry.programPath, presence(program) == .missing else { continue }
                 }
 
                 // Prefer an identifier that looks like a bundle ID.
@@ -216,7 +336,11 @@ extension RemnantFinder {
                     if installedSomewhere(core) || installedSomewhere(key) { continue }
                     let originalCore = NameRules.stripGroupPrefixes(entry.stem).core
                     let displayKey = OrphanRules.ownerKey(originalCore.lowercased() == core ? originalCore : core)
-                    let confidence: MatchConfidence = (full == core && NameRules.isReverseDNS(entry.stem)) ? .high : .medium
+                    var confidence: MatchConfidence = (full == core && NameRules.isReverseDNS(entry.stem)) ? .high : .medium
+                    if location.style == .launchd, confidence == .high,
+                       !launchJobIsSurelyOrphaned(entry, program: entry.programPath ?? "", id: full) {
+                        confidence = .medium // unloading someone's own job by mistake is worse than keeping it
+                    }
                     groups[key, default: OrphanCandidate(key: key, id: displayKey,
                                                          displayName: OrphanRules.displayName(forID: displayKey),
                                                          entries: [])].entries.append((entry, confidence))
@@ -237,25 +361,25 @@ extension RemnantFinder {
         }
 
         // Fold plain-name groups into the matching bundle-ID group ("Spotify" folder → com.spotify.client).
+        var targetByToken: [String: String] = [:]
+        for (key, g) in groups where !key.hasPrefix("name:") {
+            let tokens = [NameRules.normalize(g.displayName)]
+                + key.split(separator: ".").dropFirst().map { NameRules.normalize(String($0)) }
+            for t in tokens where !t.isEmpty {
+                if let existing = targetByToken[t], existing <= key { continue }
+                targetByToken[t] = key
+            }
+        }
         for key in groups.keys where key.hasPrefix("name:") {
-            let n = String(key.dropFirst(5))
-            if let target = groups.first(where: { !$0.key.hasPrefix("name:") &&
-                (NameRules.normalize($0.value.displayName) == n ||
-                 $0.key.split(separator: ".").dropFirst().contains { NameRules.normalize(String($0)) == n }) })?.key,
-               let plain = groups.removeValue(forKey: key) {
+            if let target = targetByToken[String(key.dropFirst(5))], let plain = groups.removeValue(forKey: key) {
                 groups[target]?.entries += plain.entries
             }
         }
 
-        // Nested duplicates inside one group.
+        // Nested duplicates inside one group: the outer item covers the inner ones.
         return groups.values.map { g in
             var g = g
-            let sorted = g.entries.sorted { $0.0.url.path.count < $1.0.url.path.count }
-            var kept: [(IndexEntry, MatchConfidence)] = []
-            for e in sorted where !kept.contains(where: { e.0.url.path.hasPrefix($0.0.url.path + "/") }) {
-                kept.append(e)
-            }
-            g.entries = kept
+            g.entries = NestedPaths.outermost(g.entries) { $0.0.url.standardizedFileURL.path }
             return g
         }
     }

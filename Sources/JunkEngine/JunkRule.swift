@@ -15,6 +15,7 @@ public enum JunkCategoryID {
     public static let deviceLogs = "xcode-device-logs"
     public static let packageCaches = "dev-package-caches"
     public static let cargoRegistry = "cargo-registry"
+    public static let jetbrainsCaches = "jetbrains-caches"
     public static let temporaryFiles = "temporary-files"
     public static let installers = "old-installers"
     public static let mailDownloads = "mail-downloads"

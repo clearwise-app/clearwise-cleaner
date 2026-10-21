@@ -74,7 +74,7 @@ final class RemnantFinderTests: XCTestCase {
         XCTAssertEqual(found.remnant(group)?.confidence, .high)
         XCTAssertEqual(found.remnant(byBundle)?.confidence, .high)
         XCTAssertEqual(found.remnant(groupPrefs)?.confidence, .high)
-        XCTAssertEqual(found.remnant(teamOnly)?.confidence, .medium)
+        XCTAssertEqual(found.remnant(teamOnly)?.confidence, .low, "team-only match is never pre-selected")
         XCTAssertEqual(found.remnant(teamOnly)?.kind, .groupContainers)
         XCTAssertNil(found.remnant(otherTeam))
 
@@ -381,5 +381,181 @@ final class InventoryAndPlanTests: XCTestCase {
         let fx = try Fixture()
         let app = try fx.makeApp("Nobody", id: "com.nobody.\(UUID().uuidString.prefix(8))")
         XCTAssertFalse(AppUninstaller.isRunning(app))
+    }
+}
+
+/// Regression tests for the safety review (findings 4, 5, 6, 7, 11).
+final class SafetyReviewRegressionTests: XCTestCase {
+
+    func orphanPaths(_ groups: [OrphanGroup]) -> [String: MatchConfidence] {
+        var out: [String: MatchConfidence] = [:]
+        for r in groups.flatMap(\.remnants) { out[r.item.url.standardizedFileURL.path] = r.confidence }
+        return out
+    }
+
+    // 4. Data of installed plug-ins / prefpanes / input methods is not orphaned.
+    func testDataOfInstalledNonAppBundlesIsNotOrphaned() async throws {
+        let fx = try Fixture()
+        let app = try fx.makeApp("Foo Writer", id: "com.acme.foowriter")
+        try fx.makeBundle(fx.lib, "Audio/Plug-Ins/Components/Diva.component", id: "com.u-he.Diva")
+        try fx.makeBundle(fx.sysLib, "Audio/Plug-Ins/VST3/FabFilter/Pro-Q 3.vst3", id: "com.fabfilter.Pro-Q.3")
+        try fx.makeBundle(fx.sysLib, "Audio/Plug-Ins/CLAP/Surge XT.clap", id: "org.surge-synth-team.surge-xt")
+        try fx.makeBundle(fx.sysLib, "PreferencePanes/Tuner.prefPane", id: "com.tunerco.prefpane")
+        try fx.makeBundle(fx.lib, "Screen Savers/Aerial.saver", id: "com.johncoates.Aerial")
+        try fx.makeBundle(fx.lib, "QuickLook/Peek.qlgenerator", id: "com.peekco.quicklook")
+        try fx.makeBundle(fx.lib, "Services/Shorten.service", id: "com.shortenco.service")
+        try fx.makeBundle(fx.lib, "Internet Plug-Ins/Viewer.plugin", id: "com.viewerco.plugin")
+        try fx.makeBundle(fx.lib, "Input Methods/Kana.app", id: "com.kanaco.inputmethod.Kana")
+        try fx.makeBundle(fx.sysLib, "Input Methods/Pinyin.app", id: "com.pinyinco.inputmethod")
+
+        let owned = [
+            try fx.plist(fx.lib, "Preferences/com.u-he.Diva.plist", ["a": 1]),
+            try fx.plist(fx.lib, "Preferences/com.fabfilter.Pro-Q.3.plist", ["a": 1]),
+            try fx.dir(fx.lib, "Application Support/org.surge-synth-team.surge-xt"),
+            try fx.plist(fx.lib, "Preferences/com.tunerco.prefpane.plist", ["a": 1]),
+            try fx.dir(fx.lib, "Caches/com.johncoates.Aerial"),
+            try fx.dir(fx.lib, "Containers/com.peekco.quicklook"),
+            try fx.plist(fx.lib, "Preferences/com.shortenco.service.plist", ["a": 1]),
+            try fx.dir(fx.lib, "Caches/com.viewerco.plugin"),
+            try fx.dir(fx.lib, "Caches/com.kanaco.inputmethod.Kana"),
+            try fx.plist(fx.lib, "Preferences/com.pinyinco.inputmethod.plist", ["a": 1]),
+            // Vendor-wide group container of an installed plug-in vendor.
+            try fx.dir(fx.lib, "Group Containers/group.com.fabfilter.shared"),
+        ]
+        let ghost = try fx.plist(fx.lib, "Preferences/com.ghostsoft.spectre.plist", ["a": 1])
+
+        let found = orphanPaths(await fx.finder(known: [app]).orphans(installed: [app], progress: nil))
+        for u in owned { XCTAssertNil(found[u.path], "owned by an installed bundle: \(u.path)") }
+        XCTAssertEqual(found[ghost.path], .high, "real orphans are still found")
+    }
+
+    // 5. An app on an unplugged drive is still installed; its launch job is not missing.
+    func testAppOnUnpluggedDriveIsNotUninstalled() async throws {
+        let fx = try Fixture()
+        let app = try fx.makeApp("Foo Writer", id: "com.acme.foowriter")
+        let studio = fx.roots.volumes.appendingPathComponent("ExtSSD/Studio.app")
+        let container = try fx.dir(fx.lib, "Containers/com.studioco.studio")
+        let agent = try fx.plist(fx.lib, "LaunchAgents/com.studioco.studio.agent.plist", [
+            "Label": "com.studioco.studio.agent",
+            "Program": studio.appendingPathComponent("Contents/MacOS/agent").path,
+        ])
+        let locator: @Sendable (String) -> URL? = { $0.hasPrefix("com.studioco.studio") ? studio : nil }
+
+        let unplugged = orphanPaths(await fx.finder(known: [app], locator: locator).orphans(installed: [app], progress: nil))
+        XCTAssertNil(unplugged[container.path], "app is on an unplugged drive, not deleted")
+        XCTAssertNil(unplugged[agent.path], "program on an unplugged drive is not verifiably missing")
+
+        // Same drive attached, app really gone: now both are leftovers, the job surely so (exact label, missing .app).
+        try FileManager.default.createDirectory(at: studio.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let volume = studio.deletingLastPathComponent().path
+        let plugged = orphanPaths(await fx.finder(known: [app], mounted: { $0 == volume }, locator: locator)
+            .orphans(installed: [app], progress: nil))
+        XCTAssertEqual(plugged[container.path], .high)
+        XCTAssertEqual(plugged[agent.path], .high)
+    }
+
+    // 6. The user's own launch agents are not orphaned unless their program is verifiably missing.
+    func testUserLaunchAgentsNeedAVerifiablyMissingProgram() async throws {
+        let fx = try Fixture()
+        let fm = FileManager.default
+        let app = try fx.makeApp("Foo Writer", id: "com.acme.foowriter")
+        let pathRelative = try fx.plist(fx.lib, "LaunchAgents/com.me.backup.plist", [
+            "Label": "com.me.backup", "ProgramArguments": ["sh", "-c", "rsync -a ~/x ~/y"],
+        ])
+        let protected = try fx.plist(fx.lib, "LaunchAgents/com.me.notes.plist", [
+            "Label": "com.me.notes", "ProgramArguments": [fx.home.appendingPathComponent("Documents/sync.sh").path],
+        ])
+        try fm.createDirectory(at: fx.home.appendingPathComponent("Documents"), withIntermediateDirectories: true)
+        let lockedDir = fx.home.appendingPathComponent("Private")
+        try fm.createDirectory(at: lockedDir, withIntermediateDirectories: true)
+        let unreadable = try fx.plist(fx.lib, "LaunchAgents/com.me.locked.plist", [
+            "Label": "com.me.locked", "Program": lockedDir.appendingPathComponent("run.sh").path,
+        ])
+        let noProgram = try fx.plist(fx.lib, "LaunchAgents/com.me.empty.plist", ["Label": "com.me.empty"])
+        // Verifiably missing: the parent exists and is readable / the whole app is gone.
+        try fm.createDirectory(at: fx.root.appendingPathComponent("opt"), withIntermediateDirectories: true)
+        let goneTool = try fx.plist(fx.lib, "LaunchAgents/com.gonetool.runner.plist", [
+            "Label": "com.gonetool.runner", "Program": fx.root.appendingPathComponent("opt/gonetool/runner").path,
+        ])
+        let goneApp = try fx.plist(fx.sysLib, "LaunchDaemons/com.goneapp.helper.plist", [
+            "Label": "com.goneapp.helper",
+            "ProgramArguments": [fx.apps.appendingPathComponent("Gone App.app/Contents/MacOS/helper").path],
+        ])
+        let mismatchedLabel = try fx.plist(fx.lib, "LaunchAgents/com.otherjob.x.plist", [
+            "Label": "com.otherjob.y", "Program": fx.apps.appendingPathComponent("Other.app/Contents/MacOS/y").path,
+        ])
+
+        try fm.setAttributes([.posixPermissions: 0o000], ofItemAtPath: lockedDir.path)
+        defer { try? fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: lockedDir.path) }
+        let found = orphanPaths(await fx.finder(known: [app]).orphans(installed: [app], progress: nil))
+        try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: lockedDir.path) // before the fixture is removed
+
+        for u in [pathRelative, protected, unreadable, noProgram] {
+            XCTAssertNil(found[u.path], "program not verifiably missing: \(u.lastPathComponent)")
+        }
+        XCTAssertEqual(found[goneTool.path], .medium, "not pointing into an app bundle: never pre-selected")
+        XCTAssertEqual(found[goneApp.path], .high, "exact label, program inside a deleted app")
+        XCTAssertEqual(found[mismatchedLabel.path], .medium, "label differs from the file name")
+    }
+
+    // 7. A team-only group container stays while an app of the same team lives deep in /Applications.
+    func testTeamOnlyContainerKeptForDeepSiblingApp() async throws {
+        let fx = try Fixture()
+        let app = try fx.makeApp("Teleport", id: "com.acme.teleport", teamID: "ABCDE12345")
+        let deepDir = fx.apps.appendingPathComponent("Adobe Creative Cloud/ACC", isDirectory: true)
+        let deep = try fx.makeApp("Creative Cloud", id: "com.deepvendor.creativecloud", in: deepDir)
+        let teamOnly = try fx.dir(fx.lib, "Group Containers/ABCDE12345.misc")
+        let deepCache = try fx.dir(fx.lib, "Caches/com.deepvendor.creativecloud")
+
+        let alone = await fx.finder(known: [app]).remnants(for: app)
+        XCTAssertEqual(alone.remnant(teamOnly)?.confidence, .low)
+
+        let teams = [deep.url.standardizedFileURL.path: "ABCDE12345"]
+        let finder = fx.finder(known: [app], teams: teams) // the UI inventory does not see the deep app
+        let found = await finder.remnants(for: app)
+        XCTAssertNil(found.remnant(teamOnly), "a sibling app of the team still uses it")
+
+        let orphans = orphanPaths(await finder.orphans(installed: [app], progress: nil))
+        XCTAssertNil(orphans[deepCache.path], "deep app counts as installed")
+        XCTAssertNil(orphans[teamOnly.path])
+
+        // The visible inventory is unchanged (one folder level).
+        let visible = await AppInventory(roots: fx.roots).installedApps()
+        XCTAssertFalse(visible.contains { $0.bundleID == "com.deepvendor.creativecloud" })
+    }
+
+    // 11. Nested dedupe is linear-ish and keeps its semantics.
+    func testNestedDedupeSemanticsAndSpeed() throws {
+        let base = URL(fileURLWithPath: "/tmp/UninstallEngineTests-perf/Library/Caches")
+        let loc = Location(base, .caches)
+        func entry(_ rel: String) -> IndexEntry {
+            let url = base.appendingPathComponent(rel)
+            return IndexEntry(url: url, location: loc, name: url.lastPathComponent, stem: url.lastPathComponent,
+                              ids: [], programPath: nil, isDirectory: true, modified: nil, insideVendorFolder: false)
+        }
+        let m = { (c: MatchConfidence) in MatchResult(confidence: c, specificity: 5, teamOnly: false) }
+
+        // Outer low displaced by a more confident inner item; its other inner items stand on their own.
+        let mixed = RemnantFinder.dedupeNested([(entry("V/B"), m(.low)), (entry("V"), m(.low)), (entry("V/A"), m(.high)),
+                                                (entry("V/A/deep"), m(.medium)), (entry("W"), m(.medium)),
+                                                (entry("W/x/y"), m(.medium))])
+        XCTAssertEqual(mixed.map { $0.0.url.lastPathComponent }, ["A", "B", "W"])
+
+        var items: [(IndexEntry, MatchResult)] = []
+        for i in 0..<2000 {
+            items.append((entry("app\(i)"), m(.high)))
+            for j in 0..<9 { items.append((entry("app\(i)/sub\(j)/leaf"), m(j == 0 ? .high : .low))) }
+        }
+        items.shuffle()
+        XCTAssertEqual(items.count, 20000)
+        var t = Date()
+        let kept = RemnantFinder.dedupeNested(items)
+        XCTAssertLessThan(Date().timeIntervalSince(t), 1.0, "dedupeNested on 20k items")
+        XCTAssertEqual(kept.count, 2000)
+
+        t = Date()
+        let outer = NestedPaths.outermost(items) { $0.0.url.path }
+        XCTAssertLessThan(Date().timeIntervalSince(t), 1.0, "orphan nested dedupe on 20k items")
+        XCTAssertEqual(outer.count, 2000)
     }
 }

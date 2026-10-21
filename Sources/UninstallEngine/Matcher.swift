@@ -132,11 +132,13 @@ enum Matcher {
             }
             if let m = idMatch(core, sig) ?? (core != l ? idMatch(l, sig) : nil) { return m }
             if let team, let own = sig.teamID, team == own.lowercased() {
-                teamMatch = MatchResult(confidence: .medium, specificity: 10, teamOnly: true)
+                // Same developer, nothing app-specific: other apps of the team (possibly deep in
+                // /Applications sub-folders) may share it. Never pre-selected.
+                teamMatch = MatchResult(confidence: .low, specificity: 10, teamOnly: true)
             }
         }
-        let byName = nameMatch(entry, sig)
-        if let teamMatch, (byName?.confidence ?? .low) < teamMatch.confidence { return teamMatch }
+        guard let byName = nameMatch(entry, sig) else { return teamMatch }
+        if let teamMatch, byName.confidence < teamMatch.confidence { return teamMatch }
         return byName
     }
 

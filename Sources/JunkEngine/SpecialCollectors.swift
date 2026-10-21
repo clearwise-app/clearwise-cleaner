@@ -34,6 +34,25 @@ enum SpecialCollectors {
         return !isPackage
     }
 
+    // MARK: JetBrains
+
+    /// `~/Library/Caches/JetBrains/<IDE>/{caches,index,tmp,log,jcef_cache}` — only the folders listed in
+    /// `JunkCatalog.jetBrainsRegenerableFolders`, and only real folders (never symlinks). `LocalHistory`
+    /// and any other entry are never returned.
+    static func jetBrainsCaches(_ env: JunkEnvironment) -> [JunkCandidate] {
+        var result: [JunkCandidate] = []
+        let base = env.homePath("Library/Caches/JetBrains")
+        for ide in FS.children(of: base) where FS.isDirectory(ide) {
+            for name in JunkCatalog.jetBrainsRegenerableFolders {
+                let url = ide.appendingPathComponent(name)
+                if FS.isDirectory(url) {
+                    result.append(JunkCandidate(url, note: "\(ide.lastPathComponent) · \(name)"))
+                }
+            }
+        }
+        return result
+    }
+
     // MARK: System logs
 
     /// Archived (rotated) logs and diagnostic reports from `/Library/Logs` and `/private/var/log`,

@@ -17,6 +17,8 @@ struct IndexEntry: Sendable, Hashable {
     let modified: Date?
     /// Found one level inside a vendor folder (e.g. Application Support/Google/Chrome).
     let insideVendorFolder: Bool
+    /// launchd `Label` (original case).
+    var label: String? = nil
 
     static func == (a: IndexEntry, b: IndexEntry) -> Bool { a.url == b.url }
     func hash(into h: inout Hasher) { h.combine(url) }
@@ -101,6 +103,7 @@ final class LocationIndex: @unchecked Sendable {
         var stem = name
         var ids: [String] = []
         var program: String?
+        var label: String?
 
         switch location.style {
         case .plain:
@@ -140,7 +143,7 @@ final class LocationIndex: @unchecked Sendable {
             guard let s = dropSuffix(name, ".plist") else { return nil }
             stem = s
             if let plist = BundleInfo.readPlist(url) {
-                if let label = plist["Label"] as? String { ids.append(label) }
+                if let l = plist["Label"] as? String { ids.append(l); label = l }
                 if let assoc = plist["AssociatedBundleIdentifiers"] as? [String] { ids += assoc }
                 if let assoc = plist["AssociatedBundleIdentifiers"] as? String { ids.append(assoc) }
                 program = (plist["Program"] as? String) ?? (plist["ProgramArguments"] as? [String])?.first
@@ -172,6 +175,6 @@ final class LocationIndex: @unchecked Sendable {
         }
         ids.insert(stem, at: 0)
         return IndexEntry(url: url, location: location, name: name, stem: stem, ids: ids, programPath: program,
-                          isDirectory: isDir, modified: modified, insideVendorFolder: insideVendor)
+                          isDirectory: isDir, modified: modified, insideVendorFolder: insideVendor, label: label)
     }
 }

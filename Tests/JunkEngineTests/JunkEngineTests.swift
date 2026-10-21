@@ -324,6 +324,108 @@ final class JunkEngineTests: XCTestCase {
         XCTAssertTrue(fm.fileExists(atPath: outsider.path))
     }
 
+    // MARK: JetBrains
+
+    func testJetBrainsOffersOnlyRegenerableFoldersAndNeverLocalHistory() async throws {
+        let ide = "Library/Caches/JetBrains/IntelliJIdea2024.1"
+        for d in ["caches", "index", "tmp", "log", "jcef_cache", "LocalHistory", "other", "frameworks"] {
+            try file("\(ide)/\(d)/data.bin", bytes: 20_000)
+        }
+        try file("\(ide)/LocalHistory/changes.storageData", bytes: 50_000)
+        try file("\(ide)/loose-file.bin", bytes: 20_000)
+        try file("Library/Caches/JetBrains/PyCharm2024.2/caches/c", bytes: 20_000)
+        try file("Library/Caches/JetBrains/PyCharm2024.2/LocalHistory/h", bytes: 20_000)
+        try file("Library/Caches/com.foo.app/blob", bytes: 20_000)
+
+        let (_, result) = await scan()
+        let jb = try XCTUnwrap(category(JunkCategoryID.jetbrainsCaches, in: result))
+        XCTAssertEqual(jb.risk, .review)
+        XCTAssertFalse(jb.isSelectedByDefault)
+        XCTAssertEqual(Set(relPaths(jb)), [
+            "\(ide)/caches", "\(ide)/index", "\(ide)/tmp", "\(ide)/log", "\(ide)/jcef_cache",
+            "Library/Caches/JetBrains/PyCharm2024.2/caches",
+        ])
+        // Nothing under JetBrains is offered by any other category, and LocalHistory by none at all.
+        let all = result.flatMap { c in c.items.map { (c.id, rel($0.url)) } }
+        XCTAssertFalse(all.contains { $0.1.contains("LocalHistory") }, "LocalHistory must never be offered")
+        XCTAssertTrue(all.filter { $0.1.contains("JetBrains") }.allSatisfy { $0.0 == JunkCategoryID.jetbrainsCaches })
+        XCTAssertEqual(relPaths(category(JunkCategoryID.userCaches, in: result)), ["Library/Caches/com.foo.app"])
+        assertNoOverlap(result)
+    }
+
+    func testJetBrainsSymlinkedSubfolderIsNotOffered() async throws {
+        let ide = home.appendingPathComponent("Library/Caches/JetBrains/GoLand2024.1")
+        try fm.createDirectory(at: ide, withIntermediateDirectories: true)
+        let elsewhere = root.appendingPathComponent("elsewhere")
+        try fm.createDirectory(at: elsewhere, withIntermediateDirectories: true)
+        try file("precious", bytes: 20_000, in: elsewhere)
+        try fm.createSymbolicLink(at: ide.appendingPathComponent("caches"), withDestinationURL: elsewhere)
+        let (_, result) = await scan()
+        XCTAssertNil(category(JunkCategoryID.jetbrainsCaches, in: result))
+    }
+
+    // MARK: Planner performance
+
+    func testClaimedPathsSemantics() {
+        var c = ClaimedPaths()
+        c.claim("/a/b/c")
+        XCTAssertTrue(c.coversOrInside("/a/b/c"))
+        XCTAssertTrue(c.coversOrInside("/a/b/c/d/e"))
+        XCTAssertFalse(c.coversOrInside("/a/b"))
+        XCTAssertFalse(c.coversOrInside("/a/b/cc"))
+        XCTAssertTrue(c.containsClaimed(inside: "/a/b"))
+        XCTAssertTrue(c.containsClaimed(inside: "/a"))
+        XCTAssertFalse(c.containsClaimed(inside: "/a/b/c"), "strictly below only")
+        XCTAssertFalse(c.containsClaimed(inside: "/a/bb"))
+        c.claim("/a/x")
+        XCTAssertTrue(c.containsClaimed(inside: "/a"))
+        XCTAssertFalse(c.coversOrInside("/a"))
+        XCTAssertEqual(c.count, 2)
+    }
+
+    func testPlannerSplitsFolderAroundHigherPriorityPath() throws {
+        try file("Library/Caches/Tool/keep.bin")
+        try file("Library/Caches/Tool/mine/inner.bin")
+        try file("Library/Caches/Tool/other.bin")
+        var high = JunkCatalog.derivedData; high.priority = 2
+        var low = JunkCatalog.userCaches; low.priority = 0
+        let env = JunkEnvironment.sandboxed(in: root)
+        let tool = home.appendingPathComponent("Library/Caches/Tool")
+        let out = JunkPlanner.assign([high, low],
+                                     [[JunkCandidate(tool.appendingPathComponent("mine"))], [JunkCandidate(tool)]], env: env)
+        XCTAssertEqual(out[0].map { $0.url.lastPathComponent }, ["mine"])
+        XCTAssertEqual(out[1].map { $0.url.lastPathComponent }, ["keep.bin", "other.bin"])
+    }
+
+    func testPlannerIsNotQuadratic() {
+        // 20 000 synthetic paths (nothing on disk): 10 000 claimed by a high-priority rule, and the same
+        // number again as lower-priority duplicates/children that must be dropped.
+        let base = root.appendingPathComponent("home/Library/Caches/Synthetic")
+        let high = (0..<10_000).map { JunkCandidate(base.appendingPathComponent("pkg\($0)/data")) }
+        let low = (0..<10_000).map { i in
+            JunkCandidate(base.appendingPathComponent(i.isMultiple(of: 2) ? "pkg\(i)/data/inner" : "other\(i)"))
+        }
+        var r1 = JunkCatalog.derivedData; r1.priority = 2
+        var r2 = JunkCatalog.userCaches; r2.priority = 0
+        let env = JunkEnvironment.sandboxed(in: root)
+        // The planner's own work (guard stubbed out): was ~7 s for 8k items when quadratic.
+        let t0 = Date()
+        let out = JunkPlanner.assign([r1, r2], [high, low], env: env, isProtected: { _ in false })
+        let dt = Date().timeIntervalSince(t0)
+        XCTAssertEqual(out[0].count, 10_000)
+        XCTAssertEqual(out[1].count, 5_000, "children of claimed paths are dropped, the rest kept")
+        XCTAssertLessThan(dt, 1.0, "planner took \(dt)s for 20k paths")
+
+        // Same input through the real SafetyGuard (a few syscalls per path in a debug build): generous bound,
+        // still orders of magnitude below the old quadratic behaviour.
+        let t1 = Date()
+        let real = JunkPlanner.assign([r1, r2], [high, low], env: env)
+        let dt1 = Date().timeIntervalSince(t1)
+        XCTAssertEqual(real[0].count, 10_000)
+        XCTAssertEqual(real[1].count, 5_000)
+        XCTAssertLessThan(dt1, 8.0, "planner with real guard took \(dt1)s for 20k paths")
+    }
+
     func testTrashCategoryIsFoundButPermanentDeletionIsRefusedOutsideRealTrash() async throws {
         let trashed = try file(".Trash/old file.txt", bytes: 2048)
         try file(".Trash/.hidden-folder/x", bytes: 2048)
@@ -331,7 +433,9 @@ final class JunkEngineTests: XCTestCase {
         let (_, result) = await scan()
         let trash = try XCTUnwrap(category(JunkCategoryID.trash, in: result))
         XCTAssertEqual(Set(trash.items.map(\.name)), ["old file.txt", ".hidden-folder"])
-        XCTAssertEqual(trash.risk, .safe)
+        XCTAssertEqual(trash.risk, .review)
+        XCTAssertFalse(trash.isSelectedByDefault, "emptying the Trash is permanent, so it must not be pre-selected")
+        XCTAssertTrue(trash.detail.contains("безвозвратно"))
 
         // The fake ~/.Trash is not the real Trash, so FileRemover must refuse permanent deletion.
         let removal = await JunkCleaner.clean(trash.items, in: trash)

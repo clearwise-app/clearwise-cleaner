@@ -31,7 +31,19 @@ public actor AppInventory {
             return results
         }
         progress?(ScanProgress(phase: "Готово", fraction: 1))
-        return Self.sorted(apps)
+        return Self.sorted(Self.disambiguated(apps))
+    }
+
+    /// Two copies with the same display name (Xcode + Xcode-beta) are shown by their file name.
+    static func disambiguated(_ apps: [InstalledApp]) -> [InstalledApp] {
+        let counts = Dictionary(apps.map { ($0.name, 1) }, uniquingKeysWith: +)
+        return apps.map { app in
+            let fileName = app.url.deletingPathExtension().lastPathComponent
+            guard counts[app.name, default: 0] > 1, fileName != app.name else { return app }
+            return InstalledApp(url: app.url, name: fileName, bundleID: app.bundleID, version: app.version,
+                                teamID: app.teamID, size: app.size, lastUsed: app.lastUsed,
+                                isSystemApp: app.isSystemApp, isAppStore: app.isAppStore)
+        }
     }
 
     static func sorted(_ apps: [InstalledApp]) -> [InstalledApp] {
@@ -47,9 +59,10 @@ public actor AppInventory {
         return sorted(concurrentMap(urls) { describe($0, sized: false) }.compactMap { $0 })
     }
 
-    /// `.app` bundles directly in each root, plus one level into plain sub-folders.
-    /// Never descends into a bundle, so helper apps nested inside other apps are skipped.
-    static func appBundleURLs(in roots: [URL]) -> [URL] {
+    /// `.app` bundles directly in each root, plus `folderDepth` levels of plain sub-folders (1 for the
+    /// visible inventory: Utilities, Setapp…). Never descends into a bundle, so helper apps nested inside
+    /// other apps are skipped.
+    static func appBundleURLs(in roots: [URL], folderDepth: Int = 1) -> [URL] {
         let fm = FileManager.default
         let keys: [URLResourceKey] = [.isDirectoryKey, .isSymbolicLinkKey, .isPackageKey]
         var seen = Set<String>()
@@ -62,22 +75,27 @@ public actor AppInventory {
         func children(_ dir: URL) -> [URL] {
             (try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: keys, options: [.skipsHiddenFiles])) ?? []
         }
-
-        for root in roots {
-            for item in children(root) {
+        func walk(_ dir: URL, depthLeft: Int) {
+            for item in children(dir) {
                 let v = try? item.resourceValues(forKeys: Set(keys))
                 if v?.isSymbolicLink == true { continue }
                 if item.pathExtension.lowercased() == "app" {
                     add(item)
-                } else if v?.isDirectory == true, v?.isPackage != true {
-                    for sub in children(item) where sub.pathExtension.lowercased() == "app" {
-                        if (try? sub.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink == true { continue }
-                        add(sub)
-                    }
+                } else if depthLeft > 0, v?.isDirectory == true, v?.isPackage != true {
+                    walk(item, depthLeft: depthLeft - 1)
                 }
             }
         }
+        for root in roots { walk(root, depthLeft: folderDepth) }
         return result
+    }
+
+    /// Apps up to three folders deep (`/Applications/Adobe Creative Cloud/ACC/Creative Cloud.app`) that the
+    /// visible one-level inventory misses. Used only to decide what other installed apps still own.
+    static func deepAppsMissing(from known: [InstalledApp], roots: SearchRoots) -> [InstalledApp] {
+        let knownPaths = Set(known.map { $0.url.standardizedFileURL.path })
+        let urls = appBundleURLs(in: roots.applicationDirs, folderDepth: 3).filter { !knownPaths.contains($0.path) }
+        return concurrentMap(urls) { describe($0, sized: false, readTeam: false) }.compactMap { $0 }
     }
 
     /// True for apps on the sealed system volume or symlinked into it (e.g. /Applications/Safari.app → Cryptexes).
@@ -87,7 +105,8 @@ public actor AppInventory {
         return path.hasPrefix("/System/") || resolved.hasPrefix("/System/")
     }
 
-    static func describe(_ url: URL, sized: Bool) -> InstalledApp? {
+    /// `readTeam: false` leaves the Team ID to the code-signature read of the app's signature.
+    static func describe(_ url: URL, sized: Bool, readTeam: Bool = true) -> InstalledApp? {
         guard let info = BundleInfo(appURL: url) else { return nil }
         let bundleID = info.bundleID
         // Only apps that are part of the OS are locked. Apple's App Store apps in /Applications
@@ -99,7 +118,7 @@ public actor AppInventory {
             name: info.name,
             bundleID: bundleID,
             version: info.version,
-            teamID: CodeSigning.teamID(for: url),
+            teamID: readTeam ? CodeSigning.teamID(for: url) : nil,
             size: sized ? FileSizer.allocatedSize(of: url) : 0,
             lastUsed: sized ? FileMetadata.lastUsedDate(of: url) : nil,
             isSystemApp: isSystem,

@@ -13,10 +13,14 @@ public actor RemnantFinder {
     /// Asks Launch Services whether an app with this bundle ID exists anywhere (conservative orphan check).
     let appLocator: @Sendable (String) -> URL?
     let signProvider: @Sendable (URL) -> CodeSignInfo
+    /// Is the volume mounted at this path (`/Volumes/<name>`) attached right now?
+    let volumeMounted: @Sendable (String) -> Bool
 
     private var index: LocationIndex?
     private var providedApps: [InstalledApp]?
     private var scannedApps: (apps: [InstalledApp], at: Date)?
+    /// Apps deeper in /Applications sub-folders than the visible inventory looks (ownership only).
+    private var deepApps: (known: Set<String>, apps: [InstalledApp], at: Date)?
     private var signatures: [URL: AppSignature] = [:]
     /// Do not read inside other apps' (group) containers when sizing. Reading there without Full Disk Access
     /// makes macOS show the blocking "access data from other apps" prompt; used by the read-only smoke run.
@@ -39,8 +43,10 @@ public actor RemnantFinder {
     init(roots: SearchRoots, knownApps: [InstalledApp]?,
          appLocator: @escaping @Sendable (String) -> URL? = { _ in nil },
          signProvider: @escaping @Sendable (URL) -> CodeSignInfo = { CodeSigning.info(for: $0) },
+         volumeMounted: @escaping @Sendable (String) -> Bool = { PathFacts.isMountPoint($0) },
          avoidPrivacyPrompts: Bool? = false) {
         self.roots = roots
+        self.volumeMounted = volumeMounted
         self.providedApps = knownApps
         self.avoidPrivacyPromptsOverride = avoidPrivacyPrompts
         self.appLocator = appLocator
@@ -57,6 +63,7 @@ public actor RemnantFinder {
     public func invalidate() {
         index = nil
         scannedApps = nil
+        deepApps = nil
     }
 
     // MARK: - Remnants of one app
@@ -66,10 +73,10 @@ public actor RemnantFinder {
         let index = currentIndex()
         let sig = signature(for: app)
         let appURL = app.url.standardizedFileURL
-        let others = installedApps().filter { $0.url.standardizedFileURL != appURL }
+        let others = ownershipApps().filter { $0.url.standardizedFileURL != appURL }
         prefetchSignatures(others)
         let otherSigs = others.map { signature(for: $0) }
-        let otherTeams = Set(others.compactMap(\.teamID))
+        let otherTeams = Set(otherSigs.compactMap(\.teamID))
 
         let soleVendor = sig.vendorPrefix.flatMap { vendor in
             otherSigs.contains { o in o.ownedIDs.contains { $0.hasPrefix(vendor + ".") } } ? nil : vendor
@@ -126,22 +133,35 @@ public actor RemnantFinder {
     }
 
     /// A folder and its child: keep the outer one unless the inner one is matched more confidently.
+    /// O(n · depth): every path only looks up its own ancestors.
     static func dedupeNested(_ items: [(IndexEntry, MatchResult)]) -> [(IndexEntry, MatchResult)] {
-        let sorted = items.sorted { $0.0.url.path.count < $1.0.url.path.count }
-        var kept: [(IndexEntry, MatchResult)] = []
-        for item in sorted {
+        var byPath: [String: (IndexEntry, MatchResult)] = [:]
+        byPath.reserveCapacity(items.count)
+        for item in items {
             let p = item.0.url.standardizedFileURL.path
-            if let i = kept.firstIndex(where: { p.hasPrefix($0.0.url.standardizedFileURL.path + "/") }) {
-                if kept[i].1.confidence < item.1.confidence {
-                    // The inner match is more certain: drop the outer guess, keep the inner item.
-                    kept.remove(at: i)
-                    kept.append(item)
-                }
-                continue
-            }
-            kept.append(item)
+            if let existing = byPath[p], existing.1.confidence >= item.1.confidence { continue }
+            byPath[p] = item
         }
-        return kept
+        // An outer item is displaced by any inner item matched more confidently.
+        var displaced = Set<String>()
+        for (p, item) in byPath {
+            NestedPaths.forEachAncestor(of: p) { a in
+                if let outer = byPath[a], outer.1.confidence < item.1.confidence { displaced.insert(a) }
+                return false
+            }
+        }
+        // Keep the outermost surviving item of each subtree. A surviving outer item is, by construction,
+        // at least as confident as everything inside it.
+        var kept: [(String, (IndexEntry, MatchResult))] = []
+        for (p, item) in byPath where !displaced.contains(p) {
+            var covered = false
+            NestedPaths.forEachAncestor(of: p) { a in
+                if byPath[a] != nil, !displaced.contains(a) { covered = true }
+                return covered
+            }
+            if !covered { kept.append((p, item)) }
+        }
+        return kept.sorted { $0.0 < $1.0 }.map(\.1)
     }
 
     static func makeRemnants(_ items: [(IndexEntry, MatchResult)], roots: SearchRoots, avoidPrompts: Bool) -> [AppRemnant] {
@@ -211,6 +231,19 @@ public actor RemnantFinder {
         return apps
     }
 
+    /// Everything that counts as installed when deciding who else owns a file: the inventory plus apps
+    /// nested up to three folders deep in /Applications sub-folders (cached like the inventory).
+    func ownershipApps(_ base: [InstalledApp]? = nil) -> [InstalledApp] {
+        let apps = base ?? installedApps()
+        let known = Set(apps.map { $0.url.standardizedFileURL.path })
+        if let deepApps, deepApps.known == known, Date().timeIntervalSince(deepApps.at) < Self.appsTTL {
+            return apps + deepApps.apps
+        }
+        let extra = AppInventory.deepAppsMissing(from: apps, roots: roots)
+        deepApps = (known, extra, Date())
+        return apps + extra
+    }
+
     func signature(for app: InstalledApp) -> AppSignature {
         let key = app.url.standardizedFileURL
         if let s = signatures[key] { return s }
@@ -231,5 +264,34 @@ public actor RemnantFinder {
     static func makeSignature(_ app: InstalledApp, signProvider: (URL) -> CodeSignInfo) -> AppSignature {
         let info = BundleInfo(appURL: app.url)
         return AppSignature(app: app, info: info, sign: signProvider(app.url), nestedIDs: info?.nestedBundleIDs() ?? [])
+    }
+}
+
+/// Ancestor walks over standardized absolute paths (no file system access).
+enum NestedPaths {
+    /// Calls `body` with every proper ancestor of `path`, nearest first, excluding "/". Stops when it returns true.
+    static func forEachAncestor(of path: String, _ body: (String) -> Bool) {
+        var end = path.endIndex
+        while let slash = path[..<end].lastIndex(of: "/"), slash != path.startIndex {
+            if body(String(path[..<slash])) { return }
+            end = slash
+        }
+    }
+
+    /// Items whose path has no ancestor among the items (first occurrence wins for equal paths). O(n · depth).
+    static func outermost<T>(_ items: [T], path: (T) -> String) -> [T] {
+        let paths = items.map(path)
+        let all = Set(paths)
+        var seen = Set<String>()
+        var out: [T] = []
+        for (item, p) in zip(items, paths) where seen.insert(p).inserted {
+            var nested = false
+            forEachAncestor(of: p) { a in
+                nested = all.contains(a)
+                return nested
+            }
+            if !nested { out.append(item) }
+        }
+        return out
     }
 }

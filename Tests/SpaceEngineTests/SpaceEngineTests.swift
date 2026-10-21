@@ -304,6 +304,122 @@ final class SpaceMapperTests: FixtureTestCase {
     }
 }
 
+// MARK: - Safety-review regressions
+
+final class HomeRootWalkTests: FixtureTestCase {
+    private var home: URL { root.appendingPathComponent("home") }
+
+    private func walkNames(root walkRoot: URL, home: URL) -> [String] {
+        var found: [String] = []
+        let o = FileWalker.Options(minAllocatedSize: bytes(10), includePackages: true, phase: "test", home: home)
+        FileWalker.walk(root: walkRoot, options: o, monitor: WalkMonitor(totalUnits: 1, handler: nil)) {
+            // The enumerator may report /private/var/… for /var/…, so cut at the fixture's "home/".
+            let p = $0.url.path
+            found.append(p.range(of: "/home/").map { String(p[$0.upperBound...]) } ?? p)
+        }
+        return found.sorted()
+    }
+
+    /// Finding 10: with the whole home as a root, ~/Documents, ~/Desktop… were skipped because
+    /// `SafetyGuard.isProtected` ("do not remove this folder") was used as "do not enter".
+    func testHomeAsRootDescendsIntoUserFoldersButNotProtectedAreas() throws {
+        try makeFile("home/Documents/big-old-file.bin", blocks: 100, daysOld: 400)
+        try makeFile("home/Desktop/sub/deep.bin", blocks: 100)
+        try makeFile("home/Downloads/dl.bin", blocks: 100)
+        try makeFile("home/Movies/m.bin", blocks: 100)
+        try makeFile("home/Projects/p/src.bin", blocks: 100)
+        // Protected areas and app data: never entered.
+        try makeFile("home/Library/Keychains/login.keychain-db", blocks: 100)
+        try makeFile("home/Library/Mail/V10/box.bin", blocks: 100)
+        try makeFile("home/Library/Messages/chat.bin", blocks: 100)
+        try makeFile("home/Library/Mobile Documents/com~apple~CloudDocs/icloud.bin", blocks: 100)
+        try makeFile("home/Library/CloudStorage/Dropbox/d.bin", blocks: 100)
+        try makeFile("home/Library/Application Support/AddressBook/ab.bin", blocks: 100)
+        try makeFile("home/Library/Application Support/Other/o.bin", blocks: 100)
+        try makeFile("home/Library/Containers/com.x/Data/c.bin", blocks: 100)
+
+        XCTAssertEqual(walkNames(root: home, home: home), [
+            "Desktop/sub/deep.bin", "Documents/big-old-file.bin", "Downloads/dl.bin", "Movies/m.bin", "Projects/p/src.bin",
+        ])
+    }
+
+    func testOldFilesWithHomeRootFindsDocumentsFile() async throws {
+        try makeFile("home/Documents/big-old-file.bin", blocks: 150, daysOld: 400)
+        var o = options()
+        o.roots = [home]
+        let result = await FileAnalyzer().oldFiles(o, progress: nil)
+        XCTAssertEqual(names(result), ["big-old-file.bin"])
+        // Whatever the walk reports is never an exact protected folder.
+        XCTAssertTrue(result.allSatisfy { !SafetyGuard.isProtected($0.item.url) })
+    }
+
+    func testExactFolderProtectionIsNotAreaProtection() {
+        let h = SafetyGuard.home
+        for name in ["Documents", "Desktop", "Downloads", "Movies", "Music", "Pictures"] {
+            let folder = h.appendingPathComponent(name)
+            XCTAssertTrue(SafetyGuard.isProtected(folder), "\(name) itself must not be removable")
+            XCTAssertFalse(FileWalker.isInProtectedArea(folder), "\(name) must be walked")
+            XCTAssertFalse(FileWalker.isInProtectedArea(folder.appendingPathComponent("sub/file.bin")))
+        }
+        for area in ["Library/Keychains", "Library/Mail/V10", "Library/Messages", "Library/Mobile Documents",
+                     "Library/CloudStorage/Dropbox", "Library/Accounts", "Library/Calendars", "Library/Photos"] {
+            XCTAssertTrue(FileWalker.isInProtectedArea(h.appendingPathComponent(area)), area)
+        }
+        XCTAssertTrue(FileWalker.isInProtectedArea(URL(fileURLWithPath: "/System/Library/CoreServices")))
+        XCTAssertTrue(FileWalker.isInProtectedArea(URL(fileURLWithPath: "/usr/bin")))
+        XCTAssertFalse(FileWalker.isInProtectedArea(URL(fileURLWithPath: "/usr/local/share")))
+    }
+}
+
+final class DirectoryIdentityTests: FixtureTestCase {
+    func testVisitedDirectoriesReportsRepeats() {
+        let v = VisitedDirectories()
+        let a = VisitedDirectories.Identity(device: 1, inode: 10)
+        XCTAssertTrue(v.insert(a))
+        XCTAssertFalse(v.insert(a), "same (device, inode) twice")
+        XCTAssertTrue(v.insert(.init(device: 1, inode: 11)))
+        XCTAssertTrue(v.insert(.init(device: 2, inode: 10)), "same inode on another device is a different directory")
+    }
+
+    func testTwoPathsToOneDirectoryShareIdentityAndCountOnce() throws {
+        try makeFile("real/sub/x.bin", blocks: 3)
+        // A symlinked parent gives a second path to the same directory (what a firmlink does at "/").
+        try fm.createSymbolicLink(at: root.appendingPathComponent("alias"), withDestinationURL: root.appendingPathComponent("real"))
+        let direct = try XCTUnwrap(VisitedDirectories.identity(of: root.appendingPathComponent("real/sub")))
+        let viaAlias = try XCTUnwrap(VisitedDirectories.identity(of: root.appendingPathComponent("alias/sub")))
+        XCTAssertEqual(direct, viaAlias)
+        XCTAssertNotEqual(direct, VisitedDirectories.identity(of: root.appendingPathComponent("real")))
+
+        let v = VisitedDirectories()
+        XCTAssertTrue(v.firstVisit(of: root.appendingPathComponent("real/sub")))
+        XCTAssertFalse(v.firstVisit(of: root.appendingPathComponent("alias/sub")))
+        XCTAssertTrue(v.firstVisit(of: root.appendingPathComponent("does-not-exist")), "unknown identity is not a repeat")
+    }
+
+    func testMapperStillCountsEveryDistinctFolderOnce() async throws {
+        for i in 0..<6 { try makeFile("d\(i)/sub/f.bin", blocks: 5) }
+        let node = await SpaceMapper().map(root, depth: 3, progress: nil)
+        XCTAssertEqual(node.size, bytes(30))
+    }
+
+    func testFirmlinkMirrorIsSkippedOnlyWhenMappingRoot() {
+        let mirror = URL(fileURLWithPath: "/System/Volumes")
+        XCTAssertTrue(isFirmlinkMirror(mirror, scanRoot: URL(fileURLWithPath: "/")))
+        XCTAssertFalse(isFirmlinkMirror(mirror, scanRoot: URL(fileURLWithPath: "/System")))
+        XCTAssertFalse(isFirmlinkMirror(root.appendingPathComponent("System/Volumes"), scanRoot: URL(fileURLWithPath: "/")))
+    }
+
+    func testRealFirmlinkedDataVolumeHasSameIdentity() throws {
+        let a = VisitedDirectories.identity(of: URL(fileURLWithPath: "/Users"))
+        let b = VisitedDirectories.identity(of: URL(fileURLWithPath: "/System/Volumes/Data/Users"))
+        try XCTSkipUnless(a != nil && b != nil, "no firmlinked data volume here")
+        XCTAssertEqual(a, b, "/Users and /System/Volumes/Data/Users are one directory")
+        let v = VisitedDirectories()
+        XCTAssertTrue(v.firstVisit(of: URL(fileURLWithPath: "/Users")))
+        XCTAssertFalse(v.firstVisit(of: URL(fileURLWithPath: "/System/Volumes/Data/Users")))
+    }
+}
+
 // MARK: - Real disk (read-only, opt-in)
 
 final class RealDiskTests: XCTestCase {

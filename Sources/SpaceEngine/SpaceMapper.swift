@@ -47,6 +47,46 @@ public actor SpaceMapper {
     }
 }
 
+// MARK: - Directory identity
+
+/// Remembers which directories (by device + inode) were already entered, so a folder reachable by two paths
+/// is measured once. On macOS `/Users` and `/System/Volumes/Data/Users` are the same directory (firmlinks):
+/// without this, mapping `/` counted the whole data volume twice.
+final class VisitedDirectories: @unchecked Sendable {
+    struct Identity: Hashable, Sendable {
+        let device: Int64
+        let inode: UInt64
+    }
+
+    private let lock = NSLock()
+    private var seen = Set<Identity>()
+
+    /// Identity of the directory at `url` itself (not following a symlink in the last component).
+    static func identity(of url: URL) -> Identity? {
+        var st = stat()
+        guard lstat(url.path, &st) == 0 else { return nil }
+        return Identity(device: Int64(st.st_dev), inode: UInt64(st.st_ino))
+    }
+
+    /// Records `identity`; returns false when it was already recorded (the directory is a repeat).
+    func insert(_ identity: Identity) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        return seen.insert(identity).inserted
+    }
+
+    /// True the first time the directory at `url` is seen. Unreadable identities are never treated as repeats.
+    func firstVisit(of url: URL) -> Bool {
+        guard let id = Self.identity(of: url) else { return true }
+        return insert(id)
+    }
+}
+
+/// Mirrors that must not be walked when mapping `/`: `/System/Volumes` holds the data volume under its
+/// own name, which is the same content as `/Users`, `/Applications`, … seen through firmlinks.
+func isFirmlinkMirror(_ url: URL, scanRoot: URL) -> Bool {
+    scanRoot.standardizedFileURL.path == "/" && url.standardizedFileURL.path == "/System/Volumes"
+}
+
 // MARK: - Scan
 
 private struct Candidate {
@@ -147,6 +187,7 @@ private final class SpaceScan: @unchecked Sendable {
     ]
     private let keySet: Set<URLResourceKey>
     private var rootVolume: (any NSObjectProtocol)?
+    private let visitedDirectories = VisitedDirectories()
     private let phase = "Карта диска"
 
     /// Folders whose children are not opened (see `SpaceMapper.init(avoidPrivacyPrompts:)`).
@@ -168,6 +209,7 @@ private final class SpaceScan: @unchecked Sendable {
             return DirectoryNode(url: root, size: size, isDirectory: false, children: [])
         }
 
+        _ = visitedDirectories.firstVisit(of: root)
         let pool = WorkPool(threads: max(4, ProcessInfo.processInfo.activeProcessorCount))
         let done = DispatchSemaphore(value: 0)
         let rootState = DirState(url: root, level: 0, parent: nil, depth: depth)
@@ -211,6 +253,9 @@ private final class SpaceScan: @unchecked Sendable {
                         if v.isSymbolicLink == true { continue }
                         if v.isDirectory == true {
                             if let rootVolume, let vol = v.volumeIdentifier, !vol.isEqual(rootVolume) { continue }
+                            if isFirmlinkMirror(entry, scanRoot: root) { continue }
+                            // The same directory reached through another path (firmlink): count it once.
+                            if !visitedDirectories.firstVisit(of: entry) { continue }
                             subdirs.append(DirState(url: entry, level: state.level + 1, parent: state, depth: depth))
                         } else {
                             let size = Int64(v.totalFileAllocatedSize ?? v.fileAllocatedSize ?? 0)

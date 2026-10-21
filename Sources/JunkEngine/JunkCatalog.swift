@@ -29,7 +29,7 @@ enum JunkCatalog {
 
     static let all: [JunkRule] = [
         userCaches, userLogs, crashReports, systemLogs, browserCaches,
-        derivedData, archives, deviceSupport, simulatorCaches, deviceLogs, packageCaches, cargoRegistry,
+        derivedData, archives, deviceSupport, simulatorCaches, deviceLogs, packageCaches, cargoRegistry, jetbrainsCaches,
         temporaryFiles, installers, mailDownloads, iosBackups, brokenPreferences, brokenLaunchAgents, trash,
     ]
 
@@ -41,7 +41,9 @@ enum JunkCatalog {
                          symbol: "internaldrive.fill", risk: .safe)
         r.priority = 0
         r.locations = [.home("Library/Caches")]
-        r.excludedNames = protectedCacheNames
+        // JetBrains keeps IDE Local History (the user's unsaved-change safety net) inside its cache folder,
+        // so it is handled by its own rule that offers only the regenerable subfolders.
+        r.excludedNames = protectedCacheNames + [.exact("JetBrains")]
         r.skipsActiveItems = true
         return r
     }
@@ -163,6 +165,20 @@ enum JunkCatalog {
         return r
     }
 
+    /// Subfolders of `~/Library/Caches/JetBrains/<IDE>/` that the IDE rebuilds by itself. Everything else
+    /// there (notably `LocalHistory`, which holds the user's file history) is never offered.
+    static let jetBrainsRegenerableFolders = ["caches", "index", "tmp", "log", "jcef_cache"]
+
+    static var jetbrainsCaches: JunkRule {
+        var r = JunkRule(id: JunkCategoryID.jetbrainsCaches, title: "JetBrains: кэш и индексы",
+                         detail: "Кэши, индексы и временные файлы IntelliJ IDEA, PyCharm, WebStorm, Android Studio и других IDE. Они пересоздаются при следующем запуске, но индексация проекта займёт время. История изменений (Local History) не затрагивается.",
+                         symbol: "curlybraces", risk: .review, phase: "Файлы разработчика")
+        r.priority = 2
+        r.collector = { SpecialCollectors.jetBrainsCaches($0) }
+        r.skipsActiveItems = true
+        return r
+    }
+
     // MARK: Temporary & user files
 
     static var temporaryFiles: JunkRule {
@@ -227,8 +243,8 @@ enum JunkCatalog {
 
     static var trash: JunkRule {
         var r = JunkRule(id: JunkCategoryID.trash, title: "Корзина",
-                         detail: "Файлы, уже перемещённые в Корзину. Будут удалены безвозвратно.",
-                         symbol: "trash.fill", risk: .safe)
+                         detail: "Файлы в Корзине будут удалены безвозвратно — проверьте, что там нет нужного.",
+                         symbol: "trash.fill", risk: .review)
         r.locations = [.home(".Trash", includeHidden: true)]
         r.keepsEmptyItems = true
         return r

@@ -17,6 +17,8 @@ struct SearchRoots: Sendable {
     var usersShared: URL?
     /// Where installed apps live (`/Applications`, `~/Applications`).
     var applicationDirs: [URL]
+    /// Mount point root for external drives (`/Volumes`).
+    var volumes: URL = URL(fileURLWithPath: "/Volumes", isDirectory: true)
 
     static var live: SearchRoots {
         let home = SafetyGuard.home
@@ -46,7 +48,8 @@ struct SearchRoots: Sendable {
             applicationDirs: [
                 root.appendingPathComponent("Applications", isDirectory: true),
                 root.appendingPathComponent("home/Applications", isDirectory: true),
-            ]
+            ],
+            volumes: root.appendingPathComponent("Volumes", isDirectory: true)
         )
     }
 
@@ -122,6 +125,19 @@ struct Location: Sendable, Hashable {
 }
 
 extension SearchRoots {
+    /// Folders (user and system Library) holding installed non-app bundles: audio plug-ins, prefpanes,
+    /// screen savers, Quick Look / Spotlight importers, services, internet plug-ins, input methods.
+    /// Their bundle IDs count as installed when looking for leftovers of deleted apps.
+    var installedBundleDirs: [URL] {
+        let rels = [
+            "Audio/Plug-Ins/Components", "Audio/Plug-Ins/HAL", "Audio/Plug-Ins/VST", "Audio/Plug-Ins/VST3",
+            "Audio/Plug-Ins/CLAP", "Audio/Plug-Ins/MAS", "PreferencePanes", "Screen Savers", "QuickLook",
+            "Spotlight", "Services", "Internet Plug-Ins", "Input Methods",
+        ]
+        let libs = [home.appendingPathComponent("Library", isDirectory: true), systemLibrary]
+        return libs.flatMap { lib in rels.map { lib.appendingPathComponent($0, isDirectory: true) } }
+    }
+
     /// All places where traces of an app can live (docs/competitors.md §1).
     var locations: [Location] {
         let lib = home.appendingPathComponent("Library", isDirectory: true)

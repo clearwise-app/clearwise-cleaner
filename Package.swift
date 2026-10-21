@@ -25,6 +25,7 @@ let package = Package(
             dependencies: ["CleanerKit", "JunkEngine", "UninstallEngine", "SpaceEngine"],
             swiftSettings: swift5
         ),
+        .testTarget(name: "CleanerKitTests", dependencies: ["CleanerKit"], swiftSettings: swift5),
         .testTarget(name: "JunkEngineTests", dependencies: ["JunkEngine"], swiftSettings: swift5),
         .testTarget(name: "UninstallEngineTests", dependencies: ["UninstallEngine"], swiftSettings: swift5),
         .testTarget(name: "SpaceEngineTests", dependencies: ["SpaceEngine"], swiftSettings: swift5),

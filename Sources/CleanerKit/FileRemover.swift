@@ -46,21 +46,21 @@ public enum FileRemover {
 
         let trash = SafetyGuard.home.appendingPathComponent(".Trash").path
         let stamp = Int(Date().timeIntervalSince1970)
+        let owner = "\(getuid()):\(getgid())"
         var commands: [String] = []
         for (i, url) in allowed.enumerated() {
             let dest = "\(trash)/\(url.lastPathComponent) \(stamp)-\(i)"
-            commands.append("/bin/mv -f -- \(shellQuote(url.path)) \(shellQuote(dest))")
+            // Hand the moved item back to the user so Finder can "Put Back" / empty it without a password.
+            commands.append("/bin/mv -f -- \(shellQuote(url.path)) \(shellQuote(dest)) && /usr/sbin/chown -R \(owner) -- \(shellQuote(dest))")
         }
         let shell = commands.joined(separator: " ; ")
         let script = "do shell script \(appleScriptString(shell)) with administrator privileges"
 
         let sizes = allowed.map { knownSizes[$0] ?? FileSizer.allocatedSize(of: $0) }
-        let ok: (Bool, String?) = await MainActor.run {
-            var error: NSDictionary?
-            NSAppleScript(source: script)?.executeAndReturnError(&error)
-            if let error { return (false, error[NSAppleScript.errorMessage] as? String ?? "Отменено") }
-            return (true, nil)
-        }
+        // osascript in a child process: shows the standard password prompt without blocking the UI.
+        let ok: (Bool, String?) = await Task.detached(priority: .userInitiated) {
+            runOsascript(script)
+        }.value
         for (url, size) in zip(allowed, sizes) {
             if ok.0, !FileManager.default.fileExists(atPath: url.path) {
                 result.removed.append(url)
@@ -78,7 +78,7 @@ public enum FileRemover {
         await Task.detached(priority: .userInitiated) {
             var result = RemovalResult()
             for url in dedupeNested(urls) {
-                guard SafetyGuard.isInsideTrash(url) else {
+                guard SafetyGuard.isInsideTrash(url), !SafetyGuard.isProtected(url) else {
                     result.failed.append(RemovalFailure(url: url, reason: "Безвозвратное удаление разрешено только в Корзине"))
                     continue
                 }
@@ -98,12 +98,31 @@ public enum FileRemover {
     /// Drops URLs that are inside another URL in the same list, so a folder and its child
     /// are not removed (and counted) twice.
     public static func dedupeNested(_ urls: [URL]) -> [URL] {
-        // Keeps the caller's order (uninstall relies on "bundle last").
+        // Keeps the caller's order (uninstall relies on "bundle last"). O(n · depth).
         var seen = Set<String>()
         let unique = urls.map { $0.standardizedFileURL }.filter { seen.insert($0.path).inserted }
         return unique.filter { url in
-            !unique.contains { other in other != url && url.path.hasPrefix(other.path + "/") }
+            var parent = (url.path as NSString).deletingLastPathComponent
+            while parent.count > 1 {
+                if seen.contains(parent) { return false }
+                parent = (parent as NSString).deletingLastPathComponent
+            }
+            return true
         }
+    }
+
+    private static func runOsascript(_ script: String) -> (Bool, String?) {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        process.arguments = ["-e", script]
+        let errPipe = Pipe()
+        process.standardError = errPipe
+        process.standardOutput = FileHandle.nullDevice
+        do { try process.run() } catch { return (false, error.localizedDescription) }
+        process.waitUntilExit()
+        if process.terminationStatus == 0 { return (true, nil) }
+        let message = String(data: errPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        return (false, message.contains("-128") ? "Отменено пользователем" : "Нет прав администратора")
     }
 
     private static func isSymlink(_ url: URL) -> Bool {
