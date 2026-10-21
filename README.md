@@ -79,5 +79,3 @@ VERSION=1.0.0 scripts/package_release.sh     # build/Clearwise-Cleaner-1.0.0.dmg
 | `Sources/UninstallEngine` | Список приложений, поиск их следов и остатков удалённых |
 | `Sources/SpaceEngine` | Старые и большие файлы, карта диска, дубликаты, разбивка хранилища |
 | `Sources/MacCleaner` | Интерфейс на SwiftUI. С флагом `--snapshot <папка>` (отладочная сборка) сохраняет скриншоты всех экранов на демо-данных |
-
-Разбор конкурентов (CleanMyMac, CCleaner, AppCleaner, DaisyDisk и других) — в [docs/competitors.md](docs/competitors.md).
