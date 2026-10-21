@@ -1,5 +1,6 @@
 import SwiftUI
 import CleanerKit
+import SpaceEngine
 
 struct SmartCareView: View {
     let model: SmartCareModel
@@ -82,6 +83,7 @@ private struct AreaPills: View {
     }
 }
 
+
 private struct SmartCareResults: View {
     let model: SmartCareModel
     @Environment(AppModel.self) private var app
@@ -93,14 +95,15 @@ private struct SmartCareResults: View {
             SmartCareAllClear(onRescan: model.startScan, onOpenDiskMap: { app.select(.diskMap) },
                               onGrantAccess: { app.presentAccessSheet() })
         } else {
-            overview(junk: junk, digest: digest)
+            overview(digest: digest)
         }
     }
 
-    private func overview(junk: JunkModel, digest: SmartCareModel.Digest) -> some View {
-        GeometryReader { geo in
-        let compact = geo.size.height < 780
-        VStack(spacing: 0) {
+    private func overview(digest: SmartCareModel.Digest) -> some View {
+        let total = model.totalBytes
+        let count = model.totalCount
+        let found = app.junk.totalSize + digest.orphansBytes + digest.oldBytes
+        return VStack(spacing: 0) {
             HStack(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: 6) {
@@ -108,13 +111,11 @@ private struct SmartCareResults: View {
                         Text("УМНАЯ ОЧИСТКА").font(.system(size: 11, weight: .bold)).tracking(0.8)
                     }
                     .foregroundStyle(ModuleTint.smartCare.accent)
-                    BigSize(bytes: junk.selectedSize, size: compact ? 52 : 64)
+                    BigSize(bytes: total, size: 64)
                         .padding(.top, 2)
-                    Text(model.reviewing
-                         ? "выбрано для очистки · ещё \(Fmt.size(max(0, junk.totalSize - junk.selectedSize))) не выбрано"
-                         : junk.selectedSize > 0
-                         ? "можно очистить прямо сейчас — только безопасный мусор"
-                         : "безопасного мусора не найдено — загляните в разделы ниже")
+                    Text(total > 0
+                         ? "выбрано для очистки · ещё \(Fmt.size(max(0, found - total))) не выбрано"
+                         : "ничего не выбрано — включите то, что хотите очистить")
                         .font(.system(size: 14))
                         .foregroundStyle(Theme.textSecondary)
                     PartialAccessNote(onGrantAccess: { app.presentAccessSheet() })
@@ -123,76 +124,74 @@ private struct SmartCareResults: View {
                 Spacer()
                 VStack(alignment: .trailing, spacing: 10) {
                     LastCleanupChip()
-                    if model.reviewing {
-                        Button { model.closeReview() } label: { Label("Назад к обзору", systemImage: "chevron.left") }
-                            .buttonStyle(PillButtonStyle(kind: .quiet))
-                    } else {
-                        Button { model.startScan() } label: { Label("Сканировать заново", systemImage: "arrow.clockwise") }
-                            .buttonStyle(PillButtonStyle(kind: .quiet))
-                    }
+                    Button { model.startScan() } label: { Label("Сканировать заново", systemImage: "arrow.clockwise") }
+                        .buttonStyle(PillButtonStyle(kind: .quiet))
                 }
             }
             .padding(.horizontal, Theme.Space.page)
             .padding(.top, 30)
 
-            if !model.reviewing {
-                TrashHint()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, Theme.Space.page)
-                    .padding(.top, 12)
+            TrashHint()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Theme.Space.page)
+                .padding(.top, 12)
+
+            ScrollViewReader { scroller in
+            ScrollView {
+                VStack(spacing: 14) {
+                    TileRow {
+                        JunkTile(model: model, junk: app.junk, digest: digest) { app.select(.junk) }
+                        LeftoversTile(model: model, uninstaller: app.uninstaller, digest: digest) {
+                            app.uninstaller.tab = .leftovers
+                            app.select(.uninstaller)
+                        }
+                    }
+                    if model.expanded == .junk { JunkDrawer(junk: app.junk) }
+                    if model.expanded == .leftovers { LeftoversDrawer(uninstaller: app.uninstaller) }
+                    TileRow {
+                        OldFilesTile(model: model, oldFiles: app.oldFiles, digest: digest) { app.select(.oldFiles) }
+                        UnusedAppsTile(digest: digest) {
+                            app.uninstaller.tab = .apps
+                            app.uninstaller.filter = .unused
+                            app.select(.uninstaller)
+                        }
+                    }
+                    .id(SmartCareModel.Area.oldFiles)
+                    if model.expanded == .oldFiles { OldFilesDrawer(oldFiles: app.oldFiles) }
+                }
+                .padding(.horizontal, Theme.Space.page)
+                .padding(.top, 18)
+                .padding(.bottom, 16)
+            }
+            .scrollIndicators(.automatic)
+            // The lower row's list opens below the window's edge: bring its tile to the top.
+            .onChange(of: model.expanded) { _, area in
+                guard area == .oldFiles else { return }
+                withAnimation(Theme.spring) { scroller.scrollTo(SmartCareModel.Area.oldFiles, anchor: .top) }
+            }
             }
 
-            if model.reviewing {
-                SmartCareReview(junk: junk)
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
-            } else {
-            Grid(horizontalSpacing: 14, verticalSpacing: 14) {
-                GridRow {
-                    JunkTile(junk: junk, digest: digest, showsPreview: !compact) { app.select(.junk) }
-                    LeftoversTile(uninstaller: app.uninstaller, digest: digest, showsPreview: !compact) {
-                        app.uninstaller.tab = .leftovers
-                        app.select(.uninstaller)
-                    }
-                }
-                GridRow {
-                    OldFilesTile(oldFiles: app.oldFiles, digest: digest, showsPreview: !compact) { app.select(.oldFiles) }
-                    UnusedAppsTile(oldFiles: app.oldFiles, digest: digest, showsPreview: !compact) {
-                        app.uninstaller.tab = .apps
-                        app.uninstaller.filter = .unused
-                        app.select(.uninstaller)
-                    }
-                }
-            }
-            .padding(.horizontal, Theme.Space.page)
-            .padding(.top, compact ? 18 : 26)
-            .transition(.opacity)
-
-            Spacer(minLength: 10)
-            }
-
-            if model.reviewing {
-                ActionFooter(title: junk.cleanVerb.button, tint: .smartCare, enabled: junk.selectedCount > 0, action: model.requestClean) {
-                    SelectionSummary(bytes: junk.selectedSize, count: junk.selectedCount)
-                } trailing: {
-                    VStack(alignment: .trailing, spacing: 3) {
-                        if junk.includesTrash { FooterNote(permanent: true) }
-                        Text("Не выбрано")
-                            .font(.system(size: 11.5, weight: .medium))
-                            .foregroundStyle(Theme.textTertiary)
-                        SizeText(bytes: max(0, junk.totalSize - junk.selectedSize), font: .number(24, weight: .light))
-                    }
-                }
-            } else {
-                ActionFooter(title: "Проверить", tint: .smartCare, enabled: !junk.categories.isEmpty, action: model.openReview) {
-                    SelectionSummary(bytes: junk.selectedSize, count: junk.selectedCount, label: "Безопасно очистить")
-                } trailing: {
-                    Label("Дальше вы выберете, что очистить, а что оставить", systemImage: "hand.raised.fill")
-                        .font(.system(size: 12))
-                        .foregroundStyle(Theme.textTertiary)
-                }
+            ActionFooter(title: (model.includesTrash ? ConfirmCopy.Verb.deleteForever : .clean).button, tint: .smartCare,
+                         enabled: count > 0, action: model.requestClean) {
+                SelectionSummary(bytes: total, count: count)
+            } trailing: {
+                FooterNote(permanent: model.includesTrash)
             }
         }
-        }
+        // Ticking inside a section (here or in its own module) turns its switch on; unticking everything, off.
+        .onChange(of: app.junk.selectedCount) { model.selectionChanged(.junk, from: $0, to: $1) }
+        .onChange(of: app.uninstaller.orphanSelection.count) { model.selectionChanged(.leftovers, from: $0, to: $1) }
+        .onChange(of: app.oldFiles.selection.count) { model.selectionChanged(.oldFiles, from: $0, to: $1) }
+    }
+}
+
+/// Two tiles side by side, as tall as the taller one.
+private struct TileRow<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 14) { content }
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
@@ -229,36 +228,148 @@ private struct SmartCareAllClear: View {
     }
 }
 
-/// Step 2 of Smart Care: every junk category with its size and a keep/delete choice per category and per file.
-private struct SmartCareReview: View {
+
+// MARK: Lists under the tiles
+
+private struct JunkDrawer: View {
     let junk: JunkModel
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                Label("Отмеченное попадёт в Корзину, остальное останется на месте", systemImage: "checklist")
-                    .font(.system(size: 12.5))
-                    .foregroundStyle(Theme.textSecondary)
-                Spacer()
-                Button("Только безопасное") { junk.selectSafeOnly() }
-                    .buttonStyle(PillButtonStyle(kind: .quiet))
-                Button("Снять всё") { junk.selectNone() }
-                    .buttonStyle(PillButtonStyle(kind: .quiet))
+        VStack(spacing: 10) {
+            SelectionBar(text: "Отмеченное попадёт в Корзину, остальное останется на месте",
+                         onDefaults: junk.selectDefaults, onNone: junk.selectNone)
+            ForEach(junk.categories) { cat in
+                JunkCategoryCard(model: junk, category: cat, tint: .smartCare)
             }
-            .padding(.horizontal, Theme.Space.page)
-            .padding(.top, 18)
+        }
+        .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+}
 
-            ScrollView {
-                LazyVStack(spacing: 10) {
-                    ForEach(junk.categories) { cat in
-                        JunkCategoryCard(model: junk, category: cat, tint: .smartCare)
+private struct LeftoversDrawer: View {
+    let uninstaller: UninstallerModel
+    @State private var open: Set<String> = []
+
+    var body: some View {
+        VStack(spacing: 10) {
+            SelectionBar(text: "Следы приложений, которых уже нет. Сразу отмечены только точные совпадения",
+                         onDefaults: uninstaller.selectDefaultOrphans, onNone: { uninstaller.orphanSelection = [] })
+            ForEach(uninstaller.orphans) { g in
+                ChoiceCard(state: uninstaller.orphanState(of: g), symbol: "app.dashed", tint: .uninstaller,
+                           title: g.displayName, detail: Fmt.items(g.remnants.count), bytes: g.totalSize,
+                           items: g.remnants, expanded: open.contains(g.id),
+                           onToggle: { uninstaller.toggleOrphanGroup(g) }, onExpand: { open.formSymmetricDifference([g.id]) }) { r in
+                    FileRow(url: r.item.url, size: r.item.size, isChecked: uninstaller.orphanSelection.contains(r.id),
+                            tint: .smartCare, indent: 30, onToggle: { uninstaller.toggleOrphan(r) })
+                }
+            }
+        }
+        .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+}
+
+private struct OldFilesDrawer: View {
+    let oldFiles: OldFilesModel
+    @State private var open: Set<FileKind> = []
+
+    var body: some View {
+        VStack(spacing: 10) {
+            SelectionBar(text: "Это ваши файлы — отметьте то, что больше не нужно", onNone: { oldFiles.selection = [] })
+            ForEach(groups, id: \.kind) { g in
+                ChoiceCard(state: CheckState(selected: oldFiles.selectedCount(in: g.files), total: g.files.count),
+                           symbol: g.kind.symbol, tint: .oldFiles, title: g.kind.title, detail: Fmt.files(g.files.count),
+                           bytes: g.size, items: g.files, expanded: open.contains(g.kind),
+                           onToggle: { oldFiles.toggleAll(in: g.files) }, onExpand: { open.formSymmetricDifference([g.kind]) }) { f in
+                    FileRow(url: f.item.url, size: f.item.size, isChecked: oldFiles.selection.contains(f.id),
+                            tint: .smartCare, indent: 30, onToggle: { oldFiles.toggle(f) })
+                }
+            }
+        }
+        .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+
+    /// Old files by kind, biggest kind first, biggest file first.
+    private var groups: [(kind: FileKind, files: [AnalyzedFile], size: Int64)] {
+        Dictionary(grouping: oldFiles.files, by: \.kind)
+            .map { kind, files in
+                (kind, files.sorted { $0.item.size > $1.item.size }, files.reduce(0) { $0 + $1.item.size })
+            }
+            .sorted { $0.size > $1.size }
+    }
+}
+
+/// A checkable group (an app's leftovers, a kind of file) that opens to its files, like `JunkCategoryCard`.
+private struct ChoiceCard<Item: Identifiable, Row: View>: View {
+    let state: CheckState
+    let symbol: String
+    let tint: ModuleTint
+    let title: String
+    let detail: String
+    let bytes: Int64
+    let items: [Item]
+    let expanded: Bool
+    let onToggle: () -> Void
+    let onExpand: () -> Void
+    @ViewBuilder let row: (Item) -> Row
+    @State private var hover = false
+
+    private static var pageSize: Int { 200 }
+    @State private var shown = 200
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 14) {
+                CheckBox(state: state, tint: .smartCare, label: title, action: onToggle)
+                Button { withAnimation(Theme.spring) { onExpand() } } label: {
+                    HStack(spacing: 14) {
+                        IconTile(symbol: symbol, tint: tint, size: 36)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(title)
+                                .font(.cardTitle)
+                                .foregroundStyle(Theme.text)
+                                .lineLimit(1)
+                            Text(detail)
+                                .font(.caption12)
+                                .foregroundStyle(Theme.textSecondary)
+                        }
+                        Spacer(minLength: 12)
+                        SizeText(bytes: bytes, font: .system(size: 15, weight: .semibold, design: .rounded))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(Theme.textTertiary)
+                            .rotationEffect(.degrees(expanded ? 90 : 0))
+                            .frame(width: 16)
+                            .accessibilityHidden(true)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityValue(expanded ? "развёрнуто" : "свёрнуто")
+                .accessibilityHint("Показать или скрыть файлы")
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 13)
+            .background(Rectangle().fill(.white.opacity(hover && !expanded ? 0.03 : 0)))
+            .onHover { hover = $0 }
+
+            if expanded {
+                Hairline()
+                LazyVStack(spacing: 0) {
+                    ForEach(items.prefix(shown)) { row($0) }
+                    if items.count > shown {
+                        Button("Показать ещё \(Fmt.integer(min(Self.pageSize, items.count - shown)))") {
+                            shown += Self.pageSize
+                        }
+                        .buttonStyle(PillButtonStyle(kind: .quiet))
+                        .padding(.vertical, 8)
                     }
                 }
-                .padding(.horizontal, Theme.Space.page)
-                .padding(.vertical, 14)
+                .padding(.vertical, 4)
+                .transition(.opacity)
             }
-            .scrollIndicators(.automatic)
         }
+        .glass(radius: 16, shadow: false)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
@@ -276,65 +387,74 @@ private struct PreviewLine: View {
     }
 }
 
+
 // MARK: Tiles
 
 private struct JunkTile: View {
+    let model: SmartCareModel
     let junk: JunkModel
     let digest: SmartCareModel.Digest
-    let showsPreview: Bool
     let onOpen: () -> Void
 
     var body: some View {
+        let on = model.included.contains(.junk)
+        let empty = junk.categories.isEmpty
         SmartTile(module: .junk, title: "Системный мусор", bytes: junk.totalSize,
-                  caption: junk.totalSize > 0
-                    ? "из них \(Fmt.size(junk.selectedSize)) — безопасно и выбрано"
-                    : "Кэши и журналы в порядке",
-                  included: junk.selectedSize > 0, showsPreview: showsPreview, onOpen: onOpen) {
+                  caption: empty ? "Кэши и журналы в порядке"
+                    : on ? "выбрано \(Fmt.size(junk.selectedSize))" : "не входит в очистку",
+                  included: empty ? nil : on, onInclude: { model.setIncluded(.junk, $0) },
+                  expanded: model.expanded == .junk, onExpand: empty ? nil : { model.toggleExpanded(.junk) },
+                  opens: .junk, onOpen: onOpen) {
             ForEach(digest.junkTop) { PreviewLine(title: $0.title, bytes: $0.bytes) }
         }
     }
 }
 
 private struct LeftoversTile: View {
+    let model: SmartCareModel
     let uninstaller: UninstallerModel
     let digest: SmartCareModel.Digest
-    let showsPreview: Bool
     let onOpen: () -> Void
 
     var body: some View {
         let n = uninstaller.orphans.count
+        let on = model.included.contains(.leftovers)
         SmartTile(module: .uninstaller, title: "Остатки удалённых приложений", bytes: digest.orphansBytes,
-                  caption: n == 0
-                    ? "Следов удалённых приложений не найдено"
+                  caption: n == 0 ? "Следов удалённых приложений не найдено"
+                    : on ? "выбрано \(Fmt.size(uninstaller.selectedOrphansSize))"
                     : "\(Fmt.apps(n)) \(Fmt.verb(n, one: "оставило", other: "оставили")) после себя файлы",
-                  included: false, opens: .uninstaller, showsPreview: showsPreview, onOpen: onOpen) {
+                  included: n == 0 ? nil : on, onInclude: { model.setIncluded(.leftovers, $0) },
+                  expanded: model.expanded == .leftovers, onExpand: n == 0 ? nil : { model.toggleExpanded(.leftovers) },
+                  opens: .uninstaller, onOpen: onOpen) {
             ForEach(digest.orphanTop) { PreviewLine(title: $0.title, bytes: $0.bytes) }
         }
     }
 }
 
 private struct OldFilesTile: View {
+    let model: SmartCareModel
     let oldFiles: OldFilesModel
     let digest: SmartCareModel.Digest
-    let showsPreview: Bool
     let onOpen: () -> Void
 
     var body: some View {
         let n = digest.oldCount
+        let on = model.included.contains(.oldFiles)
         SmartTile(module: .oldFiles, title: "Старые файлы", bytes: digest.oldBytes,
-                  caption: n == 0
-                    ? "Крупных забытых файлов нет"
+                  caption: n == 0 ? "Крупных забытых файлов нет"
+                    : on ? "выбрано \(Fmt.size(oldFiles.selectedSize))"
                     : "\(Fmt.files(n)) \(Fmt.verb(n, one: "не открывался", other: "не открывались")) больше \(Fmt.months(oldFiles.months))",
-                  included: false, opens: .oldFiles, showsPreview: showsPreview, onOpen: onOpen) {
+                  included: n == 0 ? nil : on, onInclude: { model.setIncluded(.oldFiles, $0) },
+                  expanded: model.expanded == .oldFiles, onExpand: n == 0 ? nil : { model.toggleExpanded(.oldFiles) },
+                  opens: .oldFiles, onOpen: onOpen) {
             ForEach(digest.oldTop) { PreviewLine(title: $0.title, bytes: $0.bytes) }
         }
     }
 }
 
+/// Removing apps is a decision of its own: this tile only leads to the uninstaller.
 private struct UnusedAppsTile: View {
-    let oldFiles: OldFilesModel
     let digest: SmartCareModel.Digest
-    let showsPreview: Bool
     let onOpen: () -> Void
 
     var body: some View {
@@ -344,7 +464,7 @@ private struct UnusedAppsTile: View {
                   caption: n == 0
                     ? "Все приложения в ходу"
                     : "\(Fmt.apps(n)) \(Fmt.verb(n, one: "не открывалось", other: "не открывались")) больше \(Fmt.months(6))",
-                  included: false, opens: .uninstaller, showsPreview: showsPreview, onOpen: onOpen) {
+                  showsChoiceBadge: true, opens: .uninstaller, onOpen: onOpen) {
             HStack(spacing: 6) {
                 ForEach(digest.unusedTop) { a in
                     Image(nsImage: IconCache.icon(for: a.url)).resizable().interpolation(.high)
@@ -363,44 +483,47 @@ private struct SmartTile<Preview: View>: View {
     let title: String
     let bytes: Int64
     let caption: String
-    let included: Bool
-    /// The section a tile that is not part of the cleaning leads to: «Откроется в разделе «…»».
-    var opens: AppModule? = nil
-    var showsPreview = true
+    /// The «входит в очистку» switch; nil hides it (nothing found).
+    var included: Bool? = nil
+    var onInclude: (Bool) -> Void = { _ in }
+    /// «На ваш выбор» instead of a switch: the tile only leads to its section.
+    var showsChoiceBadge = false
+    var expanded = false
+    /// Opens the list under the tile; nil when there is nothing to choose from.
+    var onExpand: (() -> Void)? = nil
+    let opens: AppModule
     let onOpen: () -> Void
     @ViewBuilder var preview: Preview
     @State private var hover = false
 
-    private var openText: String {
-        opens.map { "Откроется в разделе «\($0.sidebarTitle)»" } ?? "Просмотреть"
-    }
-
     var body: some View {
-        Button(action: onOpen) {
-            // The preview list shows only when it fits: on a short window (or under the Trash hint) the tile
-            // drops it instead of growing into the tile below.
-            ViewThatFits(in: .vertical) {
-                if showsPreview { content(preview: true) }
-                content(preview: false)
-            }
+        content
             .padding(18)
             .frame(maxWidth: .infinity, minHeight: 150, maxHeight: .infinity, alignment: .topLeading)
-            .glass(radius: 18, intensity: hover ? 1.4 : 1)
+            .glass(radius: 18, intensity: hover || expanded ? 1.4 : 1)
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(module.tint.accent.opacity(expanded ? 0.55 : 0), lineWidth: 1.25)
+            )
             .contentShape(RoundedRectangle(cornerRadius: 18))
-        }
-        .buttonStyle(PressScaleStyle())
-        .onHover { hover = $0 }
-        .animation(Theme.quick, value: hover)
+            // The whole tile opens its list (or, without one, its section); the switch and links keep their own clicks.
+            .onTapGesture { (onExpand ?? onOpen)() }
+            .onHover { hover = $0 }
+            .animation(Theme.quick, value: hover)
+            .accessibilityElement(children: .contain)
     }
 
-    private func content(preview showsList: Bool) -> some View {
+    private var content: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top) {
                 IconTile(symbol: symbol ?? module.symbol, tint: module.tint, size: 40)
                 Spacer()
-                if included {
-                    Badge(text: "Входит в очистку", color: Theme.success, symbol: "checkmark")
-                } else {
+                if let included {
+                    Toggle("Входит в очистку", isOn: Binding(get: { included }, set: onInclude))
+                        .toggleStyle(TintSwitchStyle(tint: module.tint))
+                        .help(included ? "Входит в очистку — выключите, чтобы не трогать" : "Не входит в очистку — включите, чтобы очистить")
+                        .accessibilityLabel("\(title): входит в очистку")
+                } else if showsChoiceBadge {
                     Badge(text: "На ваш выбор", color: .white.opacity(0.7), symbol: "hand.point.up.left.fill")
                 }
             }
@@ -416,16 +539,42 @@ private struct SmartTile<Preview: View>: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
                 .padding(.top, 2)
-            if showsList {
+            if !expanded {
                 VStack(alignment: .leading, spacing: 5) { preview }
                     .padding(.top, 12)
             }
             Spacer(minLength: 10)
             HStack(spacing: 4) {
-                Text(openText)
-                    .lineLimit(1)
-                Image(systemName: "arrow.right").font(.system(size: 10, weight: .bold))
-                    .offset(x: hover ? 3 : 0)
+                if let onExpand {
+                    Button(action: onExpand) {
+                        HStack(spacing: 5) {
+                            Text(expanded ? "Свернуть" : "Выбрать, что очистить")
+                            Image(systemName: "chevron.down").font(.system(size: 10, weight: .bold))
+                                .rotationEffect(.degrees(expanded ? 180 : 0))
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    Spacer(minLength: 8)
+                    Button(action: onOpen) {
+                        Image(systemName: "arrow.up.right").font(.system(size: 11, weight: .bold))
+                            .frame(width: 22, height: 22)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Открыть раздел «\(opens.sidebarTitle)»")
+                    .accessibilityLabel("Открыть раздел «\(opens.sidebarTitle)»")
+                } else {
+                    Button(action: onOpen) {
+                        HStack(spacing: 4) {
+                            Text("Откроется в разделе «\(opens.sidebarTitle)»").lineLimit(1)
+                            Image(systemName: "arrow.right").font(.system(size: 10, weight: .bold))
+                                .offset(x: hover ? 3 : 0)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             .font(.system(size: 12.5, weight: .semibold))
             .foregroundStyle(module.tint.accent)

@@ -90,12 +90,25 @@ enum SnapshotRunner {
                 fillAll(m)
                 m.smartCare.phase = .results
             },
-            Scene(name: "03b_smartcare_review") { m in
+            Scene(name: "03b_smartcare_junk_open") { m in
                 m.selection = .smartCare
                 fillAll(m)
                 m.smartCare.phase = .results
-                m.smartCare.reviewing = true
+                m.smartCare.expanded = .junk
                 if let first = m.junk.categories.first { m.junk.expanded = [first.id] }
+            },
+            Scene(name: "03c_smartcare_leftovers_on") { m in
+                m.selection = .smartCare
+                fillAll(m)
+                m.smartCare.phase = .results
+                m.smartCare.setIncluded(.leftovers, true)
+                m.smartCare.expanded = .leftovers
+            },
+            Scene(name: "03d_smartcare_oldfiles_open") { m in
+                m.selection = .smartCare
+                fillAll(m)
+                m.smartCare.phase = .results
+                m.smartCare.expanded = .oldFiles
             },
             Scene(name: "04_smartcare_done") { m in
                 m.selection = .smartCare

@@ -593,14 +593,26 @@ final class UninstallerModel {
 
     func applyOrphans(_ found: [OrphanGroup]) {
         orphans = found.sorted { $0.totalSize > $1.totalSize }
-        orphanSelection = Set(orphans.flatMap { $0.remnants.filter { $0.confidence == .high }.map(\.id) })
+        selectDefaultOrphans()
         focusedOrphanID = orphans.first?.id
         orphanState = .loaded
+    }
+
+    /// Only exact matches are ticked after a scan.
+    func selectDefaultOrphans() {
+        orphanSelection = Set(orphans.flatMap { $0.remnants.filter { $0.confidence == .high }.map(\.id) })
+    }
+
+    /// «Повторить»: exactly the leftovers the last clean could not remove.
+    func selectFailedOrphans(from result: RemovalResult) {
+        let failed = Set(result.failed.map { $0.url.standardizedFileURL })
+        orphanSelection = Set(orphans.flatMap(\.remnants).map(\.id).filter { failed.contains($0.standardizedFileURL) })
     }
 
     var orphansSize: Int64 { orphans.reduce(0) { $0 + $1.totalSize } }
     var focusedOrphan: OrphanGroup? { orphans.first { $0.id == focusedOrphanID } }
     var selectedOrphanRemnants: [AppRemnant] { orphans.flatMap(\.remnants).filter { orphanSelection.contains($0.id) } }
+    var selectedOrphansSize: Int64 { selectedOrphanRemnants.reduce(0) { $0 + $1.item.size } }
 
     func orphanState(of g: OrphanGroup) -> CheckState {
         CheckState(selected: g.remnants.filter { orphanSelection.contains($0.id) }.count, total: g.remnants.count)

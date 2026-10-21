@@ -26,11 +26,11 @@ public struct FileItem: Identifiable, Hashable, Sendable {
 
 /// How careful the user should be before removing something.
 public enum RiskLevel: Int, Comparable, Sendable {
-    /// Regenerated automatically (caches, logs). Selected by default.
+    /// Regenerated automatically (caches, logs).
     case safe
-    /// Usually fine, but user data may be involved (downloads, old installers). Not selected by default.
+    /// Usually fine, but worth a look: user data may be involved, or recreating it costs time.
     case review
-    /// Could lose work or settings. Never selected by default.
+    /// Could lose work or settings.
     case caution
 
     public static func < (lhs: RiskLevel, rhs: RiskLevel) -> Bool { lhs.rawValue < rhs.rawValue }
@@ -48,19 +48,23 @@ public struct JunkCategory: Identifiable, Sendable {
     /// SF Symbol name.
     public let symbol: String
     public let risk: RiskLevel
+    /// Ticked after a scan. Everything the system or an app recreates is; the user's own data
+    /// (backups, installers, the Trash) and items behind the administrator password are not.
+    public let isSelectedByDefault: Bool
     public var items: [FileItem]
 
-    public init(id: String, title: String, detail: String, symbol: String, risk: RiskLevel, items: [FileItem]) {
+    public init(id: String, title: String, detail: String, symbol: String, risk: RiskLevel,
+                selectedByDefault: Bool? = nil, items: [FileItem]) {
         self.id = id
         self.title = title
         self.detail = detail
         self.symbol = symbol
         self.risk = risk
+        self.isSelectedByDefault = selectedByDefault ?? (risk == .safe)
         self.items = items
     }
 
     public var totalSize: Int64 { items.reduce(0) { $0 + $1.size } }
-    public var isSelectedByDefault: Bool { risk == .safe }
 }
 
 // MARK: - Progress

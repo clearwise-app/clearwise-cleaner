@@ -65,6 +65,55 @@ struct CheckBox: View {
 
 /// Solid capsule with dark ink: ≥ 4.5:1 on every fill we use (colored text on a 16 % tint
 /// measured 2.5–3.6:1). Meaning is carried by icon + text, never by color alone.
+/// Above a checklist: what ticking means, and the two bulk choices.
+struct SelectionBar: View {
+    let text: String
+    /// «Как после сканирования»; nil when the scan ticks nothing (the user's own files).
+    var onDefaults: (() -> Void)? = nil
+    let onNone: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Label(text, systemImage: "checklist")
+                .font(.system(size: 12.5))
+                .foregroundStyle(Theme.textSecondary)
+            Spacer()
+            if let onDefaults {
+                Button("Как после сканирования", systemImage: "arrow.uturn.backward", action: onDefaults)
+                    .buttonStyle(PillButtonStyle(kind: .quiet))
+            }
+            Button("Снять всё", action: onNone)
+                .buttonStyle(PillButtonStyle(kind: .quiet))
+        }
+        .padding(.top, 2)
+    }
+}
+
+/// A switch in the module's colour: on is unmistakable even in an inactive window, where the system switch turns grey.
+struct TintSwitchStyle: ToggleStyle {
+    let tint: ModuleTint
+
+    func makeBody(configuration: Configuration) -> some View {
+        Button { configuration.isOn.toggle() } label: {
+            ZStack(alignment: configuration.isOn ? .trailing : .leading) {
+                Capsule()
+                    .fill(configuration.isOn ? AnyShapeStyle(tint.gradient) : AnyShapeStyle(.white.opacity(0.12)))
+                    .overlay(Capsule().strokeBorder(.white.opacity(configuration.isOn ? 0.3 : 0.22), lineWidth: 0.75))
+                Circle()
+                    .fill(.white)
+                    .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
+                    .padding(2.5)
+            }
+            .frame(width: 40, height: 24)
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .animation(Theme.quick, value: configuration.isOn)
+        .accessibilityValue(configuration.isOn ? "включено" : "выключено")
+        .accessibilityAddTraits(.isToggle)
+    }
+}
+
 struct Badge: View {
     let text: String
     var color: Color

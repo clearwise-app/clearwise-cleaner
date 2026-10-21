@@ -140,7 +140,8 @@ final class JunkModel {
         }
     }
 
-    func selectSafeOnly() {
+    /// Back to the selection right after the scan.
+    func selectDefaults() {
         selection = Set(categories.filter(\.isSelectedByDefault).flatMap { $0.items.map(\.url) })
         rebuildTotals()
     }
@@ -171,22 +172,32 @@ final class JunkModel {
     /// Round button / confirm verb: «Очистить», or «Удалить навсегда» when the Trash is part of the selection.
     var cleanVerb: ConfirmCopy.Verb { includesTrash ? .deleteForever : .clean }
 
-    /// The confirmation for the current selection (Smart Care reuses it with its own tint).
+    /// The selected bytes of the Trash category (emptied for good, unlike the rest).
+    var selectedTrashBytes: Int64 { selectedBytesByCategory[JunkCategoryID.trash] ?? 0 }
+
     func confirmation(tint: ModuleTint, action: @escaping @MainActor () -> Void) -> Confirmation? {
         guard selectedCount > 0 else { return nil }
-        let trashBytes = selectedBytesByCategory[JunkCategoryID.trash] ?? 0
-        let onlyTrash = includesTrash && trashBytes == selectedSize
+        return Self.cleanConfirmation(count: selectedCount, bytes: selectedSize, trashBytes: selectedTrashBytes,
+                                      needsAdmin: includesSystemLogs, tint: tint, action: action)
+    }
+
+    /// «Очистить N объектов?» — everything goes to the Trash, except the Trash's own content (`trashBytes`), which
+    /// is deleted for good. Smart Care uses it for junk, leftovers and old files together.
+    static func cleanConfirmation(count: Int, bytes: Int64, trashBytes: Int64, needsAdmin: Bool, tint: ModuleTint,
+                                  action: @escaping @MainActor () -> Void) -> Confirmation {
+        let includesTrash = trashBytes > 0
+        let onlyTrash = includesTrash && trashBytes == bytes
         var title: String?
         var message: String?
         if includesTrash && !onlyTrash {
-            title = "Очистить \(ConfirmCopy.accusative(selectedCount, .items))?"
+            title = "Очистить \(ConfirmCopy.accusative(count, .items))?"
             message = "Остальное попадёт в Корзину — это можно вернуть. Содержимое самой Корзины (\(Fmt.size(trashBytes))) будет удалено навсегда."
         } else if !includesTrash {
-            title = "Очистить \(ConfirmCopy.accusative(selectedCount, .items))?"
+            title = "Очистить \(ConfirmCopy.accusative(count, .items))?"
             message = "Всё попадёт в Корзину — это можно вернуть, пока Корзина не очищена."
         }
-        return .make(cleanVerb, title: title, message: message, count: selectedCount, bytes: selectedSize,
-                     needsAdmin: includesSystemLogs, tint: tint, action: action)
+        return .make(includesTrash ? .deleteForever : .clean, title: title, message: message, count: count, bytes: bytes,
+                     needsAdmin: needsAdmin, tint: tint, action: action)
     }
 
     func requestClean() {

@@ -144,6 +144,12 @@ final class OldFilesModel {
         withAnimation(Theme.spring) { phase = .idle }
     }
 
+    /// «Повторить» in Smart Care: exactly the files the last clean could not move.
+    func selectFailed(from result: RemovalResult) {
+        let failed = Set(result.failed.map { $0.url.standardizedFileURL })
+        selection = Set(files.map(\.id).filter { failed.contains($0.standardizedFileURL) })
+    }
+
     func toggle(_ f: AnalyzedFile) {
         if selection.contains(f.id) { selection.remove(f.id) } else { selection.insert(f.id) }
     }
