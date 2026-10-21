@@ -1,0 +1,252 @@
+import Foundation
+
+// MARK: - Files
+
+/// A single file or folder found by any scanner.
+public struct FileItem: Identifiable, Hashable, Sendable {
+    public var id: URL { url }
+    public let url: URL
+    /// Allocated size on disk in bytes (recursive for folders).
+    public let size: Int64
+    public let isDirectory: Bool
+    /// Last time the user opened it (kMDItemLastUsedDate), falling back to access date.
+    public let lastUsed: Date?
+    public let modified: Date?
+
+    public init(url: URL, size: Int64, isDirectory: Bool, lastUsed: Date? = nil, modified: Date? = nil) {
+        self.url = url
+        self.size = size
+        self.isDirectory = isDirectory
+        self.lastUsed = lastUsed
+        self.modified = modified
+    }
+
+    public var name: String { url.lastPathComponent }
+}
+
+/// How careful the user should be before removing something.
+public enum RiskLevel: Int, Comparable, Sendable {
+    /// Regenerated automatically (caches, logs). Selected by default.
+    case safe
+    /// Usually fine, but user data may be involved (downloads, old installers). Not selected by default.
+    case review
+    /// Could lose work or settings. Never selected by default.
+    case caution
+
+    public static func < (lhs: RiskLevel, rhs: RiskLevel) -> Bool { lhs.rawValue < rhs.rawValue }
+}
+
+// MARK: - Junk
+
+public struct JunkCategory: Identifiable, Sendable {
+    /// Stable id, e.g. "user-caches", "xcode-derived-data".
+    public let id: String
+    /// User-facing title in Russian, e.g. "Кэш приложений".
+    public let title: String
+    /// One-sentence explanation in Russian of what it is and why it is safe/unsafe to remove.
+    public let detail: String
+    /// SF Symbol name.
+    public let symbol: String
+    public let risk: RiskLevel
+    public var items: [FileItem]
+
+    public init(id: String, title: String, detail: String, symbol: String, risk: RiskLevel, items: [FileItem]) {
+        self.id = id
+        self.title = title
+        self.detail = detail
+        self.symbol = symbol
+        self.risk = risk
+        self.items = items
+    }
+
+    public var totalSize: Int64 { items.reduce(0) { $0 + $1.size } }
+    public var isSelectedByDefault: Bool { risk == .safe }
+}
+
+// MARK: - Progress
+
+public struct ScanProgress: Sendable {
+    /// Short Russian label of what is happening, e.g. "Кэш браузеров".
+    public var phase: String
+    /// 0…1
+    public var fraction: Double
+    public var currentPath: String?
+
+    public init(phase: String, fraction: Double, currentPath: String? = nil) {
+        self.phase = phase
+        self.fraction = fraction
+        self.currentPath = currentPath
+    }
+}
+
+public typealias ProgressHandler = @Sendable (ScanProgress) -> Void
+
+// MARK: - Apps
+
+public struct InstalledApp: Identifiable, Hashable, Sendable {
+    public var id: URL { url }
+    public let url: URL
+    public let name: String
+    public let bundleID: String?
+    public let version: String?
+    /// Code-signing Team ID, used to match leftovers like group containers.
+    public let teamID: String?
+    /// Size of the .app bundle itself.
+    public let size: Int64
+    public let lastUsed: Date?
+    /// Apple / system apps that must not be offered for removal.
+    public let isSystemApp: Bool
+    /// Installed from the Mac App Store (has _MASReceipt).
+    public let isAppStore: Bool
+
+    public init(url: URL, name: String, bundleID: String?, version: String?, teamID: String?,
+                size: Int64, lastUsed: Date?, isSystemApp: Bool, isAppStore: Bool) {
+        self.url = url
+        self.name = name
+        self.bundleID = bundleID
+        self.version = version
+        self.teamID = teamID
+        self.size = size
+        self.lastUsed = lastUsed
+        self.isSystemApp = isSystemApp
+        self.isAppStore = isAppStore
+    }
+}
+
+public enum RemnantKind: String, CaseIterable, Sendable {
+    case applicationSupport, caches, preferences, containers, groupContainers, savedState,
+         logs, launchAgents, launchDaemons, privilegedHelpers, cookies, webData, httpStorages,
+         crashReports, receipts, extensions, other
+
+    public var title: String {
+        switch self {
+        case .applicationSupport: "Данные приложения"
+        case .caches: "Кэш"
+        case .preferences: "Настройки"
+        case .containers: "Контейнеры"
+        case .groupContainers: "Групповые контейнеры"
+        case .savedState: "Сохранённое состояние"
+        case .logs: "Логи"
+        case .launchAgents: "Агенты запуска"
+        case .launchDaemons: "Системные службы"
+        case .privilegedHelpers: "Вспомогательные утилиты"
+        case .cookies: "Cookies"
+        case .webData: "Веб-данные"
+        case .httpStorages: "HTTP-хранилища"
+        case .crashReports: "Отчёты о сбоях"
+        case .receipts: "Квитанции установщика"
+        case .extensions: "Расширения и плагины"
+        case .other: "Прочее"
+        }
+    }
+
+    public var symbol: String {
+        switch self {
+        case .applicationSupport: "folder.fill"
+        case .caches: "internaldrive.fill"
+        case .preferences: "slider.horizontal.3"
+        case .containers, .groupContainers: "shippingbox.fill"
+        case .savedState: "clock.arrow.circlepath"
+        case .logs: "doc.text.fill"
+        case .launchAgents, .launchDaemons: "bolt.fill"
+        case .privilegedHelpers: "wrench.and.screwdriver.fill"
+        case .cookies, .webData, .httpStorages: "globe"
+        case .crashReports: "exclamationmark.triangle.fill"
+        case .receipts: "doc.plaintext.fill"
+        case .extensions: "puzzlepiece.extension.fill"
+        case .other: "questionmark.folder.fill"
+        }
+    }
+}
+
+public enum MatchConfidence: Int, Comparable, Sendable {
+    /// Matched by name only (fuzzy). Not selected by default.
+    case low
+    /// Matched by name inside a vendor folder, or by Team ID.
+    case medium
+    /// Matched by exact bundle identifier.
+    case high
+
+    public static func < (lhs: MatchConfidence, rhs: MatchConfidence) -> Bool { lhs.rawValue < rhs.rawValue }
+}
+
+public struct AppRemnant: Identifiable, Hashable, Sendable {
+    public var id: URL { item.url }
+    public let item: FileItem
+    public let kind: RemnantKind
+    public let confidence: MatchConfidence
+    /// Lives outside the user's home (e.g. /Library/LaunchDaemons) and needs admin rights.
+    public let requiresAdmin: Bool
+
+    public init(item: FileItem, kind: RemnantKind, confidence: MatchConfidence, requiresAdmin: Bool) {
+        self.item = item
+        self.kind = kind
+        self.confidence = confidence
+        self.requiresAdmin = requiresAdmin
+    }
+}
+
+/// Leftovers of an app that is no longer installed.
+public struct OrphanGroup: Identifiable, Hashable, Sendable {
+    /// Usually the bundle identifier the leftovers belong to.
+    public let id: String
+    public let displayName: String
+    public let remnants: [AppRemnant]
+
+    public init(id: String, displayName: String, remnants: [AppRemnant]) {
+        self.id = id
+        self.displayName = displayName
+        self.remnants = remnants
+    }
+
+    public var totalSize: Int64 { remnants.reduce(0) { $0 + $1.item.size } }
+}
+
+// MARK: - Space
+
+/// Node of the disk space map (sunburst / treemap).
+public final class DirectoryNode: Identifiable, @unchecked Sendable {
+    public let id = UUID()
+    public let url: URL
+    public let size: Int64
+    public let isDirectory: Bool
+    public let children: [DirectoryNode]
+
+    public init(url: URL, size: Int64, isDirectory: Bool, children: [DirectoryNode]) {
+        self.url = url
+        self.size = size
+        self.isDirectory = isDirectory
+        self.children = children
+    }
+
+    public var name: String { url.lastPathComponent }
+}
+
+// MARK: - Removal
+
+public struct RemovalFailure: Hashable, Sendable {
+    public let url: URL
+    public let reason: String
+    public init(url: URL, reason: String) {
+        self.url = url
+        self.reason = reason
+    }
+}
+
+public struct RemovalResult: Sendable {
+    public var removed: [URL]
+    public var failed: [RemovalFailure]
+    public var freedBytes: Int64
+
+    public init(removed: [URL] = [], failed: [RemovalFailure] = [], freedBytes: Int64 = 0) {
+        self.removed = removed
+        self.failed = failed
+        self.freedBytes = freedBytes
+    }
+
+    public mutating func merge(_ other: RemovalResult) {
+        removed += other.removed
+        failed += other.failed
+        freedBytes += other.freedBytes
+    }
+}
