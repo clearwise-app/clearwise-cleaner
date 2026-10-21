@@ -94,4 +94,15 @@ final class SafetyGuardTests: XCTestCase {
         XCTAssertEqual(result.removed.count, 0)
         XCTAssertTrue(FileManager.default.fileExists(atPath: file.path))
     }
+
+    func testRemovalReportsProgressForEveryItem() async throws {
+        final class Box: @unchecked Sendable { var steps: [RemovalStep] = []; let lock = NSLock() }
+        let box = Box()
+        let urls = [URL(fileURLWithPath: "/tmp/not-in-trash-a"), URL(fileURLWithPath: "/tmp/not-in-trash-b")]
+        _ = await FileRemover.deletePermanentlyFromTrash(urls) { step in
+            box.lock.lock(); box.steps.append(step); box.lock.unlock()
+        }
+        XCTAssertEqual(box.steps.map(\.done), [false, true, false, true])
+        XCTAssertEqual(box.steps.filter(\.done).map(\.bytes), [0, 0])
+    }
 }

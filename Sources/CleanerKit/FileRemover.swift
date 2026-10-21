@@ -4,10 +4,14 @@ import Foundation
 /// Default behaviour is "move to Trash" so every action is undoable from Finder.
 public enum FileRemover {
     /// Moves items to the user's Trash. Protected paths are refused and reported as failures.
-    public static func moveToTrash(_ urls: [URL], knownSizes: [URL: Int64] = [:]) async -> RemovalResult {
+    public static func moveToTrash(_ urls: [URL], knownSizes: [URL: Int64] = [:],
+                                   progress: RemovalProgressHandler? = nil) async -> RemovalResult {
         await Task.detached(priority: .userInitiated) {
             var result = RemovalResult()
             for url in dedupeNested(urls) {
+                progress?(RemovalStep(url: url, bytes: 0, done: false))
+                var freed: Int64 = 0
+                defer { progress?(RemovalStep(url: url, bytes: freed, done: true)) }
                 if let reason = SafetyGuard.refusalReason(for: url) {
                     result.failed.append(RemovalFailure(url: url, reason: reason))
                     continue
@@ -22,6 +26,7 @@ public enum FileRemover {
                     try FileManager.default.trashItem(at: url, resultingItemURL: nil)
                     result.removed.append(url)
                     result.freedBytes += size
+                    freed = size
                 } catch {
                     result.failed.append(RemovalFailure(url: url, reason: error.localizedDescription))
                 }
@@ -32,17 +37,20 @@ public enum FileRemover {
 
     /// Moves root-owned items (e.g. /Library/LaunchDaemons/*.plist) to the user's Trash
     /// after asking for the administrator password once via the standard macOS prompt.
-    public static func moveToTrashAsAdmin(_ urls: [URL], knownSizes: [URL: Int64] = [:]) async -> RemovalResult {
+    public static func moveToTrashAsAdmin(_ urls: [URL], knownSizes: [URL: Int64] = [:],
+                                          progress: RemovalProgressHandler? = nil) async -> RemovalResult {
         var result = RemovalResult()
         var allowed: [URL] = []
         for url in dedupeNested(urls) {
             if let reason = SafetyGuard.refusalReason(for: url) {
                 result.failed.append(RemovalFailure(url: url, reason: reason))
+                progress?(RemovalStep(url: url, bytes: 0, done: true))
             } else {
                 allowed.append(url)
             }
         }
         guard !allowed.isEmpty else { return result }
+        for url in allowed { progress?(RemovalStep(url: url, bytes: 0, done: false)) }
 
         let trash = SafetyGuard.home.appendingPathComponent(".Trash").path
         let stamp = Int(Date().timeIntervalSince1970)
@@ -65,8 +73,10 @@ public enum FileRemover {
             if ok.0, !FileManager.default.fileExists(atPath: url.path) {
                 result.removed.append(url)
                 result.freedBytes += size
+                progress?(RemovalStep(url: url, bytes: size, done: true))
             } else {
                 result.failed.append(RemovalFailure(url: url, reason: ok.1 ?? "Не удалось переместить"))
+                progress?(RemovalStep(url: url, bytes: 0, done: true))
             }
         }
         return result
@@ -74,10 +84,14 @@ public enum FileRemover {
 
     /// Permanently deletes items. Only allowed for items already inside a Trash folder
     /// (this is how "Empty Trash" works). Anything else is refused.
-    public static func deletePermanentlyFromTrash(_ urls: [URL], knownSizes: [URL: Int64] = [:]) async -> RemovalResult {
+    public static func deletePermanentlyFromTrash(_ urls: [URL], knownSizes: [URL: Int64] = [:],
+                                                 progress: RemovalProgressHandler? = nil) async -> RemovalResult {
         await Task.detached(priority: .userInitiated) {
             var result = RemovalResult()
             for url in dedupeNested(urls) {
+                progress?(RemovalStep(url: url, bytes: 0, done: false))
+                var freed: Int64 = 0
+                defer { progress?(RemovalStep(url: url, bytes: freed, done: true)) }
                 guard SafetyGuard.isInsideTrash(url), !SafetyGuard.isProtected(url) else {
                     result.failed.append(RemovalFailure(url: url, reason: "Безвозвратное удаление разрешено только в Корзине"))
                     continue
@@ -87,6 +101,7 @@ public enum FileRemover {
                     try FileManager.default.removeItem(at: url)
                     result.removed.append(url)
                     result.freedBytes += size
+                    freed = size
                 } catch {
                     result.failed.append(RemovalFailure(url: url, reason: error.localizedDescription))
                 }

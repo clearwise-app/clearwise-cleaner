@@ -7,7 +7,8 @@ public enum AppUninstaller {
 
     /// Quits the app if running, unloads its launch agents, moves remnants and then the bundle (if removeBundle) to Trash.
     /// System apps are refused. If the app does not quit within ~5 s nothing is removed.
-    public static func uninstall(_ app: InstalledApp, remnants: [AppRemnant], removeBundle: Bool = true) async -> RemovalResult {
+    public static func uninstall(_ app: InstalledApp, remnants: [AppRemnant], removeBundle: Bool = true,
+                                 progress: RemovalProgressHandler? = nil) async -> RemovalResult {
         if app.isSystemApp || SafetyGuard.isProtected(app.url) {
             return RemovalResult(failed: [RemovalFailure(url: app.url, reason: "Системное приложение нельзя удалить")])
         }
@@ -23,12 +24,12 @@ public enum AppUninstaller {
         }
         let plan = RemovalPlan(app: app, remnants: remnants, removeBundle: removeBundle,
                                bundleNeedsAdmin: removeBundle && !userCanMove(app.url))
-        return await execute(plan)
+        return await execute(plan, progress: progress)
     }
 
     /// Removes leftovers only (used for orphans and "reset app").
-    public static func remove(_ remnants: [AppRemnant]) async -> RemovalResult {
-        await execute(RemovalPlan(app: nil, remnants: remnants, removeBundle: false, bundleNeedsAdmin: false))
+    public static func remove(_ remnants: [AppRemnant], progress: RemovalProgressHandler? = nil) async -> RemovalResult {
+        await execute(RemovalPlan(app: nil, remnants: remnants, removeBundle: false, bundleNeedsAdmin: false), progress: progress)
     }
 
     public static func isRunning(_ app: InstalledApp) -> Bool {
@@ -60,18 +61,18 @@ public enum AppUninstaller {
         return !isRunning(app)
     }
 
-    static func execute(_ plan: RemovalPlan) async -> RemovalResult {
+    static func execute(_ plan: RemovalPlan, progress: RemovalProgressHandler? = nil) async -> RemovalResult {
         for agent in plan.launchAgentsToUnload { bootout(agent) }
         var result = RemovalResult()
         if !plan.userItems.isEmpty {
-            result.merge(await FileRemover.moveToTrash(plan.userItems, knownSizes: plan.knownSizes))
+            result.merge(await FileRemover.moveToTrash(plan.userItems, knownSizes: plan.knownSizes, progress: progress))
         }
         if !plan.adminItems.isEmpty {
             // One administrator prompt for everything root-owned (bundle last when it needs admin).
-            result.merge(await FileRemover.moveToTrashAsAdmin(plan.adminItems, knownSizes: plan.knownSizes))
+            result.merge(await FileRemover.moveToTrashAsAdmin(plan.adminItems, knownSizes: plan.knownSizes, progress: progress))
         }
         if let bundle = plan.userBundle {
-            result.merge(await FileRemover.moveToTrash([bundle], knownSizes: plan.knownSizes))
+            result.merge(await FileRemover.moveToTrash([bundle], knownSizes: plan.knownSizes, progress: progress))
         }
         return result
     }

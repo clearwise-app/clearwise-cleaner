@@ -256,3 +256,19 @@ public struct RemovalResult: Sendable {
         freedBytes += other.freedBytes
     }
 }
+
+/// Live progress of a removal, for the cleaning animation.
+/// Sent with `done == false` right before an item is processed and with `done == true` after it
+/// (`bytes` = space freed by that item, 0 if it failed).
+public struct RemovalStep: Sendable {
+    public let url: URL
+    public let bytes: Int64
+    public let done: Bool
+    public init(url: URL, bytes: Int64, done: Bool) {
+        self.url = url
+        self.bytes = bytes
+        self.done = done
+    }
+}
+
+public typealias RemovalProgressHandler = @Sendable (RemovalStep) -> Void
