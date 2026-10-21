@@ -274,6 +274,17 @@ enum MockData {
         return DirectoryNode(url: home, size: kids.reduce(0) { $0 + $1.size }, isDirectory: true, children: kids)
     }
 
+    // MARK: Storage breakdown (sidebar disk widget)
+
+    /// A 494 GB disk with 182.6 GB free, split like a typical developer's Mac.
+    static var storage: StorageBreakdown {
+        StorageBreakdown.compose(
+            volumeName: "Macintosh HD", total: 494_380_000_000, free: 182_600_000_000,
+            measured: [.apps: 58_400 * MB, .appData: 46_200 * MB, .media: 41_300 * MB, .developer: 38_700 * MB,
+                       .documents: 29_800 * MB, .iCloud: 14_600 * MB, .music: 9_100 * MB, .trash: 2_400 * MB],
+            measuredAt: now, duration: 2.6, fullDiskAccess: true)
+    }
+
     static let failures: [RemovalFailure] = [
         RemovalFailure(url: URL(fileURLWithPath: "/Library/Logs/DiagnosticReports"), reason: "Системная или пользовательская папка"),
         RemovalFailure(url: h("Library/Caches/com.apple.Safari"), reason: "Операция не разрешена: нужен полный доступ к диску"),

@@ -1,4 +1,5 @@
 import SwiftUI
+import SpaceEngine
 import CleanerKit
 
 /// The idle → scanning screen every module shares: hero, title, subtitle, options and the round button
@@ -175,6 +176,8 @@ struct FDABanner: View {
 
 struct DiskCapsule: View {
     let disk: DiskUsage?
+    @Environment(AppModel.self) private var app
+    @State private var hovered: StorageCategory.Kind?
 
     var body: some View {
         if let disk {
@@ -193,8 +196,16 @@ struct DiskCapsule: View {
                             .lineLimit(1)
                             .fixedSize()
                     }
-                    UsageBar(fraction: disk.fraction)
-                        .frame(height: 5)
+                    // Same category segments as the sidebar widget; plain usage bar until the first measurement.
+                    if let breakdown = app.storage.breakdown {
+                        StorageSegmentBar(breakdown: breakdown, height: 6, hovered: hovered) { hovered = $0 }
+                            .help(hovered.map { kind in
+                                "\(kind.title): \(StorageFmt.precisePercent(breakdown.share(kind))) · \(Fmt.size(breakdown.bytes(kind)))"
+                            } ?? "")
+                    } else {
+                        UsageBar(fraction: disk.fraction)
+                            .frame(height: 5)
+                    }
                 }
             }
             .padding(.horizontal, 14)

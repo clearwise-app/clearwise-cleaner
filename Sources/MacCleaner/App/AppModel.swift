@@ -13,6 +13,8 @@ final class AppModel {
     var disk: DiskUsage?
     var confirmation: Confirmation?
     var isDropTargeted = false
+    /// Full-screen cleaning scene while a confirmed cleanup runs (see `runCleaning`).
+    var cleaning: CleaningSession?
 
     enum AppsState { case notLoaded, loading, loaded }
     var apps: [InstalledApp] = []
@@ -26,10 +28,14 @@ final class AppModel {
     let oldFiles = OldFilesModel()
     let duplicates = DuplicatesModel()
     let diskMap = DiskMapModel()
+    /// Disk usage by category (sidebar widget). Measured at launch and after every cleanup.
+    let storage: StorageModel
 
     init(probeSystem: Bool = true) {
         hasFullDiskAccess = probeSystem ? Permissions.hasFullDiskAccess : true
         disk = probeSystem ? DiskUsage.startupVolume() : nil
+        storage = StorageModel(live: probeSystem)
+        if probeSystem { storage.refreshIfAllowed(fullDiskAccess: hasFullDiskAccess) }
         smartCare.app = self
         junk.app = self
         uninstaller.app = self
@@ -43,6 +49,7 @@ final class AppModel {
     func refreshSystemState() {
         hasFullDiskAccess = Permissions.hasFullDiskAccess
         disk = DiskUsage.startupVolume()
+        storage.refreshIfStale(disk: disk, fullDiskAccess: hasFullDiskAccess)
     }
 
     /// Loads (once) the installed apps list; concurrent callers share one inventory run.
@@ -91,6 +98,7 @@ final class AppModel {
         oldFiles.forget(removed)
         duplicates.forget(removed)
         uninstaller.forget(removed)
+        if storage.persistsResults { storage.refresh() }
         refreshSystemState()
     }
 }

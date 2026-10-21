@@ -90,6 +90,7 @@ final class DiskMapModel {
     // MARK: Scan
 
     func startScan() {
+        app?.storage.noteUserScan()
         task?.cancel()
         task = Task { await scan() }
     }
@@ -252,13 +253,23 @@ final class DiskMapModel {
         task = Task {
             withAnimation(Theme.spring) { phase = .cleaning }
             let sizes = Dictionary(picked.map { ($0.url, $0.size) }, uniquingKeysWith: { a, _ in a })
-            let r = await FileRemover.moveToTrash(picked.map(\.url), knownSizes: sizes)
+            let r = await app?.runCleaning(Self.plan(picked)) ?? RemovalResult()
             for url in r.removed { removedBytes[url.standardizedFileURL] = sizes[url] ?? 0 }
             collector.removeAll { r.removed.contains($0.url) }
             result = r
             app?.didRemove(r)
             withAnimation(Theme.spring) { phase = .done }
         }
+    }
+
+    /// The collector as one stage, one Trash call per object so «Остановить» works between objects.
+    static func plan(_ picked: [CollectedItem]) -> CleaningPlan {
+        var plan = CleaningPlan(title: "Удаление собранных объектов", module: .diskMap)
+        let sizes = CleaningPrep.sizes(picked.map { ($0.url, $0.size) })
+        let urls = CleaningPrep.dedupe(picked.map(\.url))
+        plan.addStage("Собранные объекты", symbol: "tray.full.fill", items: urls.map { ($0, sizes[$0] ?? 0) })
+        plan.addTrashUnits(urls, knownSizes: sizes)
+        return plan
     }
 
     func finish() {

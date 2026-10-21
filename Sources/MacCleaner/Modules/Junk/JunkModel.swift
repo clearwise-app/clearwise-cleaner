@@ -46,6 +46,7 @@ final class JunkModel {
     // MARK: Scan
 
     func startScan() {
+        app?.storage.noteUserScan()
         task?.cancel()
         task = Task { await scan() }
     }
@@ -128,17 +129,42 @@ final class JunkModel {
         task = Task { await clean() }
     }
 
-    func clean() async {
+    /// Runs the selected categories through the full-screen cleaning scene (Smart Care reuses it with its own look).
+    func clean(title: String = "Очистка системного мусора", module: AppModule = .junk) async {
         let pairs = selectedPairs
         resultWasPermanent = pairs.count == 1 && pairs[0].0.id == JunkCategoryID.trash
         withAnimation(Theme.spring) { phase = .cleaning }
-        var total = RemovalResult()
-        for (cat, items) in pairs {
-            total.merge(await JunkCleaner.clean(items, in: cat))
-        }
+        let plan = Self.plan(pairs, title: title, module: module)
+        let total = await app?.runCleaning(plan) ?? RemovalResult()
         result = total
         app?.didRemove(total)
         withAnimation(Theme.spring) { phase = .done }
+    }
+
+    /// One stage per category, in the order shown; one engine call per item so «Остановить» works between items.
+    /// Root-owned system logs stay in a single call: one administrator prompt, as before.
+    static func plan(_ pairs: [(JunkCategory, [FileItem])], title: String, module: AppModule) -> CleaningPlan {
+        var plan = CleaningPlan(title: title, module: module)
+        for (cat, items) in pairs {
+            // JunkCleaner dedupes nested items per call; splitting the call must not change that.
+            let keep = Set(CleaningPrep.dedupe(items.map(\.url)).map(\.path))
+            let unique = items.filter { keep.contains($0.url.standardizedFileURL.path) }
+            var userOwned = unique
+            var rootOwned: [FileItem] = []
+            if cat.id == JunkCategoryID.systemLogs {
+                userOwned = unique.filter { FileManager.default.isDeletableFile(atPath: $0.url.path) }
+                rootOwned = unique.filter { !FileManager.default.isDeletableFile(atPath: $0.url.path) }
+            }
+            plan.addStage(cat.title, symbol: cat.symbol, items: unique.map { ($0.url, $0.size) },
+                          admin: Set(rootOwned.map(\.url)))
+            plan.addEach(userOwned) { item, progress in
+                await JunkCleaner.clean([item], in: cat, progress: progress)
+            }
+            if !rootOwned.isEmpty {
+                plan.addUnit { progress in await JunkCleaner.clean(rootOwned, in: cat, progress: progress) }
+            }
+        }
+        return plan
     }
 
     /// Drops removed items from the results (after cleaning here or elsewhere).

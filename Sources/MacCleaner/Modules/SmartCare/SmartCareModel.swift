@@ -54,6 +54,7 @@ final class SmartCareModel {
     }
 
     func startScan() {
+        app?.storage.noteUserScan()
         task?.cancel()
         task = Task { await scan() }
     }
@@ -106,7 +107,7 @@ final class SmartCareModel {
         task = Task {
             guard let app else { return }
             withAnimation(Theme.spring) { phase = .cleaning }
-            await app.junk.clean()
+            await app.junk.clean(title: "Умная очистка", module: .smartCare)
             result = app.junk.result
             app.junk.finish()
             withAnimation(Theme.spring) { phase = .done }

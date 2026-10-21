@@ -83,6 +83,7 @@ final class UninstallerModel {
     }
 
     func startScan() {
+        app?.storage.noteUserScan()
         task?.cancel()
         task = Task { await loadApps() }
     }
@@ -200,9 +201,12 @@ final class UninstallerModel {
             needsAdmin: picked.contains(where: \.requiresAdmin),
             warning: isRunning(target) ? "«\(target.name)» сейчас запущено — оно будет закрыто." : nil,
             tint: .uninstaller,
-            action: { [weak self] in self?.run(title: "Удаляем «\(target.name)»…") {
-                await AppUninstaller.uninstall(target, remnants: picked, removeBundle: true)
-            } done: { "«\(target.name)» удалено" } }
+            action: { [weak self] in
+                guard let self else { return }
+                self.run(Self.uninstallPlan(target, remnants: picked, running: self.isRunning(target))) {
+                    "«\(target.name)» удалено"
+                }
+            }
         ))
     }
 
@@ -219,9 +223,9 @@ final class UninstallerModel {
             needsAdmin: picked.contains(where: \.requiresAdmin),
             warning: isRunning(target) ? "Закройте «\(target.name)» перед сбросом, иначе оно может пересоздать файлы." : nil,
             tint: .uninstaller,
-            action: { [weak self] in self?.run(title: "Сбрасываем «\(target.name)»…") {
-                await AppUninstaller.remove(picked)
-            } done: { "«\(target.name)» сброшено" } }
+            action: { [weak self] in
+                self?.run(Self.removalPlan(picked, title: "Сброс «\(target.name)»", byApp: false)) { "«\(target.name)» сброшено" }
+            }
         ))
     }
 
@@ -252,28 +256,113 @@ final class UninstallerModel {
                 needsAdmin: plan.contains { $0.1.contains(where: \.requiresAdmin) },
                 warning: running.isEmpty ? nil : "Будут закрыты: \(running.map(\.name).joined(separator: ", ")).",
                 tint: .uninstaller,
-                action: { self.run(title: "Удаляем \(Fmt.apps(targets.count))…") {
-                    var total = RemovalResult()
-                    for (a, r) in plan { total.merge(await AppUninstaller.uninstall(a, remnants: r, removeBundle: true)) }
-                    return total
-                } done: { "Удалено \(Fmt.apps(targets.count))" } }
+                action: { self.run(Self.batchPlan(plan)) { "Удалено \(Fmt.apps(targets.count))" } }
             ))
         }
     }
 
-    private func run(title: String, _ work: @escaping @MainActor () async -> RemovalResult, done: @escaping @MainActor () -> String) {
+    private func run(_ plan: CleaningPlan, done: @escaping @MainActor () -> String) {
         task = Task {
-            workingTitle = title
+            workingTitle = plan.title
             withAnimation(Theme.spring) { phase = .cleaning }
-            let r = await work()
-            // Files moved: the finder's index of what exists is stale now.
-            await finder.invalidate()
-            finderSynced = false
+            let r = await app?.runCleaning(plan) ?? RemovalResult()
+            // Straight after the scene returns (no suspension) so it fades into the completion screen.
             result = r
             resultTitle = done()
             app?.didRemove(r)
             withAnimation(Theme.spring) { phase = .done }
+            // Files moved: the finder's index of what exists is stale now.
+            finderSynced = false
+            await finder.invalidate()
         }
+    }
+
+    // MARK: Cleaning plans
+
+    /// Single app: «Завершение приложения» (if running), leftovers by kind, root-owned leftovers, then the app.
+    /// Still one engine call — it quits the app first and moves the bundle last.
+    static func uninstallPlan(_ target: InstalledApp, remnants picked: [AppRemnant], running: Bool) -> CleaningPlan {
+        var plan = CleaningPlan(title: "Удаление «\(target.name)»", module: .uninstaller)
+        let quit = running ? plan.addStage("Завершение приложения", symbol: "power", items: []) : nil
+        let ordered = byKind(picked)
+        addRemnantStages(&plan, ordered, byApp: false)
+        plan.addStage("Приложение", symbol: "app.fill", iconURL: target.url, items: [(target.url, target.size)],
+                      admin: bundleNeedsAdmin(target) ? [target.url] : [])
+        plan.addUnit(activating: quit) { progress in
+            await AppUninstaller.uninstall(target, remnants: ordered, removeBundle: true, progress: progress)
+        }
+        return plan
+    }
+
+    /// Batch: one stage and one engine call per app.
+    static func batchPlan(_ apps: [(InstalledApp, [AppRemnant])]) -> CleaningPlan {
+        var plan = CleaningPlan(title: "Удаление \(Fmt.apps(apps.count))", module: .uninstaller)
+        for (a, remnants) in apps {
+            let ordered = byKind(remnants)
+            var admin = Set(ordered.filter(\.requiresAdmin).map(\.item.url))
+            if bundleNeedsAdmin(a) { admin.insert(a.url) }
+            let stage = plan.addStage(a.name, symbol: "app.fill", iconURL: a.url,
+                                      items: ordered.map { ($0.item.url, $0.item.size) } + [(a.url, a.size)], admin: admin)
+            plan.addUnit(activating: stage) { progress in
+                await AppUninstaller.uninstall(a, remnants: ordered, removeBundle: true, progress: progress)
+            }
+        }
+        return plan
+    }
+
+    /// Leftovers only (reset, orphans): user-owned items one call each (stoppable), root-owned ones together
+    /// at the end so the administrator password is asked once, exactly as a single `remove` call would.
+    static func removalPlan(_ picked: [AppRemnant], title: String, byApp: Bool, groups: [OrphanGroup] = []) -> CleaningPlan {
+        var plan = CleaningPlan(title: title, module: .uninstaller)
+        let ordered = byApp ? picked : byKind(picked)
+        if byApp {
+            let ids = Set(ordered.map(\.id))
+            for g in groups {
+                let items = g.remnants.filter { ids.contains($0.id) && !$0.requiresAdmin }
+                guard !items.isEmpty else { continue }
+                plan.addStage(g.displayName, symbol: "app.dashed", items: items.map { ($0.item.url, $0.item.size) })
+            }
+            addAdminStage(&plan, ordered)
+        } else {
+            addRemnantStages(&plan, ordered, byApp: false)
+        }
+        let user = ordered.filter { !$0.requiresAdmin }
+        let admin = ordered.filter(\.requiresAdmin)
+        plan.addEach(user) { r, progress in await AppUninstaller.remove([r], progress: progress) }
+        if !admin.isEmpty {
+            plan.addUnit { progress in await AppUninstaller.remove(admin, progress: progress) }
+        }
+        return plan
+    }
+
+    private static func byKind(_ remnants: [AppRemnant]) -> [AppRemnant] {
+        let order = Dictionary(uniqueKeysWithValues: RemnantKind.allCases.enumerated().map { ($1, $0) })
+        return remnants.enumerated().sorted { a, b in
+            let ka = order[a.element.kind] ?? 0, kb = order[b.element.kind] ?? 0
+            return ka != kb ? ka < kb : a.offset < b.offset
+        }.map(\.element)
+    }
+
+    private static func addRemnantStages(_ plan: inout CleaningPlan, _ ordered: [AppRemnant], byApp: Bool) {
+        for kind in RemnantKind.allCases {
+            let items = ordered.filter { $0.kind == kind && !$0.requiresAdmin }
+            guard !items.isEmpty else { continue }
+            plan.addStage(kind.title, symbol: kind.symbol, items: items.map { ($0.item.url, $0.item.size) })
+        }
+        addAdminStage(&plan, ordered)
+    }
+
+    private static func addAdminStage(_ plan: inout CleaningPlan, _ ordered: [AppRemnant]) {
+        let admin = ordered.filter(\.requiresAdmin)
+        guard !admin.isEmpty else { return }
+        plan.addStage("Системные компоненты", symbol: "lock.shield.fill", items: admin.map { ($0.item.url, $0.item.size) },
+                      admin: Set(admin.map(\.item.url)))
+    }
+
+    /// Mirrors the engine's check: a bundle the user cannot move goes through the administrator prompt.
+    private static func bundleNeedsAdmin(_ app: InstalledApp) -> Bool {
+        let parent = app.url.deletingLastPathComponent().path
+        return Darwin.access(parent, W_OK) != 0 || Darwin.access(app.url.path, W_OK) != 0
     }
 
     func finish() {
@@ -349,9 +438,10 @@ final class UninstallerModel {
             confirmTitle: "Переместить в Корзину",
             needsAdmin: picked.contains(where: \.requiresAdmin),
             tint: .uninstaller,
-            action: { [weak self] in self?.run(title: "Удаляем остатки…") {
-                await AppUninstaller.remove(picked)
-            } done: { "Остатки удалены" } }
+            action: { [weak self] in
+                guard let self else { return }
+                self.run(Self.removalPlan(picked, title: "Удаление остатков", byApp: true, groups: self.orphans)) { "Остатки удалены" }
+            }
         ))
     }
 }

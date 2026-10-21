@@ -1,5 +1,6 @@
 import SwiftUI
 import CleanerKit
+import SpaceEngine
 
 struct Sidebar: View {
     @Environment(AppModel.self) private var model
@@ -31,9 +32,7 @@ struct Sidebar: View {
 
             Spacer(minLength: 12)
 
-            if let disk = model.disk {
-                SidebarDisk(disk: disk).padding(.horizontal, 14).padding(.bottom, 10)
-            }
+            SidebarStorage().padding(.horizontal, 14).padding(.bottom, 10)
             FDAPill().padding(.horizontal, 14).padding(.bottom, 16)
         }
         .frame(width: Theme.sidebarWidth)
@@ -47,6 +46,8 @@ struct Sidebar: View {
         .overlay(alignment: .trailing) {
             Rectangle().fill(Theme.hairline).frame(width: 1)
         }
+        // The storage card floats past the sidebar edge, over the module content.
+        .zIndex(1)
     }
 
     private func section(_ title: String) -> some View {
@@ -130,28 +131,221 @@ private struct SidebarItem: View {
     }
 }
 
-private struct SidebarDisk: View {
-    let disk: DiskUsage
+/// Bottom-left disk widget: free space, the disk as coloured category segments, the top categories in percent.
+/// Hovering a segment shows its share and size; hovering (or clicking) the widget opens the full breakdown.
+private struct SidebarStorage: View {
+    @Environment(AppModel.self) private var model
+    @State private var hoveredSegment: StorageCategory.Kind?
+    @State private var hoverWidget = false
+    @State private var hoverCard = false
+    @State private var pinned = false
+    @State private var cardVisible = false
+    @State private var cardTask: Task<Void, Never>?
+    @State private var tooltipSize = CGSize(width: 160, height: 42)
+    @State private var titleHeight: CGFloat = 30
+
+    private static let barHeight: CGFloat = 8
+    private var storage: StorageModel { model.storage }
+    private var hovered: StorageCategory.Kind? { hoveredSegment ?? storage.debugHovered }
+    private var showsCard: Bool { cardVisible || pinned || storage.debugShowsDetails }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                Image(systemName: "internaldrive.fill")
-                    .font(.system(size: 11))
-                    .foregroundStyle(Theme.textSecondary)
-                Text(disk.name)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Theme.text)
+        VStack(alignment: .leading, spacing: 8) {
+            titleRow
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { titleHeight = $0 }
+            if let b = storage.breakdown {
+                StorageSegmentBar(breakdown: b, height: Self.barHeight, hovered: hovered) { kind in
+                    hoveredSegment = kind
+                    scheduleCard()
+                }
+                .overlay(alignment: .bottomLeading) { tooltip(b) }
+                .zIndex(1)
+                legend(b)
+            } else if storage.isMeasuring {
+                StorageShimmerBar(height: Self.barHeight)
+                Text("Считаем, что занимает место…")
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(Theme.textTertiary)
                     .lineLimit(1)
+            } else {
+                // Not measured yet (no Full Disk Access, nothing scanned): plain used/free bar + an explicit action.
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(.white.opacity(0.08))
+                        Capsule().fill(.white.opacity(0.35))
+                            .frame(width: total > 0 ? geo.size.width * CGFloat(Double(total - free) / Double(total)) : 0)
+                    }
+                }
+                .frame(height: Self.barHeight)
+                Button { storage.requestMeasure() } label: {
+                    Label("Показать, чем занят диск", systemImage: "chart.bar.xaxis")
+                        .font(.system(size: 11, weight: .medium))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(ModuleTint.smartCare.accent)
             }
-            UsageBar(fraction: disk.fraction).frame(height: 4)
-            Text("\(Fmt.size(disk.available)) свободно из \(Fmt.size(disk.total))")
-                .font(.system(size: 11, design: .rounded))
-                .monospacedDigit()
-                .foregroundStyle(Theme.textTertiary)
         }
         .padding(12)
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(.white.opacity(0.06)))
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(.white.opacity(hoverWidget || showsCard ? 0.085 : 0.06))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(.white.opacity(showsCard ? 0.1 : 0), lineWidth: 0.75))
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .onTapGesture { if storage.breakdown == nil { storage.requestMeasure() } else { togglePinned() } }
+        .onHover { inside in
+            hoverWidget = inside
+            if !inside { hoveredSegment = nil }
+            scheduleCard()
+        }
+        .overlay(alignment: .bottomLeading) { card }
+        .animation(Theme.quick, value: hoverWidget)
+        .animation(Theme.spring, value: showsCard)
+        .accessibilityElement(children: .contain)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("Показать, что занимает место на диске")
+    }
+
+    // MARK: Parts
+
+    private var free: Int64 { model.disk?.available ?? storage.breakdown?.free ?? 0 }
+    private var total: Int64 { model.disk?.total ?? storage.breakdown?.total ?? 0 }
+    private var name: String { model.disk?.name ?? storage.breakdown?.volumeName ?? "Macintosh HD" }
+
+    private var titleRow: some View {
+        let freeText = "свободно \(Fmt.size(free)) из \(Fmt.size(total))"
+        let nameLabel = HStack(spacing: 5) {
+            Image(systemName: "internaldrive.fill")
+                .font(.system(size: 10.5))
+                .foregroundStyle(Theme.textSecondary)
+            Text(name)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Theme.text)
+                .lineLimit(1)
+        }
+        let freeLabel = Text(freeText)
+            .font(.system(size: 10.5, design: .rounded))
+            .monospacedDigit()
+            .foregroundStyle(Theme.textTertiary)
+            .lineLimit(1)
+        return ViewThatFits(in: .horizontal) {
+            HStack(spacing: 6) {
+                nameLabel.fixedSize()
+                Spacer(minLength: 4)
+                freeLabel.fixedSize()
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                nameLabel
+                freeLabel
+            }
+        }
+    }
+
+    /// Top four categories in two content-sized columns: "● Приложения 12%".
+    private func legend(_ b: StorageBreakdown) -> some View {
+        let top = Array(b.categories.filter { $0.bytes > 0 }.prefix(4))
+        let rows = stride(from: 0, to: top.count, by: 2).map { Array(top[$0..<min($0 + 2, top.count)]) }
+        return Grid(alignment: .leading, horizontalSpacing: 4, verticalSpacing: 4) {
+            ForEach(rows.indices, id: \.self) { r in
+                GridRow {
+                    ForEach(Array(rows[r].enumerated()), id: \.element.id) { i, c in
+                        legendCell(c, share: b.share(c.bytes), gap: i == 0 && rows[r].count > 1)
+                    }
+                }
+            }
+        }
+        .font(.system(size: 10.5, design: .rounded))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .animation(Theme.quick, value: hovered)
+    }
+
+    @ViewBuilder
+    private func legendCell(_ c: StorageCategory, share: Double, gap: Bool) -> some View {
+        let opacity = hovered != nil && hovered != c.kind ? 0.45 : 1
+        Circle().fill(c.kind.color).frame(width: 6, height: 6).opacity(opacity)
+        Text(c.kind.shortTitle)
+            .foregroundStyle(Theme.textSecondary)
+            .lineLimit(1)
+            .fixedSize()
+            .opacity(opacity)
+        Text(StorageFmt.percent(share))
+            .fontWeight(.semibold)
+            .foregroundStyle(Theme.text.opacity(0.9))
+            .monospacedDigit()
+            .fixedSize()
+            .gridColumnAlignment(.trailing)
+            .padding(.trailing, gap ? 10 : 0)
+            .opacity(opacity)
+    }
+
+    @ViewBuilder
+    private func tooltip(_ b: StorageBreakdown) -> some View {
+        if let kind = hovered, let c = b.categories.first(where: { $0.kind == kind }) {
+            GeometryReader { geo in
+                let barWidth = geo.size.width
+                let seg = StorageSegmentBar.layout(b, width: barWidth).first { $0.kind == kind }
+                let center = seg.map { $0.x + $0.width / 2 } ?? barWidth / 2
+                // Centered over the segment, kept inside the widget (12 pt padding on each side).
+                let x = min(max(center - tooltipSize.width / 2, -8), barWidth - tooltipSize.width + 8)
+                StorageTooltip(category: c, breakdown: b)
+                    .onGeometryChange(for: CGSize.self) { $0.size } action: { tooltipSize = $0 }
+                    // Floats just above the widget, so the title and free space stay readable.
+                    .offset(x: x, y: -(tooltipSize.height + titleHeight + 8 + 12 + 6))
+            }
+            .frame(height: Self.barHeight)
+            .allowsHitTesting(false)
+            .transition(.opacity)
+        }
+    }
+
+    @ViewBuilder private var card: some View {
+        if showsCard, let b = storage.breakdown {
+            StorageDetailCard(breakdown: b, hovered: hovered,
+                              onHover: { hoveredSegment = $0 },
+                              onClose: pinned ? { togglePinned() } : nil)
+                .onHover { inside in
+                    hoverCard = inside
+                    if !inside { hoveredSegment = nil }
+                    scheduleCard()
+                }
+                // Past the sidebar's right edge (the widget is inset 14 pt), bottom-aligned with the widget.
+                .offset(x: Theme.sidebarWidth - 14 + 10)
+                .transition(.opacity.combined(with: .offset(x: -8)))
+        }
+    }
+
+    // MARK: Behaviour
+
+    private func togglePinned() {
+        if pinned {
+            pinned = false
+            cardVisible = false
+        } else {
+            pinned = true
+        }
+    }
+
+    /// Opens the card after a short hover over the widget (not while pointing at a segment, which has its own
+    /// tooltip); closes it shortly after the mouse has left both the widget and the card.
+    private func scheduleCard() {
+        cardTask?.cancel()
+        let wantsOpen = (hoverWidget && hoveredSegment == nil) || hoverCard
+        let wantsClose = !hoverWidget && !hoverCard
+        guard storage.breakdown != nil else { return }
+        if wantsOpen && !cardVisible {
+            cardTask = Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(450))
+                guard !Task.isCancelled else { return }
+                cardVisible = true
+            }
+        } else if wantsClose && cardVisible {
+            cardTask = Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(220))
+                guard !Task.isCancelled else { return }
+                cardVisible = false
+            }
+        }
     }
 }
 

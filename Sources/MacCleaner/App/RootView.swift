@@ -15,8 +15,10 @@ struct RootView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .ignoresSafeArea()
+            .blur(radius: model.cleaning == nil ? 0 : 24)
+            .allowsHitTesting(model.cleaning == nil)
 
-            if model.isDropTargeted && model.selection != .diskMap {
+            if model.isDropTargeted && model.selection != .diskMap && model.cleaning == nil {
                 DropOverlay()
                     .transition(.opacity)
                     .allowsHitTesting(false)
@@ -30,10 +32,17 @@ struct RootView: View {
                 .transition(.opacity.combined(with: .scale(scale: 0.97)))
                 .zIndex(10)
             }
+
+            if let session = model.cleaning {
+                CleaningOverlay(session: session)
+                    .transition(.asymmetric(insertion: .opacity.combined(with: .scale(scale: 1.03)),
+                                            removal: .opacity.combined(with: .scale(scale: 1.08))))
+                    .zIndex(20)
+            }
         }
         .environment(\.moduleTint, model.selection.tint)
         .dropDestination(for: URL.self) { urls, _ in
-            model.handleDrop(urls)
+            model.cleaning == nil && model.handleDrop(urls)
         } isTargeted: { targeted in
             withAnimation(Theme.quick) { model.isDropTargeted = targeted }
         }

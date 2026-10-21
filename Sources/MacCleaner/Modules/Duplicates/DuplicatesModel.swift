@@ -113,6 +113,7 @@ final class DuplicatesModel {
     // MARK: Scan
 
     func startScan() {
+        app?.storage.noteUserScan()
         task?.cancel()
         task = Task { await scan() }
     }
@@ -276,13 +277,35 @@ final class DuplicatesModel {
                     skipped += remove.map { RemovalFailure(url: $0.item.url, reason: "Оставляемая копия не найдена на диске — группа пропущена") }
                 }
             }
-            let sizes = Dictionary(picked.map { ($0.item.url, $0.item.size) }, uniquingKeysWith: { a, _ in a })
-            var r = urls.isEmpty ? RemovalResult() : await FileRemover.moveToTrash(urls, knownSizes: sizes)
+            var r = urls.isEmpty ? RemovalResult() : (await app?.runCleaning(Self.plan(picked, urls: urls)) ?? RemovalResult())
             r.failed += skipped
             result = r
             app?.didRemove(r)
             withAnimation(Theme.spring) { phase = .done }
         }
+    }
+
+    /// One stage per kind of file (largest first), one Trash call per copy so «Остановить» works between copies.
+    static func plan(_ picked: [AnalyzedFile], urls: [URL]) -> CleaningPlan {
+        var plan = CleaningPlan(title: "Удаление дубликатов", module: .duplicates)
+        let sizes = CleaningPrep.sizes(picked.map { ($0.item.url, $0.item.size) })
+        let kindOf = Dictionary(picked.map { ($0.item.url.standardizedFileURL.path, $0.kind) }, uniquingKeysWith: { a, _ in a })
+        let unique = CleaningPrep.dedupe(urls)
+        let kinds = FileKind.allCases.map { kind in (kind, unique.filter { kindOf[$0.path] == kind }) }
+            .filter { !$0.1.isEmpty }
+            .sorted { $0.1.reduce(0) { $0 + (sizes[$1] ?? 0) } > $1.1.reduce(0) { $0 + (sizes[$1] ?? 0) } }
+        var staged = Set<String>()
+        for (kind, files) in kinds {
+            staged.formUnion(files.map(\.path))
+            plan.addStage(kind.title, symbol: kind.symbol, items: files.map { ($0, sizes[$0] ?? 0) })
+            plan.addTrashUnits(files, knownSizes: sizes)
+        }
+        let rest = unique.filter { !staged.contains($0.path) }
+        if !rest.isEmpty {
+            plan.addStage(FileKind.other.title, symbol: FileKind.other.symbol, items: rest.map { ($0, sizes[$0] ?? 0) })
+            plan.addTrashUnits(rest, knownSizes: sizes)
+        }
+        return plan
     }
 
     func forget(_ removed: Set<URL>) {

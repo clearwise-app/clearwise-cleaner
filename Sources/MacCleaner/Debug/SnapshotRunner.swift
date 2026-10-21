@@ -35,6 +35,7 @@ enum SnapshotRunner {
         if !live {
             model.hasFullDiskAccess = scene.fullDiskAccess
             model.disk = DiskUsage(name: "Macintosh HD", total: 494_380_000_000, available: 182_600_000_000)
+            model.storage.apply(MockData.storage)
         }
         let started = Date()
         await scene.configure(model)
@@ -244,6 +245,40 @@ enum SnapshotRunner {
                 m.uninstaller.phase = .results
                 selectChrome(m)
             },
+            // Full-screen cleaning scene (fake progress, frozen animation — see MockCleaning).
+            Scene(name: "clean_junk_25") { m in MockCleaning.junk(m, fraction: 0.25) },
+            Scene(name: "clean_junk_70") { m in MockCleaning.junk(m, fraction: 0.7) },
+            Scene(name: "clean_smartcare_45") { m in MockCleaning.junk(m, fraction: 0.45, module: .smartCare) },
+            Scene(name: "clean_uninstall_50") { m in MockCleaning.uninstall(m, fraction: 0.5) },
+            Scene(name: "clean_uninstall_admin") { m in MockCleaning.uninstallAdmin(m) },
+            Scene(name: "clean_orphans_60") { m in MockCleaning.orphans(m, fraction: 0.6) },
+            Scene(name: "clean_batch_40") { m in MockCleaning.batch(m, fraction: 0.4) },
+            Scene(name: "clean_dup_55") { m in MockCleaning.duplicates(m, fraction: 0.55) },
+            Scene(name: "clean_done_transition") { m in MockCleaning.done(m) },
+            Scene(name: "clean_compact_junk_40", size: NSSize(width: 1100, height: 720)) { m in MockCleaning.junk(m, fraction: 0.4) },
+            Scene(name: "clean_compact_uninstall_admin", size: NSSize(width: 1100, height: 720)) { m in MockCleaning.uninstallAdmin(m) },
+            // Sidebar disk widget: category segments, a hovered segment's tooltip, the full breakdown card.
+            Scene(name: "storage_sidebar") { m in m.selection = .junk },
+            Scene(name: "storage_hover_segment") { m in
+                m.selection = .junk
+                m.storage.debugHovered = .developer
+            },
+            Scene(name: "storage_popover") { m in
+                m.selection = .junk
+                m.storage.debugShowsDetails = true
+                m.storage.debugHovered = .media
+            },
+            Scene(name: "storage_popover_noFDA", fullDiskAccess: false) { m in
+                m.selection = .oldFiles
+                var b = MockData.storage
+                b.fullDiskAccess = false
+                m.storage.apply(b)
+                m.storage.debugShowsDetails = true
+            },
+            Scene(name: "storage_loading") { m in
+                m.selection = .junk
+                m.storage.apply(nil)
+            },
         ]
     }
 
@@ -283,6 +318,18 @@ enum SnapshotRunner {
             Scene(name: "live_diskmap") { m in
                 m.selection = .diskMap
                 await m.diskMap.scan()
+            },
+            Scene(name: "live_storage") { m in
+                m.selection = .smartCare
+                m.storage.refresh()
+                while m.storage.isMeasuring { try? await Task.sleep(for: .milliseconds(100)) }
+                m.storage.debugShowsDetails = true
+                if let b = m.storage.breakdown {
+                    print("live storage: \(b.volumeName) total \(Fmt.size(b.total)), used \(Fmt.size(b.used)), free \(Fmt.size(b.free)), FDA \(b.fullDiskAccess), \(String(format: "%.2f", b.duration)) s")
+                    for c in b.categories {
+                        print("  \(c.title): \(Fmt.size(c.bytes)) (\(StorageFmt.precisePercent(b.share(c.bytes))))")
+                    }
+                }
             },
         ]
     }

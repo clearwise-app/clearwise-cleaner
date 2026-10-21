@@ -69,6 +69,7 @@ final class OldFilesModel {
     // MARK: Scan
 
     func startScan() {
+        app?.storage.noteUserScan()
         task?.cancel()
         task = Task { await scan() }
     }
@@ -148,12 +149,28 @@ final class OldFilesModel {
     private func startTrash(_ picked: [AnalyzedFile]) {
         task = Task {
             withAnimation(Theme.spring) { phase = .cleaning }
-            let sizes = Dictionary(picked.map { ($0.item.url, $0.item.size) }, uniquingKeysWith: { a, _ in a })
-            let r = await FileRemover.moveToTrash(picked.map(\.item.url), knownSizes: sizes)
+            let r = await app?.runCleaning(Self.plan(picked)) ?? RemovalResult()
             result = r
             app?.didRemove(r)
             withAnimation(Theme.spring) { phase = .done }
         }
+    }
+
+    /// One stage per kind (largest first), one Trash call per file so «Остановить» works between files.
+    static func plan(_ picked: [AnalyzedFile]) -> CleaningPlan {
+        var plan = CleaningPlan(title: "Удаление старых и больших файлов", module: .oldFiles)
+        let sizes = CleaningPrep.sizes(picked.map { ($0.item.url, $0.item.size) })
+        let urls = CleaningPrep.dedupe(picked.map(\.item.url))
+        let kept = Set(urls.map(\.path))
+        let unique = picked.filter { kept.contains($0.item.url.standardizedFileURL.path) }
+        let kinds = FileKind.allCases.map { kind in (kind, unique.filter { $0.kind == kind }) }
+            .filter { !$0.1.isEmpty }
+            .sorted { $0.1.reduce(0) { $0 + $1.item.size } > $1.1.reduce(0) { $0 + $1.item.size } }
+        for (kind, files) in kinds {
+            plan.addStage(kind.title, symbol: kind.symbol, items: files.map { ($0.item.url, $0.item.size) })
+            plan.addTrashUnits(files.map { $0.item.url.standardizedFileURL }, knownSizes: sizes)
+        }
+        return plan
     }
 
     func forget(_ removed: Set<URL>) {
