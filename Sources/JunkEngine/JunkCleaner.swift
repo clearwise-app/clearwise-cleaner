@@ -28,6 +28,18 @@ public enum JunkCleaner {
             let rootOwned = accepted.filter { !FileManager.default.isDeletableFile(atPath: $0.url.path) }.map(\.url)
             if !userOwned.isEmpty { result.merge(await FileRemover.moveToTrash(userOwned, knownSizes: sizes, progress: progress)) }
             if !rootOwned.isEmpty { result.merge(await FileRemover.moveToTrashAsAdmin(rootOwned, knownSizes: sizes, progress: progress)) }
+        case JunkCategoryID.chromiumAppCaches:
+            // The app may have been opened since the scan; its caches are in use then.
+            let running = RunningApps.current()
+            var idle: [URL] = []
+            for item in accepted {
+                if let root = ChromiumAppCaches.owningUserDataFolder(of: item.url), running.uses(root) {
+                    result.failed.append(RemovalFailure(url: item.url, reason: "Приложение запущено"))
+                } else {
+                    idle.append(item.url)
+                }
+            }
+            if !idle.isEmpty { result.merge(await FileRemover.moveToTrash(idle, knownSizes: sizes, progress: progress)) }
         default:
             result.merge(await FileRemover.moveToTrash(accepted.map(\.url), knownSizes: sizes, progress: progress))
         }

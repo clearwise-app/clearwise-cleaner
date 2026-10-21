@@ -8,6 +8,7 @@ public enum JunkCategoryID {
     public static let crashReports = "crash-reports"
     public static let systemLogs = "system-logs"
     public static let browserCaches = "browser-caches"
+    public static let chromiumAppCaches = "electron-app-caches"
     public static let xcodeDerivedData = "xcode-derived-data"
     public static let xcodeArchives = "xcode-archives"
     public static let xcodeDeviceSupport = "xcode-device-support"

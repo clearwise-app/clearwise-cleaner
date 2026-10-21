@@ -115,6 +115,12 @@ enum SnapshotRunner {
                 m.junk.apply(MockData.junk)
                 m.junk.expanded = ["user-caches"]
             },
+            Scene(name: "07c_junk_electron") { m in
+                m.selection = .junk
+                m.junk.apply(MockData.junk)
+                m.junk.notes = MockData.junkNotes
+                m.junk.expanded = ["electron-app-caches"]
+            },
             Scene(name: "08_junk_confirm") { m in
                 m.selection = .junk
                 m.junk.apply(MockData.junk)

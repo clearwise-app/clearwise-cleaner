@@ -28,7 +28,7 @@ enum JunkCatalog {
     ]
 
     static let all: [JunkRule] = [
-        userCaches, userLogs, crashReports, systemLogs, browserCaches,
+        userCaches, userLogs, crashReports, systemLogs, browserCaches, chromiumAppCaches,
         derivedData, archives, deviceSupport, simulatorCaches, deviceLogs, packageCaches, cargoRegistry, jetbrainsCaches,
         temporaryFiles, installers, mailDownloads, iosBackups, brokenPreferences, brokenLaunchAgents, trash,
     ]
@@ -83,6 +83,16 @@ enum JunkCatalog {
         // Same protected names as app caches: Safari's container keeps a CloudKit cache (bookmark/tab sync)
         // next to its page cache, and clearing it forces a full iCloud re-sync.
         r.excludedNames = protectedCacheNames
+        return r
+    }
+
+    static var chromiumAppCaches: JunkRule {
+        var r = JunkRule(id: JunkCategoryID.chromiumAppCaches, title: "Кэш программ на Electron",
+                         detail: "Кэш страниц, скриптов и графики Slack, Discord, VS Code, Notion, Figma и других программ на движке Chromium. Переписка, входы в аккаунты и офлайн-данные не затрагиваются, запущенные программы пропускаются.",
+                         symbol: "atom", risk: .safe, phase: "Кэш программ")
+        // Below browsers (priority 2), which own their user data folders; nothing else claims Application Support.
+        r.collector = { ChromiumAppCaches.candidates($0) }
+        r.skipsActiveItems = true
         return r
     }
 

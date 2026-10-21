@@ -35,7 +35,10 @@ public actor JunkScanner {
     /// Scans all junk categories. Returns only categories with at least one item, sorted by size desc.
     public func scan(progress: ProgressHandler? = nil) async -> [JunkCategory] {
         var env = environment
-        if usesLiveClock { env.now = Date() }
+        if usesLiveClock {
+            env.now = Date()
+            env.readsAppContainers = Permissions.hasFullDiskAccess   // may have been granted since launch
+        }
         let rules = self.rules
         progress?(ScanProgress(phase: "Поиск файлов", fraction: 0))
 

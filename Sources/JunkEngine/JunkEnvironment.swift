@@ -1,4 +1,5 @@
 import Foundation
+import CleanerKit
 
 /// Where the scanner looks. Production code uses `.live`; tests build one around a fake home
 /// in a temporary directory so the real home folder is never scanned or touched.
@@ -20,6 +21,12 @@ struct JunkEnvironment: Sendable {
     var temporaryMinimumAge: TimeInterval = 3 * 24 * 3600
     /// How many items are sized in parallel.
     var sizingConcurrency: Int = max(4, ProcessInfo.processInfo.activeProcessorCount)
+    /// Folders with installed apps (`/Applications`, `~/Applications`), for naming apps' data folders.
+    var applicationFolders: [URL] = []
+    /// Other apps' containers may be opened (Full Disk Access). Without it macOS shows a blocking consent prompt.
+    var readsAppContainers = false
+    /// Snapshot of running apps, taken when a scan needs it.
+    var runningApps: @Sendable () -> RunningApps = { RunningApps() }
 
     static var live: JunkEnvironment {
         var own = ["MacCleaner", "Clearwise Cleaner", "Clearwise"]
@@ -29,7 +36,11 @@ struct JunkEnvironment: Sendable {
             systemLogRoots: [URL(fileURLWithPath: "/Library/Logs"), URL(fileURLWithPath: "/private/var/log")],
             temporaryRoot: URL(fileURLWithPath: NSTemporaryDirectory()).standardizedFileURL,
             ownIdentifiers: own,
-            now: Date()
+            now: Date(),
+            applicationFolders: [URL(fileURLWithPath: "/Applications"),
+                                 FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications")],
+            readsAppContainers: Permissions.hasFullDiskAccess,
+            runningApps: { RunningApps.current() }
         )
     }
 
@@ -41,7 +52,9 @@ struct JunkEnvironment: Sendable {
                              root.appendingPathComponent("system/private/var/log")],
             temporaryRoot: root.appendingPathComponent("tmp"),
             ownIdentifiers: ["MacCleaner"],
-            now: now
+            now: now,
+            applicationFolders: [root.appendingPathComponent("Applications")],
+            readsAppContainers: true
         )
     }
 
