@@ -1,0 +1,252 @@
+import SwiftUI
+import AppKit
+import CleanerKit
+
+/// `MacCleaner --snapshot <dir> [--only <name-substring>]` renders every module's key states with mock
+/// data into PNGs (1280×800 @2x) and exits. Views are hosted in an offscreen window and captured with
+/// `cacheDisplay`, which keeps AppKit-backed controls, scroll views and shadows. No engine is ever called.
+@MainActor
+enum SnapshotRunner {
+    struct Scene {
+        let name: String
+        var fullDiskAccess = true
+        var size = NSSize(width: 1280, height: 800)
+        let configure: @MainActor (AppModel) async -> Void
+    }
+
+    nonisolated static func run(outputDirectory: URL, only: String?, live: Bool = false) {
+        MainActor.assumeIsolated {
+            let app = NSApplication.shared
+            app.setActivationPolicy(.accessory)
+            app.appearance = NSAppearance(named: .darkAqua)
+            Task { @MainActor in
+                try? FileManager.default.createDirectory(at: outputDirectory, withIntermediateDirectories: true)
+                for scene in (live ? liveScenes : scenes) where only.map({ scene.name.contains($0) }) ?? true {
+                    await render(scene, live: live, to: outputDirectory.appendingPathComponent(scene.name + ".png"))
+                }
+                exit(0)
+            }
+            app.run()
+        }
+    }
+
+    private static func render(_ scene: Scene, live: Bool, to url: URL) async {
+        let model = AppModel(probeSystem: live)
+        if !live {
+            model.hasFullDiskAccess = scene.fullDiskAccess
+            model.disk = DiskUsage(name: "Macintosh HD", total: 494_380_000_000, available: 182_600_000_000)
+        }
+        let started = Date()
+        await scene.configure(model)
+        if live { print("live scene \(scene.name): \(Int(Date().timeIntervalSince(started)))s") }
+
+        let size = scene.size
+        let root = RootView()
+            .environment(model)
+            .environment(\.isSnapshot, true)
+            .frame(width: size.width, height: size.height)
+        let host = NSHostingView(rootView: root)
+        host.frame = NSRect(origin: .zero, size: size)
+        let window = NSWindow(contentRect: host.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+        window.appearance = NSAppearance(named: .darkAqua)
+        window.contentView = host
+        window.setFrameOrigin(NSPoint(x: -20_000, y: -20_000))
+        window.orderFrontRegardless()
+        host.layoutSubtreeIfNeeded()
+        try? await Task.sleep(for: .milliseconds(700))
+        host.layoutSubtreeIfNeeded()
+
+        guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { return }
+        host.cacheDisplay(in: host.bounds, to: rep)
+        if let data = rep.representation(using: .png, properties: [:]) {
+            try? data.write(to: url)
+            print("snapshot:", url.path)
+        }
+        window.orderOut(nil)
+    }
+
+    // MARK: Scenes
+
+    static var scenes: [Scene] {
+        [
+            Scene(name: "01_smartcare_idle") { m in m.selection = .smartCare },
+            Scene(name: "02_smartcare_scanning") { m in
+                m.selection = .smartCare
+                m.smartCare.phase = .scanning
+                m.junk.phase = .scanning
+                m.junk.progress = ScanProgress(phase: "Кэш браузеров", fraction: 0.64,
+                                               currentPath: MockData.h("Library/Caches/Google/Chrome/Default/Cache/Cache_Data").path)
+                m.oldFiles.phase = .scanning
+                m.oldFiles.progress = ScanProgress(phase: "Загрузки", fraction: 0.38)
+                m.uninstaller.applyOrphans(MockData.orphans)
+            },
+            Scene(name: "03_smartcare_results") { m in
+                m.selection = .smartCare
+                fillAll(m)
+                m.smartCare.phase = .results
+            },
+            Scene(name: "04_smartcare_done") { m in
+                m.selection = .smartCare
+                m.smartCare.phase = .done
+                m.smartCare.result = RemovalResult(removed: Array(repeating: MockData.h("x"), count: 1_284),
+                                                   failed: MockData.failures, freedBytes: 13_870_000_000)
+            },
+            Scene(name: "05_junk_idle_noFDA", fullDiskAccess: false) { m in m.selection = .junk },
+            Scene(name: "06_junk_scanning") { m in
+                m.selection = .junk
+                m.junk.phase = .scanning
+                m.junk.progress = ScanProgress(phase: "Xcode: DerivedData", fraction: 0.47,
+                                               currentPath: MockData.h("Library/Developer/Xcode/DerivedData/MacCleaner-dkqhzfxbtwy/Build/Intermediates.noindex").path)
+            },
+            Scene(name: "07_junk_results") { m in
+                m.selection = .junk
+                m.junk.apply(MockData.junk)
+                m.junk.expanded = ["user-caches"]
+            },
+            Scene(name: "08_junk_confirm") { m in
+                m.selection = .junk
+                m.junk.apply(MockData.junk)
+                m.junk.requestClean()
+            },
+            Scene(name: "09_junk_done") { m in
+                m.selection = .junk
+                m.junk.phase = .done
+                m.junk.result = RemovalResult(removed: Array(repeating: MockData.h("x"), count: 342),
+                                              failed: [], freedBytes: 3_240_000_000)
+            },
+            Scene(name: "10_uninstaller_idle") { m in m.selection = .uninstaller },
+            Scene(name: "11_uninstaller_app") { m in
+                m.selection = .uninstaller
+                loadApps(m)
+                m.uninstaller.phase = .results
+                selectChrome(m)
+            },
+            Scene(name: "12_uninstaller_batch") { m in
+                m.selection = .uninstaller
+                loadApps(m)
+                m.uninstaller.phase = .results
+                selectChrome(m)
+                m.uninstaller.checkedApps = [URL(fileURLWithPath: "/Applications/Xcode-beta.app"),
+                                             URL(fileURLWithPath: "/Applications/GarageBand.app"),
+                                             URL(fileURLWithPath: "/Applications/iMovie.app")]
+            },
+            Scene(name: "12b_uninstaller_confirm") { m in
+                m.selection = .uninstaller
+                loadApps(m)
+                m.uninstaller.phase = .results
+                selectChrome(m)
+                m.uninstaller.requestUninstall()
+            },
+            Scene(name: "13_uninstaller_leftovers") { m in
+                m.selection = .uninstaller
+                loadApps(m)
+                m.uninstaller.phase = .results
+                m.uninstaller.tab = .leftovers
+                m.uninstaller.applyOrphans(MockData.orphans)
+            },
+            Scene(name: "14_uninstaller_done") { m in
+                m.selection = .uninstaller
+                m.uninstaller.phase = .done
+                m.uninstaller.resultTitle = "«Google Chrome» удалено"
+                m.uninstaller.result = RemovalResult(removed: Array(repeating: MockData.h("x"), count: 11),
+                                                     failed: [], freedBytes: 4_431_000_000)
+            },
+            Scene(name: "15_oldfiles_idle") { m in m.selection = .oldFiles },
+            Scene(name: "16_oldfiles_results") { m in
+                m.selection = .oldFiles
+                m.oldFiles.apply(MockData.oldFiles, mode: .old)
+                m.oldFiles.selection = Set(MockData.oldFiles.prefix(3).map(\.id))
+            },
+            Scene(name: "17_diskmap_idle") { m in m.selection = .diskMap },
+            Scene(name: "18_diskmap_scanning") { m in
+                m.selection = .diskMap
+                m.diskMap.phase = .scanning
+                m.diskMap.progress = ScanProgress(phase: "Считаем размеры папок", fraction: 0.71,
+                                                  currentPath: MockData.h("Library/Application Support/MobileSync").path)
+            },
+            Scene(name: "19_diskmap_results") { m in
+                m.selection = .diskMap
+                m.diskMap.apply(MockData.diskTree)
+                m.diskMap.hoveredID = m.diskMap.root?.children.first { $0.name == "Movies" }?.id
+            },
+            Scene(name: "20_diskmap_zoom_collector") { m in
+                m.selection = .diskMap
+                m.diskMap.apply(MockData.diskTree)
+                if let lib = m.diskMap.root?.children.first(where: { $0.name == "Library" }) {
+                    m.diskMap.stack.append(lib)
+                    if let dev = lib.children.first(where: { $0.name == "Developer" }) {
+                        m.diskMap.collect(dev.children[0].children[1], parent: dev.children[0])
+                        m.diskMap.collect(dev.children[1], parent: dev)
+                    }
+                }
+                if let dl = m.diskMap.root?.children.first(where: { $0.name == "Downloads" }) {
+                    m.diskMap.collect(dl.children[0], parent: dl)
+                }
+            },
+            Scene(name: "21_compact_smartcare_results", size: NSSize(width: 1100, height: 720)) { m in
+                m.selection = .smartCare
+                fillAll(m)
+                m.smartCare.phase = .results
+            },
+            Scene(name: "22_compact_oldfiles_idle", size: NSSize(width: 1100, height: 720)) { m in m.selection = .oldFiles },
+            Scene(name: "23_compact_uninstaller", size: NSSize(width: 1100, height: 720)) { m in
+                m.selection = .uninstaller
+                loadApps(m)
+                m.uninstaller.phase = .results
+                selectChrome(m)
+            },
+        ]
+    }
+
+    /// Real, read-only engine runs (`--snapshot <dir> --live`): checks that real data fits the layout.
+    /// Nothing is ever removed — only scans are called.
+    static var liveScenes: [Scene] {
+        [
+            Scene(name: "live_junk") { m in
+                m.selection = .junk
+                await m.junk.scan()
+                if let first = m.junk.categories.first { m.junk.expanded = [first.id] }
+            },
+            Scene(name: "live_uninstaller") { m in
+                m.selection = .uninstaller
+                await m.uninstaller.loadApps()
+                while m.uninstaller.remnantsLoading { try? await Task.sleep(for: .milliseconds(200)) }
+            },
+            Scene(name: "live_leftovers") { m in
+                m.selection = .uninstaller
+                await m.uninstaller.loadApps()
+                m.uninstaller.tab = .leftovers
+                await m.uninstaller.scanOrphans()
+            },
+            Scene(name: "live_oldfiles") { m in
+                m.selection = .oldFiles
+                await m.oldFiles.scan()
+            },
+            Scene(name: "live_diskmap") { m in
+                m.selection = .diskMap
+                await m.diskMap.scan()
+            },
+        ]
+    }
+
+    private static func loadApps(_ m: AppModel) {
+        m.apps = MockData.apps
+        m.appsState = .loaded
+    }
+
+    private static func selectChrome(_ m: AppModel) {
+        let chrome = URL(fileURLWithPath: "/Applications/Google Chrome.app")
+        m.uninstaller.selectedAppID = chrome
+        let rem = MockData.remnants()
+        m.uninstaller.remnants = rem.sorted { $0.item.size > $1.item.size }
+        m.uninstaller.remnantSelection = Set(rem.filter { $0.confidence >= .medium }.map(\.id))
+        m.uninstaller.remnantsLoading = false
+    }
+
+    private static func fillAll(_ m: AppModel) {
+        m.junk.apply(MockData.junk)
+        m.oldFiles.apply(MockData.oldFiles, mode: .old)
+        loadApps(m)
+        m.uninstaller.applyOrphans(MockData.orphans)
+    }
+}

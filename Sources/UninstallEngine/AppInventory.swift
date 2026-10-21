@@ -80,13 +80,19 @@ public actor AppInventory {
         return result
     }
 
+    /// True for apps on the sealed system volume or symlinked into it (e.g. /Applications/Safari.app → Cryptexes).
+    public static func isPartOfOS(_ url: URL) -> Bool {
+        let path = url.standardizedFileURL.path
+        let resolved = url.resolvingSymlinksInPath().path
+        return path.hasPrefix("/System/") || resolved.hasPrefix("/System/")
+    }
+
     static func describe(_ url: URL, sized: Bool) -> InstalledApp? {
         guard let info = BundleInfo(appURL: url) else { return nil }
         let bundleID = info.bundleID
-        let path = url.standardizedFileURL.path
-        let isSystem = (bundleID?.lowercased().hasPrefix("com.apple.") ?? false)
-            || path.hasPrefix("/System/")
-            || url.lastPathComponent == "Safari.app"
+        // Only apps that are part of the OS are locked. Apple's App Store apps in /Applications
+        // (Xcode, GarageBand, iMovie, iWork) are ordinary removable apps, often the biggest ones.
+        let isSystem = isPartOfOS(url) || url.lastPathComponent == "Safari.app"
         let isAppStore = FileManager.default.fileExists(atPath: url.appendingPathComponent("Contents/_MASReceipt/receipt").path)
         return InstalledApp(
             url: url,
