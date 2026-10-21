@@ -106,6 +106,48 @@ final class SafetyGuardTests: XCTestCase {
         XCTAssertEqual(box.steps.filter(\.done).map(\.bytes), [0, 0])
     }
 
+    func testOnlyOwnershipRefusalsAskForThePassword() {
+        func cocoa(_ posix: Int32?) -> NSError {
+            var info: [String: Any] = [:]
+            if let posix { info[NSUnderlyingErrorKey] = NSError(domain: NSPOSIXErrorDomain, code: Int(posix)) }
+            return NSError(domain: NSCocoaErrorDomain, code: NSFileWriteNoPermissionError, userInfo: info)
+        }
+        XCTAssertTrue(FileRemover.isPermissionDenied(cocoa(EACCES)), "root-owned item: the password helps")
+        XCTAssertFalse(FileRemover.isPermissionDenied(cocoa(EPERM)), "privacy protection or a lock: root cannot help")
+        XCTAssertTrue(FileRemover.isPermissionDenied(cocoa(nil)))
+        XCTAssertTrue(FileRemover.isPermissionDenied(NSError(domain: NSPOSIXErrorDomain, code: Int(EACCES))))
+        XCTAssertFalse(FileRemover.isPermissionDenied(NSError(domain: NSCocoaErrorDomain, code: NSFileNoSuchFileError)))
+    }
+
+    func testAdminDeleteActsOnlyOnDirectChildrenOfTheUsersTrash() async throws {
+        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("sg-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tmp) }
+        let file = tmp.appendingPathComponent("keep.txt")
+        try Data("x".utf8).write(to: file)
+        let trash = home.appendingPathComponent(".Trash")
+        // Refused before any password prompt: nothing here reaches osascript.
+        let result = await FileRemover.deletePermanentlyFromTrashAsAdmin([
+            file,
+            trash.appendingPathComponent("Folder/nested.app"),
+            trash.appendingPathComponent("../Documents"),
+        ])
+        XCTAssertTrue(result.removed.isEmpty)
+        XCTAssertEqual(result.failed.count, 3)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: file.path))
+        let whole = await FileRemover.deletePermanentlyFromTrashAsAdmin([trash])
+        XCTAssertEqual(whole.failed.count, 1, "the Trash folder itself is never removed")
+    }
+
+    func testNeedsAdminToDeleteMeansSomeoneElseOwnsIt() throws {
+        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("sg-\(UUID().uuidString)")
+        try Data("x".utf8).write(to: tmp)
+        defer { try? FileManager.default.removeItem(at: tmp) }
+        XCTAssertFalse(FileRemover.needsAdminToDelete(tmp))
+        XCTAssertTrue(FileRemover.needsAdminToDelete(URL(fileURLWithPath: "/System")))
+        XCTAssertFalse(FileRemover.needsAdminToDelete(URL(fileURLWithPath: "/nonexistent-\(UUID().uuidString)")))
+    }
+
     func testSystemConfigAndAdminOnlyAreasAreProtected() {
         blocked("/Library/LaunchDaemons/com.apple.foo.plist")
         blocked("/Library/Preferences/com.apple.loginwindow.plist")

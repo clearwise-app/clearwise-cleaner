@@ -303,6 +303,8 @@ enum SnapshotRunner {
                   content: completionScene(compact: true)) { _ in },
             Scene(name: "done_all_failed", content: completionScene(compact: false, allFailed: true)) { _ in },
             Scene(name: "done_permanent", content: completionScene(compact: false, permanent: true)) { _ in },
+            // Full Disk Access granted, macOS still refuses a few files: no «Дать доступ», a plain «nothing to do».
+            Scene(name: "done_protected", content: completionScene(compact: false, protectedFailures: true)) { _ in },
             Scene(name: "08b_junk_confirm_permanent") { m in
                 m.selection = .junk
                 m.junk.apply(MockData.junk)
@@ -523,10 +525,17 @@ enum SnapshotRunner {
         ]
     }
 
-    private static func completionScene(compact: Bool, allFailed: Bool = false,
-                                        permanent: Bool = false) -> @MainActor (AppModel) -> AnyView {
+    private static func completionScene(compact: Bool, allFailed: Bool = false, permanent: Bool = false,
+                                        protectedFailures: Bool = false) -> @MainActor (AppModel) -> AnyView {
         { _ in
-            let result = allFailed
+            let refused = (1...8).map {
+                RemovalFailure(url: MockData.h("Library/Caches/com.apple.cache\($0)"),
+                               reason: "“cache\($0)” couldn’t be moved to the trash because you don’t have permission to access it.")
+            }
+            let result = protectedFailures
+                ? RemovalResult(removed: Array(repeating: MockData.h("x"), count: 48), failed: refused,
+                                freedBytes: 10_400_000_000)
+                : allFailed
                 ? RemovalResult(failed: Array(MockData.actionableFailures.prefix(2)))
                 : RemovalResult(removed: Array(repeating: MockData.h("x"), count: permanent ? 37 : 14),
                                 failed: permanent ? [] : MockData.actionableFailures,
@@ -540,6 +549,7 @@ enum SnapshotRunner {
                 }
                 .preferredColorScheme(.dark)
                 .environment(\.locale, Locale(identifier: "ru_RU"))
+                .environment(\.hasFullDiskAccess, protectedFailures)
             )
         }
     }

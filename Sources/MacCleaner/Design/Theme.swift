@@ -190,6 +190,8 @@ extension EnvironmentValues {
     /// True when the view is being rendered for a static snapshot: animations stay at rest.
     @Entry var isSnapshot: Bool = false
     @Entry var moduleTint: ModuleTint = .smartCare
+    /// Full Disk Access is granted: a refusal is then never «дайте полный доступ». Set by RootView.
+    @Entry var hasFullDiskAccess: Bool = false
     /// True when decorative, continuously running animations must stop: window inactive,
     /// or the full-screen cleaning overlay covers the content. Set by RootView.
     @Entry var animationsPaused: Bool = false

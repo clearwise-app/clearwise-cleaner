@@ -60,6 +60,7 @@ struct RootView: View {
             }
         }
         .environment(\.moduleTint, model.selection.tint)
+        .environment(\.hasFullDiskAccess, model.hasFullDiskAccess)
         .dropDestination(for: URL.self) { urls, _ in
             model.handleDrop(urls)
         } isTargeted: { targeted in
@@ -153,6 +154,7 @@ private struct TrashCompletionScreen: View {
             CompletionView(tint: completion.tint, result: completion.result, title: "Корзина очищена",
                            permanent: true, noun: .items,
                            onGrantAccess: { model.dismissTrashCompletion(); model.presentAccessSheet() },
+                           onRetry: { model.dismissTrashCompletion(); model.requestEmptyTrash() },
                            onDone: { model.dismissTrashCompletion() })
         }
         .environment(\.moduleTint, completion.tint)

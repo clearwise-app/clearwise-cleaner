@@ -521,8 +521,17 @@ extension AppModel {
         plan.activity = "Сейчас"
         plan.addStage("Корзина", symbol: "trash.fill", items: pairs)
         let sizes = CleaningPrep.sizes(pairs.map { ($0.url, $0.size) })
-        plan.addChunks(items.map(\.url)) { chunk, progress in
+        // Items the user may not delete (apps uninstalled with the admin password) go in one unit last:
+        // a single password prompt, like Finder's «Очистить Корзину».
+        let urls = items.map(\.url)
+        let adminOnly = urls.filter(FileRemover.needsAdminToDelete)
+        plan.addChunks(urls.filter { !adminOnly.contains($0) }) { chunk, progress in
             await FileRemover.deletePermanentlyFromTrash(chunk, knownSizes: sizes, progress: progress)
+        }
+        if !adminOnly.isEmpty {
+            plan.addChunks(adminOnly, size: adminOnly.count) { chunk, progress in
+                await FileRemover.deletePermanentlyFromTrash(chunk, knownSizes: sizes, progress: progress)
+            }
         }
         Task { [weak self] in
             guard let self else { return }

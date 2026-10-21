@@ -115,10 +115,14 @@ public enum FileRemover {
 
     /// Permanently deletes items. Only allowed for items already inside a Trash folder
     /// (this is how "Empty Trash" works). Anything else is refused.
+    /// Items of the user's own Trash that macOS refuses to the user (root-owned: App Store apps and daemons
+    /// moved there by `moveToTrashAsAdmin`) are retried once as root, after the administrator password —
+    /// like Finder's «Очистить Корзину».
     public static func deletePermanentlyFromTrash(_ urls: [URL], knownSizes: [URL: Int64] = [:],
                                                  progress: RemovalProgressHandler? = nil) async -> RemovalResult {
-        await Task.detached(priority: .userInitiated) {
+        let (firstPass, refused): (RemovalResult, [URL]) = await Task.detached(priority: .userInitiated) {
             var result = RemovalResult()
+            var refused: [URL] = []
             for url in dedupeNested(urls) {
                 progress?(RemovalStep(url: url, bytes: 0, done: false))
                 var freed: Int64 = 0
@@ -133,12 +137,95 @@ public enum FileRemover {
                     result.removed.append(url)
                     result.freedBytes += size
                     freed = size
+                } catch where isPermissionDenied(error) && isInUserTrash(url) {
+                    refused.append(url)
                 } catch {
                     result.failed.append(RemovalFailure(url: url, reason: error.localizedDescription))
                 }
             }
-            return result
+            return (result, refused)
         }.value
+        // A partly deleted root-owned folder is still there: one admin pass finishes it.
+        guard !refused.isEmpty else { return firstPass }
+        var result = firstPass
+        result.merge(await deletePermanentlyFromTrashAsAdmin(refused, knownSizes: knownSizes, progress: progress))
+        return result
+    }
+
+    /// Permanently deletes direct children of the user's own Trash as root, after one administrator password
+    /// prompt. For items the user may not delete (see `deletePermanentlyFromTrash`); anything else is refused.
+    ///
+    /// Hardening: the shell enters the Trash with `cd -P` and checks it is the real, user-owned ~/.Trash
+    /// before removing `./name` — a Trash swapped for a symlink cannot redirect root, and `rm` removes
+    /// a symlinked item itself, never what it points to.
+    public static func deletePermanentlyFromTrashAsAdmin(_ urls: [URL], knownSizes: [URL: Int64] = [:],
+                                                        progress: RemovalProgressHandler? = nil) async -> RemovalResult {
+        var result = RemovalResult()
+        var allowed: [URL] = []
+        for url in dedupeNested(urls) {
+            if isInUserTrash(url), !SafetyGuard.isProtected(url) {
+                allowed.append(url)
+            } else {
+                result.failed.append(RemovalFailure(url: url, reason: "Безвозвратное удаление разрешено только в Корзине"))
+                progress?(RemovalStep(url: url, bytes: 0, done: true))
+            }
+        }
+        guard !allowed.isEmpty else { return result }
+        for url in allowed { progress?(RemovalStep(url: url, bytes: 0, done: false)) }
+
+        let trash = userTrash.path
+        let removals = allowed.map { "/bin/rm -rf -- \(shellQuote("./" + $0.lastPathComponent))" }
+        let shell = "cd -P -- \(shellQuote(trash)) && [ \"$(/bin/pwd -P)\" = \(shellQuote(trash)) ]"
+            + " && [ \"$(/usr/bin/stat -f %u .)\" = \(getuid()) ] && { \(removals.joined(separator: " ; ")) ; } ; exit 0"
+        let script = "do shell script \(appleScriptString(shell)) with administrator privileges"
+
+        let sizes = allowed.map { knownSizes[$0] ?? FileSizer.allocatedSize(of: $0) }
+        let ok: (Bool, String?) = await Task.detached(priority: .userInitiated) {
+            runOsascript(script)
+        }.value
+        for (url, size) in zip(allowed, sizes) {
+            let gone = !FileManager.default.fileExists(atPath: url.path) && !isSymlink(url)
+            if ok.0, gone {
+                result.removed.append(url)
+                result.freedBytes += size
+                progress?(RemovalStep(url: url, bytes: size, done: true))
+            } else {
+                result.failed.append(RemovalFailure(url: url, reason: ok.1 ?? "Не удалось удалить"))
+                progress?(RemovalStep(url: url, bytes: 0, done: true))
+            }
+        }
+        return result
+    }
+
+    /// True when the user cannot delete `url` themselves: it (or the folder it is) belongs to someone else,
+    /// as items moved to the Trash by `moveToTrashAsAdmin` do. Lets callers keep such items in one unit
+    /// (one password prompt).
+    public static func needsAdminToDelete(_ url: URL) -> Bool {
+        var st = stat()
+        guard lstat(url.path, &st) == 0 else { return false }
+        return st.st_uid != getuid()
+    }
+
+    /// ~/.Trash itself (a real folder owned by the user); the only place `deletePermanentlyFromTrashAsAdmin` acts.
+    private static var userTrash: URL { SafetyGuard.home.appendingPathComponent(".Trash").standardizedFileURL }
+
+    private static func isInUserTrash(_ url: URL) -> Bool {
+        let name = url.lastPathComponent
+        guard !name.isEmpty, name != ".", name != "..", !name.contains("/"),
+              url.standardizedFileURL.deletingLastPathComponent().path == userTrash.path else { return false }
+        var st = stat()
+        return lstat(userTrash.path, &st) == 0 && (st.st_mode & S_IFMT) == S_IFDIR && st.st_uid == getuid()
+    }
+
+    /// The item belongs to someone else (EACCES), so the administrator password helps. Not EPERM: that is macOS
+    /// privacy protection or a locked file, which root cannot get past either, so no password is asked for.
+    static func isPermissionDenied(_ error: Error) -> Bool {
+        let ns = error as NSError
+        if let posix = ns.userInfo[NSUnderlyingErrorKey] as? NSError, posix.domain == NSPOSIXErrorDomain {
+            return posix.code == Int(EACCES)
+        }
+        if ns.domain == NSPOSIXErrorDomain { return ns.code == Int(EACCES) }
+        return ns.domain == NSCocoaErrorDomain && ns.code == NSFileWriteNoPermissionError
     }
 
     /// Drops URLs that are inside another URL in the same list, so a folder and its child

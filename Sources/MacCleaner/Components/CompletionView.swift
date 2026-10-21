@@ -22,9 +22,12 @@ struct CompletionView: View {
 
     @State private var showFailures = false
     @Environment(\.isSnapshot) private var isSnapshot
+    @Environment(\.hasFullDiskAccess) private var hasFullDiskAccess
 
     private var allFailed: Bool { result.removed.isEmpty && !result.failed.isEmpty }
-    private var lines: [FailureCopy.Line] { result.failed.map(FailureCopy.describe) }
+    private var lines: [FailureCopy.Line] {
+        result.failed.map { FailureCopy.describe($0, fullDiskAccess: hasFullDiskAccess) }
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -137,11 +140,20 @@ struct CompletionView: View {
                 withAnimation(Theme.spring) { showFailures.toggle() }
             } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Theme.warning)
+                    // Nothing to fix (macOS-protected files): a calm info mark instead of a warning.
+                    let nothingToDo = lines.allSatisfy { $0.action == .none }
+                    Image(systemName: nothingToDo ? "info.circle.fill" : "exclamationmark.triangle.fill")
+                        .foregroundStyle(nothingToDo ? Theme.textSecondary : Theme.warning)
                         .accessibilityHidden(true)
-                    Text("Пропущено: \(Fmt.count(result.failed.count, noun))")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Theme.text)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Пропущено: \(Fmt.count(result.failed.count, noun))")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Theme.text)
+                        Text(FailureCopy.verdict(for: lines, someRemoved: !result.removed.isEmpty))
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(Theme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(.system(size: 11, weight: .bold))
@@ -150,7 +162,7 @@ struct CompletionView: View {
                         .accessibilityHidden(true)
                 }
                 .padding(.horizontal, 14)
-                .frame(height: 40)
+                .padding(.vertical, 9)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
