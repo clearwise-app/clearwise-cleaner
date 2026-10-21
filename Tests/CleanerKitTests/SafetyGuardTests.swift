@@ -105,4 +105,20 @@ final class SafetyGuardTests: XCTestCase {
         XCTAssertEqual(box.steps.map(\.done), [false, true, false, true])
         XCTAssertEqual(box.steps.filter(\.done).map(\.bytes), [0, 0])
     }
+
+    func testSystemConfigAndAdminOnlyAreasAreProtected() {
+        blocked("/Library/LaunchDaemons/com.apple.foo.plist")
+        blocked("/Library/Preferences/com.apple.loginwindow.plist")
+        blocked("/private/var/root/.ssh")
+        blocked("/var/root/x")
+        blocked("/Library/Managed Preferences/x.plist")
+        blocked("/Library/SystemExtensions/x")
+        allowed("/Library/Preferences/com.vendor.app.plist")
+    }
+
+    func testSharedWritableFolderDetection() throws {
+        XCTAssertTrue(FileRemover.isInSharedWritableFolder(URL(fileURLWithPath: "/Users/Shared/Vendor/x")))
+        XCTAssertTrue(FileRemover.isInSharedWritableFolder(URL(fileURLWithPath: "/private/tmp/x")))
+        XCTAssertFalse(FileRemover.isInSharedWritableFolder(URL(fileURLWithPath: "/Library/LaunchDaemons/com.vendor.plist")))
+    }
 }

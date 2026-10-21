@@ -4,14 +4,16 @@ import AppKit
 @main
 enum Entry {
     static func main() {
+        #if DEBUG
         let args = CommandLine.arguments
         if let i = args.firstIndex(of: "--snapshot"), i + 1 < args.count {
             SnapshotRunner.run(outputDirectory: URL(fileURLWithPath: args[i + 1]),
                                only: args.firstIndex(of: "--only").flatMap { $0 + 1 < args.count ? args[$0 + 1] : nil },
                                live: args.contains("--live"))
-        } else {
-            MacCleanerApp.main()
+            return
         }
+        #endif
+        MacCleanerApp.main()
     }
 }
 

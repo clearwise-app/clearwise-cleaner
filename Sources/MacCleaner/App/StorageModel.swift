@@ -65,7 +65,7 @@ final class StorageModel {
             withAnimation(Theme.softSpring) { self.breakdown = result }
             self.isMeasuring = false
             self.task = nil
-            Self.saveCache(result)
+            if self.persistsResults { Self.saveCache(result) }
         }
     }
 

@@ -1,3 +1,5 @@
+#if DEBUG
+// Snapshot / mock tooling: compiled out of release builds (it can render real scan results to disk).
 import Foundation
 import CleanerKit
 
@@ -94,3 +96,4 @@ enum MockCleaning {
         session.frozenTime = 4.62
     }
 }
+#endif

@@ -1,3 +1,5 @@
+#if DEBUG
+// Snapshot / mock tooling: compiled out of release builds (it can render real scan results to disk).
 import SwiftUI
 import AppKit
 import CleanerKit
@@ -355,3 +357,4 @@ enum SnapshotRunner {
         m.uninstaller.applyOrphans(MockData.orphans)
     }
 }
+#endif

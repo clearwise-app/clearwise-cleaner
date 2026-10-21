@@ -37,31 +37,45 @@ public enum FileRemover {
 
     /// Moves root-owned items (e.g. /Library/LaunchDaemons/*.plist) to the user's Trash
     /// after asking for the administrator password once via the standard macOS prompt.
+    ///
+    /// Hardening (root acts on paths the user typed a password for, possibly much later):
+    /// - items inside world-writable or sticky folders (/Library/Caches, /Users/Shared…) never go through root —
+    ///   another user or process could swap them; they are trashed as the current user or reported;
+    /// - the destination name is random (UUID) and the move is refused if it already exists or is a link;
+    /// - ownership is NOT changed afterwards (a recursive chown as root could be redirected via hard links),
+    ///   so Finder will ask for the password again when emptying the Trash, and "Put Back" is not available.
+    /// A privileged helper (SMAppService + XPC, fd-based renames) would close the remaining TOCTOU window.
     public static func moveToTrashAsAdmin(_ urls: [URL], knownSizes: [URL: Int64] = [:],
                                           progress: RemovalProgressHandler? = nil) async -> RemovalResult {
         var result = RemovalResult()
         var allowed: [URL] = []
+        var sharedFolderItems: [URL] = []
         for url in dedupeNested(urls) {
             if let reason = SafetyGuard.refusalReason(for: url) {
                 result.failed.append(RemovalFailure(url: url, reason: reason))
                 progress?(RemovalStep(url: url, bytes: 0, done: true))
+            } else if isInSharedWritableFolder(url) {
+                sharedFolderItems.append(url)
             } else {
                 allowed.append(url)
             }
+        }
+        if !sharedFolderItems.isEmpty {
+            // Plain user-level trash; if the user may not move it, it stays (root is never used here).
+            result.merge(await moveToTrash(sharedFolderItems, knownSizes: knownSizes, progress: progress))
         }
         guard !allowed.isEmpty else { return result }
         for url in allowed { progress?(RemovalStep(url: url, bytes: 0, done: false)) }
 
         let trash = SafetyGuard.home.appendingPathComponent(".Trash").path
-        let stamp = Int(Date().timeIntervalSince1970)
-        let owner = "\(getuid()):\(getgid())"
         var commands: [String] = []
-        for (i, url) in allowed.enumerated() {
-            let dest = "\(trash)/\(url.lastPathComponent) \(stamp)-\(i)"
-            // Hand the moved item back to the user so Finder can "Put Back" / empty it without a password.
-            commands.append("/bin/mv -f -- \(shellQuote(url.path)) \(shellQuote(dest)) && /usr/sbin/chown -R \(owner) -- \(shellQuote(dest))")
+        for url in allowed {
+            let dest = shellQuote("\(trash)/\(url.lastPathComponent) \(UUID().uuidString.prefix(8))")
+            let source = shellQuote(url.path)
+            commands.append("{ [ ! -e \(dest) ] && [ ! -L \(dest) ] && /bin/mv -n -- \(source) \(dest); }")
         }
-        let shell = commands.joined(separator: " ; ")
+        // Each item is checked on disk afterwards, so one failed move must not fail the whole batch.
+        let shell = commands.joined(separator: " ; ") + " ; exit 0"
         let script = "do shell script \(appleScriptString(shell)) with administrator privileges"
 
         let sizes = allowed.map { knownSizes[$0] ?? FileSizer.allocatedSize(of: $0) }
@@ -70,7 +84,8 @@ public enum FileRemover {
             runOsascript(script)
         }.value
         for (url, size) in zip(allowed, sizes) {
-            if ok.0, !FileManager.default.fileExists(atPath: url.path) {
+            let gone = !FileManager.default.fileExists(atPath: url.path) && !isSymlink(url)
+            if ok.0, gone {
                 result.removed.append(url)
                 result.freedBytes += size
                 progress?(RemovalStep(url: url, bytes: size, done: true))
@@ -80,6 +95,22 @@ public enum FileRemover {
             }
         }
         return result
+    }
+
+    /// True when any folder on the way to `url` (below /) is world-writable or sticky,
+    /// i.e. other users or processes can rename things there.
+    static func isInSharedWritableFolder(_ url: URL) -> Bool {
+        var dir = url.deletingLastPathComponent().standardizedFileURL
+        while dir.path != "/" && !dir.path.isEmpty {
+            var st = stat()
+            if lstat(dir.path, &st) == 0 {
+                let mode = st.st_mode
+                if (mode & S_IFMT) == S_IFLNK { return true }
+                if mode & S_IWOTH != 0 || mode & S_ISVTX != 0 { return true }
+            }
+            dir = dir.deletingLastPathComponent()
+        }
+        return false
     }
 
     /// Permanently deletes items. Only allowed for items already inside a Trash folder

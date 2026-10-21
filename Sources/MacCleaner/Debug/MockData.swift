@@ -1,3 +1,5 @@
+#if DEBUG
+// Snapshot / mock tooling: compiled out of release builds (it can render real scan results to disk).
 import Foundation
 import CleanerKit
 import SpaceEngine
@@ -290,3 +292,4 @@ enum MockData {
         RemovalFailure(url: h("Library/Caches/com.apple.Safari"), reason: "Операция не разрешена: нужен полный доступ к диску"),
     ]
 }
+#endif

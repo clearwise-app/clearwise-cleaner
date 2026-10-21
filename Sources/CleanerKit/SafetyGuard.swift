@@ -45,6 +45,9 @@ public enum SafetyGuard {
             "/System/", "/bin/", "/sbin/", "/usr/bin/", "/usr/lib/", "/usr/libexec/", "/usr/sbin/", "/usr/share/",
             "/private/etc/", "/private/var/vm/", "/private/var/db/dslocal/", "/private/var/db/TCC/",
             "/Library/Apple/", "/Library/Keychains/", "/Library/Security/",
+            "/private/var/root/", "/private/var/at/", "/private/var/audit/", "/private/var/protected/",
+            "/Library/Managed Preferences/", "/Library/SystemExtensions/", "/Library/StagedExtensions/",
+            "/Library/Updates/",
             h + "/Library/Keychains/",
             h + "/Library/Mobile Documents/",   // iCloud Drive
             h + "/Library/CloudStorage/",       // Dropbox, Google Drive, OneDrive…
@@ -79,6 +82,7 @@ public enum SafetyGuard {
                 return "Встроенное приложение macOS"
             }
             if isAppleGroupContainer(c) { return "Данные встроенных приложений macOS" }
+            if isAppleSystemConfig(c) { return "Системная служба macOS" }
             if isMediaLibrary(c) { return "Медиатека (Фото, Музыка, TV)" }
         }
         // Very shallow paths (e.g. /Users/name) are never what a cleaner wants.
@@ -147,6 +151,16 @@ public enum SafetyGuard {
         guard lowerPath.hasPrefix(base) else { return false }
         let first = lowerPath.dropFirst(base.count).split(separator: "/").first.map(String.init) ?? ""
         return first.hasPrefix("group.com.apple.") || first.contains(".com.apple.")
+    }
+
+    /// `com.apple.*` launchd jobs and preferences in the system Library (never an app's leftover).
+    private static func isAppleSystemConfig(_ lowerPath: String) -> Bool {
+        for dir in ["/library/launchdaemons/", "/library/launchagents/", "/library/preferences/"]
+        where lowerPath.hasPrefix(dir) {
+            let name = lowerPath.dropFirst(dir.count).split(separator: "/").first.map(String.init) ?? ""
+            if name.hasPrefix("com.apple.") { return true }
+        }
+        return false
     }
 
     /// Photos / Music / TV / iPhoto libraries and anything inside them.

@@ -99,6 +99,16 @@ public enum AppUninstaller {
 /// Pure description of what will be done, in order. Kept separate so it can be unit-tested
 /// without touching the disk.
 struct RemovalPlan {
+    /// Unloading a job is not undoable from the Trash, so it needs more certainty than moving a file:
+    /// exact match, user domain, real file (not a link), not Apple's, and not refused by SafetyGuard.
+    static func mayUnload(_ r: AppRemnant) -> Bool {
+        let url = r.item.url
+        guard r.confidence == .high, !r.requiresAdmin, !SafetyGuard.isProtected(url) else { return false }
+        if (try? url.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink) == true { return false }
+        let name = url.deletingPathExtension().lastPathComponent.lowercased()
+        return !NameRules.isAppleID(name)
+    }
+
     var launchAgentsToUnload: [URL] = []
     var userItems: [URL] = []
     /// Root-owned items, including the bundle (last) if it needs admin rights.
@@ -116,7 +126,7 @@ struct RemovalPlan {
                 continue
             }
             knownSizes[url] = r.item.size
-            if r.kind == .launchAgents, url.pathExtension == "plist" { launchAgentsToUnload.append(url) }
+            if r.kind == .launchAgents, url.pathExtension == "plist", Self.mayUnload(r) { launchAgentsToUnload.append(url) }
             if r.requiresAdmin { adminItems.append(url) } else { userItems.append(url) }
         }
         if removeBundle, let app, !app.isSystemApp {

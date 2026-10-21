@@ -63,8 +63,24 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 PLIST
 plutil -lint "$APP/Contents/Info.plist" >/dev/null
 
-echo "==> Signing (ad-hoc)"
-codesign --force --deep -s - "$APP"
-codesign --verify --deep "$APP"
+echo "==> Signing (hardened runtime)"
+# Hardened Runtime blocks dylib injection into an app that holds Full Disk Access.
+# Apple Events entitlement: NSRunningApplication.terminate() asks apps to quit before uninstalling.
+# SIGN_IDENTITY="Developer ID Application: …" scripts/build_app.sh for a distributable, notarizable build
+# (then: xcrun notarytool submit build/MacCleaner.zip --wait && xcrun stapler staple build/MacCleaner.app).
+ENTITLEMENTS="build/MacCleaner.entitlements"
+cat > "$ENTITLEMENTS" <<ENT
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>com.apple.security.automation.apple-events</key><true/>
+</dict>
+</plist>
+ENT
+IDENTITY="${SIGN_IDENTITY:--}"
+TIMESTAMP=$([ "$IDENTITY" = "-" ] && echo "--timestamp=none" || echo "--timestamp")
+codesign --force --options runtime $TIMESTAMP --entitlements "$ENTITLEMENTS" -s "$IDENTITY" "$APP"
+codesign --verify --strict "$APP"
 
 echo "==> Done: $ROOT/$APP"
