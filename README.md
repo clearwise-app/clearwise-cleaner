@@ -1,17 +1,19 @@
 <div align="center">
 
-<img src="docs/screenshots/0-hero.jpg" alt="Clearwise Cleaner" width="820">
+<img src="docs/banner.jpg" alt="Clearwise Cleaner — аккуратная очистка Mac" width="100%">
 
-# Clearwise Cleaner
+<br>
 
-**Аккуратная очистка Mac: мусор, забытые файлы и приложения целиком — со всеми их следами.**
+<a href="../../releases/latest"><img src="https://img.shields.io/badge/Скачать_для_macOS-DMG-B04FE0?style=for-the-badge&logo=apple&logoColor=white" alt="Скачать для macOS" height="44"></a>
 
-![macOS 15+](https://img.shields.io/badge/macOS-15%2B-black?logo=apple)
+<sub>Бесплатно · macOS 15 и новее · Apple silicon и Intel · [Что нового](CHANGELOG.md)</sub>
+
+<br>
+
 ![Swift 6](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white)
 ![SwiftUI](https://img.shields.io/badge/UI-SwiftUI-0A84FF)
 ![Offline](https://img.shields.io/badge/интернет-не%20нужен-30D158)
-
-[**⬇︎ Скачать последнюю версию**](../../releases/latest) · [Что нового](CHANGELOG.md) · [Сборка из исходников](#сборка-из-исходников)
+![Trash first](https://img.shields.io/badge/удаление-в%20Корзину-8E5CF7)
 
 </div>
 
@@ -61,8 +63,10 @@
 ```bash
 scripts/build_app.sh                         # build/Clearwise Cleaner.app
 swift test                                   # тесты движков
-VERSION=1.0.0 scripts/package_release.sh     # build/Clearwise-Cleaner-1.0.0.dmg для релиза
+VERSION=1.0.0 scripts/package_release.sh     # build/Clearwise-Cleaner-1.0.0.dmg для релиза (Apple silicon + Intel)
 ```
+
+Оформленное окно DMG (фон со стрелкой к «Программам») собирает [dmgbuild](https://pypi.org/project/dmgbuild/): `python3 -m venv build/.venv && build/.venv/bin/pip install dmgbuild`. Без него получится обычное окно. Обложку и фон рисует `scripts/make_art.swift`.
 
 `build_app.sh` подписывает приложение первым сертификатом «Apple Development» из связки ключей (тогда Полный доступ к диску не слетает после пересборки), иначе — ad-hoc. Релизный DMG всегда подписывается ad-hoc: в сертификате разработчика записан его Apple ID.
 

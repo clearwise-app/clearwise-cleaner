@@ -13,9 +13,13 @@ ICONSET="build/AppIcon.iconset"
 VERSION="${VERSION:-1.0}"
 BUILD_NUMBER="${BUILD_NUMBER:-1}"
 
-echo "==> Compiling (release)"
-swift build -c release --product MacCleaner --scratch-path "$SCRATCH"
-BIN_DIR="$(swift build -c release --product MacCleaner --scratch-path "$SCRATCH" --show-bin-path)"
+# UNIVERSAL=1 builds for Apple silicon and Intel in one binary (releases); otherwise this Mac's architecture only.
+ARCH_FLAGS=()
+[[ "${UNIVERSAL:-0}" == 1 ]] && ARCH_FLAGS=(--arch arm64 --arch x86_64)
+
+echo "==> Compiling (release${ARCH_FLAGS[*]:+, universal})"
+swift build -c release --product MacCleaner --scratch-path "$SCRATCH" ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"}
+BIN_DIR="$(swift build -c release --product MacCleaner --scratch-path "$SCRATCH" ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"} --show-bin-path)"
 
 echo "==> Assembling $APP"
 rm -rf "$APP"
