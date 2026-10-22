@@ -388,7 +388,7 @@ enum MockData {
             architectures: ArchitectureReport(apps: (universal + native + intel).sorted { $0.name < $1.name }),
             vitals: SystemVitals(physicalMemory: 16 * 1_073_741_824, memoryPressure: .normal, swapUsed: 1_240 * MB,
                                  bootTime: now.addingTimeInterval(-6 * 86_400 - 5 * 3600)),
-            measuredAt: now)
+            measuredAt: calendar.date(byAdding: .minute, value: 12 * 60 + 5, to: today) ?? now)  // fixed, not the real clock
     }
 }
 #endif
