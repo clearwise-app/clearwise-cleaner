@@ -19,15 +19,18 @@ ARCH_FLAGS=()
 
 echo "==> Compiling (release${ARCH_FLAGS[*]:+, universal})"
 swift build -c release --product MacCleaner --scratch-path "$SCRATCH" ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"}
+# The MCP server ships inside the bundle (Contents/MacOS/clearwise-mcp) so an AI client can be pointed at it.
+swift build -c release --product clearwise-mcp --scratch-path "$SCRATCH" ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"}
 BIN_DIR="$(swift build -c release --product MacCleaner --scratch-path "$SCRATCH" ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"} --show-bin-path)"
 
 echo "==> Assembling $APP"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/MacCleaner" "$APP/Contents/MacOS/MacCleaner"
+cp "$BIN_DIR/clearwise-mcp" "$APP/Contents/MacOS/clearwise-mcp"
 # The debug map holds absolute paths of the sources and object files (the builder's home folder); like Xcode's
 # release builds, the shipped binary keeps only what dyld needs.
-strip -S -x "$APP/Contents/MacOS/MacCleaner"
+strip -S -x "$APP/Contents/MacOS/MacCleaner" "$APP/Contents/MacOS/clearwise-mcp"
 
 echo "==> Drawing icon"
 mkdir -p build
@@ -95,6 +98,8 @@ IDENTITY="${SIGN_IDENTITY:-${DEFAULT_IDENTITY:--}}"
 echo "    identity: ${SIGN_IDENTITY:-${DEV_CERT:-ad-hoc}}"
 # A secure timestamp is only needed (and only fetched) for Developer ID builds that go to notarization.
 TIMESTAMP=$([[ "$IDENTITY" == "Developer ID"* ]] && echo "--timestamp" || echo "--timestamp=none")
+# The nested server first: the bundle's seal then covers a signed binary.
+codesign --force --options runtime $TIMESTAMP -s "$IDENTITY" "$APP/Contents/MacOS/clearwise-mcp"
 codesign --force --options runtime $TIMESTAMP --entitlements "$ENTITLEMENTS" -s "$IDENTITY" "$APP"
 codesign --verify --strict "$APP"
 

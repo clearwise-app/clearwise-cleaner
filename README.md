@@ -73,6 +73,18 @@ VERSION=1.0.0 scripts/package_release.sh     # build/Clearwise-Cleaner-1.0.0.dmg
 
 `build_app.sh` подписывает приложение первым сертификатом «Apple Development» из связки ключей (тогда Полный доступ к диску не слетает после пересборки), иначе — ad-hoc. Релизный DMG всегда подписывается ad-hoc: в сертификате разработчика записан его Apple ID.
 
+## Для ИИ-агентов: MCP-сервер
+
+Внутри приложения лежит `clearwise-mcp` — сервер [Model Context Protocol](https://modelcontextprotocol.io). Подключите его к Claude Code, Claude Desktop, Cursor или любому другому клиенту MCP, и ассистент сможет искать мусор, остатки приложений, старые и повторяющиеся файлы, лишнее в Docker, проверять автозапуск и здоровье Mac — и убирать то, что вы одобрили.
+
+```bash
+claude mcp add clearwise -- "/Applications/Clearwise Cleaner.app/Contents/MacOS/clearwise-mcp"
+```
+
+Для других клиентов — запись в `mcpServers`: `{ "clearwise": { "command": "/Applications/Clearwise Cleaner.app/Contents/MacOS/clearwise-mcp" } }`.
+
+Правила те же, что в приложении: всё удаляющее — сначала «на сухую», удаление только с `confirm: true` после вашего согласия; файлы уходят в Корзину, безвозвратно — только содержимое Корзины и Docker, о чём инструменты говорят прямо. Полный доступ к диску выдаётся программе-хосту (Terminal, Claude, Cursor). Подробности и список инструментов — в [skills/clearwise-cleaner/SKILL.md](skills/clearwise-cleaner/SKILL.md); этот же файл можно положить в папку skills вашего агента.
+
 ## Как устроено
 
 | Модуль | Что внутри |
@@ -82,6 +94,7 @@ VERSION=1.0.0 scripts/package_release.sh     # build/Clearwise-Cleaner-1.0.0.dmg
 | `Sources/UninstallEngine` | Список приложений, поиск их следов и остатков удалённых |
 | `Sources/SpaceEngine` | Старые и большие файлы, карта диска, дубликаты, разбивка хранилища |
 | `Sources/HealthEngine` | Аккумулятор, SSD, память и архитектура программ — только чтение |
+| `Sources/ClearwiseMCPCore`, `Sources/ClearwiseMCP` | MCP-сервер `clearwise-mcp`: те же движки для ИИ-ассистентов, по stdio |
 | `Sources/StartupEngine` | Агенты, службы и объекты входа: список, выключение, включение, удаление |
 | `Sources/MacCleaner` | Интерфейс на SwiftUI. С флагом `--snapshot <папка>` (отладочная сборка) сохраняет скриншоты всех экранов на демо-данных |
 

@@ -56,7 +56,7 @@ public enum DockerCleanup {
         }
     }
 
-    static let scheme = "docker-cleanup"
+    public static let scheme = "docker-cleanup"
 
     /// Containers first: images they used become unused and go with «Неиспользуемые образы» in the same run.
     static let order: [Kind] = [.stoppedContainers, .danglingImages, .unusedImages, .buildCache]

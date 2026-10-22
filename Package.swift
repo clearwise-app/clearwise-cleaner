@@ -8,7 +8,8 @@ import PackageDescription
 //   SpaceEngine      — old & large files analysis, disk space map.
 //   HealthEngine     — read-only Mac health: battery, SSD, local snapshots, Intel-only apps, memory.
 //   StartupEngine    — login items, launch agents and daemons: listing, disable/enable, removal.
-//   MacCleaner       — SwiftUI app (executable).
+//   ClearwiseMCPCore — the MCP server (JSON-RPC over stdio) that lets an AI assistant drive the engines.
+//   MacCleaner       — SwiftUI app (executable); clearwise-mcp — the MCP server (executable).
 let swift5: [SwiftSetting] = [.swiftLanguageMode(.v5)]
 
 let package = Package(
@@ -16,6 +17,7 @@ let package = Package(
     platforms: [.macOS(.v15)],
     products: [
         .executable(name: "MacCleaner", targets: ["MacCleaner"]),
+        .executable(name: "clearwise-mcp", targets: ["ClearwiseMCP"]),
     ],
     targets: [
         .target(name: "CleanerKit", swiftSettings: swift5),
@@ -24,6 +26,12 @@ let package = Package(
         .target(name: "SpaceEngine", dependencies: ["CleanerKit"], swiftSettings: swift5),
         .target(name: "HealthEngine", dependencies: ["CleanerKit", "UninstallEngine"], swiftSettings: swift5),
         .target(name: "StartupEngine", dependencies: ["CleanerKit"], swiftSettings: swift5),
+        .target(
+            name: "ClearwiseMCPCore",
+            dependencies: ["CleanerKit", "JunkEngine", "UninstallEngine", "SpaceEngine", "HealthEngine", "StartupEngine"],
+            swiftSettings: swift5
+        ),
+        .executableTarget(name: "ClearwiseMCP", dependencies: ["ClearwiseMCPCore"], swiftSettings: swift5),
         .executableTarget(
             name: "MacCleaner",
             dependencies: ["CleanerKit", "JunkEngine", "UninstallEngine", "SpaceEngine", "HealthEngine", "StartupEngine"],
@@ -35,5 +43,6 @@ let package = Package(
         .testTarget(name: "SpaceEngineTests", dependencies: ["SpaceEngine"], swiftSettings: swift5),
         .testTarget(name: "HealthEngineTests", dependencies: ["HealthEngine"], swiftSettings: swift5),
         .testTarget(name: "StartupEngineTests", dependencies: ["StartupEngine"], swiftSettings: swift5),
+        .testTarget(name: "ClearwiseMCPTests", dependencies: ["ClearwiseMCPCore"], swiftSettings: swift5),
     ]
 )
