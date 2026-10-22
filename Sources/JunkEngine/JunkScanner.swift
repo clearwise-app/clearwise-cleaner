@@ -91,7 +91,8 @@ public actor JunkScanner {
                 list.sort { $0.size != $1.size ? $0.size > $1.size : $0.url.path < $1.url.path }
             }
             categories.append(JunkCategory(id: rule.id, title: rule.title, detail: rule.detail,
-                                           symbol: rule.symbol, risk: rule.risk, items: list))
+                                           symbol: rule.symbol, risk: rule.risk,
+                                           selectedByDefault: rule.selectedByDefault, items: list))
         }
         categories.sort { $0.totalSize > $1.totalSize }
         self.notes = notes

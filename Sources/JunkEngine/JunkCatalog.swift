@@ -27,6 +27,8 @@ enum JunkCatalog {
         .prefix("com.apple.findmy"), .prefix("com.apple.ScreenTimeAgent"),
     ]
 
+    /// Ticked after a scan: `.safe` rules and the regenerable ones marked `selectedByDefault`. The user's own data
+    /// (Trash, device backups, installers, Mail attachments, Xcode archives) and admin-only system logs stay unticked.
     static let all: [JunkRule] = [
         userCaches, userLogs, crashReports, systemLogs, browserCaches, chromiumAppCaches,
         derivedData, archives, deviceSupport, simulatorCaches, deviceLogs, packageCaches, cargoRegistry, jetbrainsCaches,
@@ -126,6 +128,7 @@ enum JunkCatalog {
         r.locations = ["iOS", "iPadOS", "watchOS", "tvOS", "visionOS", "xrOS", "macOS"].map {
             .home("Library/Developer/Xcode/\($0) DeviceSupport")
         }
+        r.selectedByDefault = true
         return r
     }
 
@@ -175,6 +178,7 @@ enum JunkCatalog {
                          symbol: "cube.box.fill", risk: .review, phase: "Файлы разработчика")
         r.priority = 2
         r.locations = [.home(".cargo/registry/cache"), .home(".cargo/registry/src")]
+        r.selectedByDefault = true
         return r
     }
 
@@ -189,6 +193,7 @@ enum JunkCatalog {
         r.priority = 2
         r.collector = { SpecialCollectors.jetBrainsCaches($0) }
         r.skipsActiveItems = true
+        r.selectedByDefault = true
         return r
     }
 
@@ -242,6 +247,7 @@ enum JunkCatalog {
                          symbol: "slider.horizontal.3", risk: .review, phase: "Проверка настроек")
         r.collector = { SpecialCollectors.brokenPreferences($0) }
         r.keepsEmptyItems = true
+        r.selectedByDefault = true
         return r
     }
 
@@ -251,6 +257,7 @@ enum JunkCatalog {
                          symbol: "bolt.slash.fill", risk: .review, phase: "Проверка автозапуска")
         r.collector = { SpecialCollectors.brokenLaunchAgents($0) }
         r.keepsEmptyItems = true
+        r.selectedByDefault = true
         return r
     }
 

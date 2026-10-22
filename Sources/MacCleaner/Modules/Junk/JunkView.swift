@@ -53,6 +53,8 @@ private struct JunkResultsView: View {
 
             ScrollView {
                 LazyVStack(spacing: 10) {
+                    SelectionBar(text: "Отмеченное попадёт в Корзину, остальное останется на месте",
+                                 onDefaults: model.selectDefaults, onNone: model.selectNone)
                     ForEach(model.categories) { cat in
                         JunkCategoryCard(model: model, category: cat)
                     }

@@ -181,7 +181,7 @@ final class JunkEngineTests: XCTestCase {
         let broken = try XCTUnwrap(category(JunkCategoryID.brokenPreferences, in: result))
         XCTAssertEqual(Set(broken.items.map(\.name)), ["com.bad.app.plist", "com.empty.app.plist", "com.bad.host.ABC.plist"])
         XCTAssertEqual(broken.risk, .review)
-        XCTAssertFalse(broken.isSelectedByDefault)
+        XCTAssertTrue(broken.isSelectedByDefault, "unreadable anyway: the app recreates it with defaults")
     }
 
     func testBrokenLaunchAgentDetection() async throws {
@@ -342,7 +342,7 @@ final class JunkEngineTests: XCTestCase {
         let (_, result) = await scan()
         let jb = try XCTUnwrap(category(JunkCategoryID.jetbrainsCaches, in: result))
         XCTAssertEqual(jb.risk, .review)
-        XCTAssertFalse(jb.isSelectedByDefault)
+        XCTAssertTrue(jb.isSelectedByDefault, "rebuilt by the IDE; Local History is never offered")
         XCTAssertEqual(Set(relPaths(jb)), [
             "\(ide)/caches", "\(ide)/index", "\(ide)/tmp", "\(ide)/log", "\(ide)/jcef_cache",
             "Library/Caches/JetBrains/PyCharm2024.2/caches",

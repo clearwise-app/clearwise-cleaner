@@ -86,6 +86,18 @@ struct CleaningPlan {
         }
     }
 
+    /// Runs `other` after this plan, in one scene (Smart Care joins the junk, leftovers and old-files plans).
+    mutating func append(_ other: CleaningPlan) {
+        let offset = stages.count
+        stages += other.stages
+        units += other.units.map { unit in
+            var u = unit
+            u.activates = u.activates.map { $0 + offset }
+            u.stage = u.stage.map { $0 + offset }
+            return u
+        }
+    }
+
     var isEmpty: Bool { units.isEmpty }
 }
 

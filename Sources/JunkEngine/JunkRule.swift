@@ -101,6 +101,9 @@ struct JunkRule: Sendable {
     let detail: String
     let symbol: String
     let risk: RiskLevel
+    /// Ticked after a scan even though `risk` is not `.safe`: regenerable, just slow or costly to recreate.
+    /// Nil = only `.safe` rules are.
+    var selectedByDefault: Bool? = nil
     /// Progress label shown while this rule is processed.
     var phase: String
     /// Rules with higher priority claim paths first. Catch-all rules (all of `~/Library/Caches`)
