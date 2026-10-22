@@ -59,6 +59,12 @@ public actor AppInventory {
         return sorted(concurrentMap(urls) { describe($0, sized: false) }.compactMap { $0 })
     }
 
+    /// Installed apps without sizes, Spotlight dates or code signatures: fast enough to run on demand.
+    public static func quickList() -> [InstalledApp] {
+        let urls = appBundleURLs(in: SearchRoots.live.applicationDirs)
+        return sorted(disambiguated(concurrentMap(urls) { describe($0, sized: false, readTeam: false) }.compactMap { $0 }))
+    }
+
     /// `.app` bundles directly in each root, plus `folderDepth` levels of plain sub-folders (1 for the
     /// visible inventory: Utilities, Setapp…). Never descends into a bundle, so helper apps nested inside
     /// other apps are skipped.

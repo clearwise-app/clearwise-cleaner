@@ -225,6 +225,13 @@ extension AppModule {
                 .init(symbol: "music.note", angle: -30, distance: 0.6, scale: 0.8),
                 .init(symbol: "film.fill", angle: 212, distance: 0.58, scale: 0.75),
             ])
+        case .health:
+            HeroSpec(symbol: "stethoscope", satellites: [
+                .init(symbol: "battery.75percent", angle: 150, distance: 0.58),
+                .init(symbol: "internaldrive.fill", angle: 32, distance: 0.6, scale: 0.85),
+                .init(symbol: "memorychip.fill", angle: -30, distance: 0.6, scale: 0.8),
+                .init(symbol: "cpu.fill", angle: 212, distance: 0.58, scale: 0.75),
+            ])
         }
     }
 }

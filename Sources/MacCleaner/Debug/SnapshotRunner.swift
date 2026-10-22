@@ -3,6 +3,7 @@
 import SwiftUI
 import AppKit
 import CleanerKit
+import HealthEngine
 
 /// `MacCleaner --snapshot <dir> [--only <name-substring>]` renders every module's key states with mock
 /// data into PNGs (1280×800 @2x) and exits. Views are hosted in an offscreen window and captured with
@@ -347,6 +348,21 @@ enum SnapshotRunner {
                 m.selection = .smartCare
                 m.smartCare.phase = .results
             },
+            // «Здоровье Mac»: read-only, so there is no cleaning or completion state.
+            Scene(name: "24_health_idle") { m in m.selection = .health },
+            Scene(name: "25_health_results") { m in
+                m.selection = .health
+                m.health.apply(MockData.health)
+            },
+            Scene(name: "26_health_details") { m in
+                m.selection = .health
+                m.health.apply(MockData.health)
+                m.health.expanded = ["battery", "space"]
+            },
+            Scene(name: "27_health_compact", size: NSSize(width: 1100, height: 720)) { m in
+                m.selection = .health
+                m.health.apply(MockData.health)
+            },
             Scene(name: "junk_empty") { m in
                 m.selection = .junk
                 m.junk.apply([])
@@ -528,6 +544,10 @@ enum SnapshotRunner {
             Scene(name: "live_diskmap") { m in
                 m.selection = .diskMap
                 await m.diskMap.scan()
+            },
+            Scene(name: "live_health") { m in
+                m.selection = .health
+                m.health.apply(await MacHealthCheck.run())
             },
             Scene(name: "live_storage") { m in
                 m.selection = .smartCare

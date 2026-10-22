@@ -50,6 +50,7 @@ final class AppModel {
     let oldFiles = OldFilesModel()
     let duplicates = DuplicatesModel()
     let diskMap = DiskMapModel()
+    let health = HealthModel()
     /// Disk usage by category (sidebar widget). Measured at launch and after every cleanup.
     let storage: StorageModel
 
@@ -347,6 +348,7 @@ extension AppModel {
         case .oldFiles: oldFiles.phase != .scanning && oldFiles.phase != .cleaning
         case .duplicates: duplicates.phase != .scanning && duplicates.phase != .cleaning
         case .diskMap: diskMap.phase != .scanning && diskMap.phase != .cleaning
+        case .health: health.phase != .checking
         }
     }
 
@@ -369,6 +371,7 @@ extension AppModel {
         case .oldFiles: oldFiles.startScan()
         case .duplicates: duplicates.startScan()
         case .diskMap: diskMap.startScan()
+        case .health: health.startCheck()
         }
     }
 
@@ -385,6 +388,7 @@ extension AppModel {
         case .oldFiles: oldFiles.phase == .results && !oldFiles.selection.isEmpty
         case .duplicates: duplicates.phase == .results && !duplicates.marked.isEmpty
         case .diskMap: !diskMap.collector.isEmpty && diskMap.phase != .scanning && diskMap.phase != .cleaning
+        case .health: false   // read-only: nothing to remove
         }
     }
 
@@ -393,7 +397,7 @@ extension AppModel {
         switch selection {
         case .smartCare, .junk: "Очистить…"
         case .uninstaller: "Удалить…"
-        case .oldFiles, .duplicates, .diskMap: "Переместить в Корзину…"
+        case .oldFiles, .duplicates, .diskMap, .health: "Переместить в Корзину…"
         }
     }
 
@@ -416,6 +420,7 @@ extension AppModel {
         case .oldFiles: oldFiles.requestTrash()
         case .duplicates: duplicates.requestTrash()
         case .diskMap: diskMap.requestTrash()
+        case .health: break
         }
     }
 
@@ -553,6 +558,7 @@ extension AppModel {
         case .oldFiles: if oldFiles.phase == .done { oldFiles.finish() }
         case .duplicates: if duplicates.phase == .done { duplicates.finish() }
         case .diskMap: if diskMap.phase == .done { diskMap.finish() }
+        case .health: break
         }
     }
 
