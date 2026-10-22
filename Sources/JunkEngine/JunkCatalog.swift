@@ -247,7 +247,6 @@ enum JunkCatalog {
                          symbol: "slider.horizontal.3", risk: .review, phase: "Проверка настроек")
         r.collector = { SpecialCollectors.brokenPreferences($0) }
         r.keepsEmptyItems = true
-        r.selectedByDefault = true
         return r
     }
 
@@ -257,7 +256,6 @@ enum JunkCatalog {
                          symbol: "bolt.slash.fill", risk: .review, phase: "Проверка автозапуска")
         r.collector = { SpecialCollectors.brokenLaunchAgents($0) }
         r.keepsEmptyItems = true
-        r.selectedByDefault = true
         return r
     }
 

@@ -137,6 +137,7 @@ struct RootView: View {
             case .duplicates: DuplicatesView(model: model.duplicates)
             case .diskMap: DiskMapView(model: model.diskMap)
             case .health: HealthView(model: model.health)
+            case .startup: StartupView(model: model.startup)
             }
         }
         .id(model.selection)

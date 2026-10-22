@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AppModule: String, CaseIterable, Identifiable {
-    case smartCare, junk, uninstaller, oldFiles, duplicates, diskMap, health
+    case smartCare, junk, uninstaller, oldFiles, duplicates, diskMap, health, startup
 
     var id: String { rawValue }
 
@@ -14,6 +14,7 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .duplicates: "Дубликаты"
         case .diskMap: "Карта диска"
         case .health: "Здоровье Mac"
+        case .startup: "Автозапуск"
         }
     }
 
@@ -34,6 +35,7 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .duplicates: "Найдите одинаковые файлы и оставьте по одной копии."
         case .diskMap: "Посмотрите, что занимает место, и уберите лишнее."
         case .health: "Аккумулятор, диск, свободное место и программы для Intel. Только проверка — ничего не удаляется."
+        case .startup: "Что запускается вместе с Mac: объекты входа, фоновые агенты и системные службы."
         }
     }
 
@@ -46,6 +48,7 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .duplicates: "doc.on.doc.fill"
         case .diskMap: "chart.pie.fill"
         case .health: "stethoscope"
+        case .startup: "power.circle.fill"
         }
     }
 
@@ -58,6 +61,7 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .duplicates: .duplicates
         case .diskMap: .diskMap
         case .health: .health
+        case .startup: .startup
         }
     }
 }

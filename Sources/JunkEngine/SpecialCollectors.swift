@@ -1,4 +1,5 @@
 import Foundation
+import CleanerKit
 
 /// Discovery logic for categories that need more than a directory listing.
 /// Everything here is read-only.
@@ -44,7 +45,7 @@ enum SpecialCollectors {
         var result: [JunkCandidate] = []
         for container in FS.children(of: env.homePath("Library/Group Containers")) where FS.isDirectory(container) {
             let name = container.lastPathComponent.lowercased()
-            if name.hasPrefix("group.com.apple.") || name.contains(".com.apple.") || name.contains("safari") { continue }
+            if SafetyGuard.isAppleGroupContainerName(name) || name.contains("safari") { continue }
             let caches = container.appendingPathComponent("Library/Caches")
             guard FS.isDirectory(container.appendingPathComponent("Library")), FS.isDirectory(caches) else { continue }
             result += FS.children(of: caches).map { JunkCandidate($0) }

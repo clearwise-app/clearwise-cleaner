@@ -145,12 +145,21 @@ public enum SafetyGuard {
         return appleInApplications.contains { lowerPath == $0 || lowerPath.hasPrefix($0 + "/") }
     }
 
-    /// `~/Library/Group Containers/<TEAM>.com.apple.*` (Notes, Reminders, iWork sharing…).
+    /// `~/Library/Group Containers/<id>` of Apple (Notes, Reminders, iWork sharing, iCloud, Mail, Home, Shortcuts…).
     private static func isAppleGroupContainer(_ lowerPath: String) -> Bool {
         let base = home.path.lowercased() + "/library/group containers/"
         guard lowerPath.hasPrefix(base) else { return false }
         let first = lowerPath.dropFirst(base.count).split(separator: "/").first.map(String.init) ?? ""
-        return first.hasPrefix("group.com.apple.") || first.contains(".com.apple.")
+        return isAppleGroupContainerName(first)
+    }
+
+    /// A Group Containers folder name that belongs to Apple: `group.com.apple.*`, `<TEAM>.com.apple.*`, and the
+    /// ones without that pattern — `com.apple.bird` (iCloud), `com.apple.MailPersonaStorage`,
+    /// `group.is.workflow.*` (Shortcuts), `systemgroup.*`.
+    public static func isAppleGroupContainerName(_ name: String) -> Bool {
+        let n = name.lowercased()
+        let prefixes = ["group.com.apple.", "com.apple.", "group.is.workflow.", "is.workflow.", "systemgroup.", "group.apple."]
+        return prefixes.contains { n.hasPrefix($0) } || n.contains(".com.apple.")
     }
 
     /// `com.apple.*` launchd jobs and preferences in the system Library (never an app's leftover).

@@ -92,29 +92,46 @@ private struct BatteryCard: View {
     let battery: BatteryHealth
 
     var body: some View {
-        HealthCard(id: "battery", model: model, symbol: "battery.100percent", title: "Аккумулятор",
-                   status: battery.condition.map { $0 == .normal ? .ok : .warning("Нужно обслуживание") },
-                   metric: metric, rows: rows, details: details, note: HealthCopy.battery)
+        GaugeCard(id: "battery", model: model, symbol: "battery.100percent", title: "Аккумулятор",
+                  gauge: battery.maximumCapacityPercent.map { Double($0) / 100 }, gaugeCaption: "ёмкость",
+                  tone: tone, verdict: verdict, explanation: explanation, facts: facts,
+                  details: details, note: HealthCopy.battery)
     }
 
-    private var metric: HealthMetric {
-        if let p = battery.maximumCapacityPercent {
-            return HealthMetric(value: Fmt.integer(p), unit: "%", caption: "максимальная ёмкость: сколько вмещает батарея по сравнению с новой. Не текущий заряд")
-        }
-        return HealthMetric(value: Fmt.integer(battery.cycleCount), unit: nil,
-                            caption: Fmt.plural(battery.cycleCount, "цикл заряда", "цикла заряда", "циклов заряда"))
+    private var needsService: Bool { battery.condition.map { $0 != .normal } ?? false }
+
+    private var tone: GaugeTone {
+        if needsService { return .bad }
+        if let p = battery.maximumCapacityPercent, p < 80 { return .watch }
+        return .good
     }
 
-    private var rows: [HealthRow] {
-        var list: [HealthRow] = []
-        let cycles = Fmt.integer(battery.cycleCount)
-        list.append(HealthRow("Циклы заряда", battery.designCycleCount.map { "\(cycles) из \(Fmt.integer($0))" } ?? cycles))
-        if let c = battery.condition {
-            list.append(HealthRow("Состояние", c == .normal ? "Нормальное" : "Рекомендуется обслуживание"))
-        }
+    private var verdict: String {
+        if needsService { return "Пора менять" }
+        guard let p = battery.maximumCapacityPercent else { return "Работает нормально" }
+        if p >= 90 { return "Отличное состояние" }
+        if p >= 80 { return "Хорошее состояние" }
+        return "Заметно изношен"
+    }
+
+    private var explanation: String {
+        if needsService { return "macOS рекомендует заменить аккумулятор в сервисе." }
+        guard let p = battery.maximumCapacityPercent else { return "macOS не сообщает о неполадках." }
+        return "Полностью заряженный, он держит \(p)\(Fmt.nbsp)% от того, что держал новым."
+    }
+
+    private var facts: [GaugeFact] {
+        var list: [GaugeFact] = []
         if let charge = battery.chargePercent {
-            let source = battery.isCharging ? "заряжается" : (battery.isPluggedIn ? "от сети" : "от аккумулятора")
-            list.append(HealthRow("Текущий заряд", "\(Fmt.percent(Double(charge) / 100)) · \(source)"))
+            let source = battery.isCharging ? "заряжается" : (battery.isPluggedIn ? "от сети" : "от батареи")
+            list.append(GaugeFact(label: "Заряд сейчас", value: "\(charge)\(Fmt.nbsp)% · \(source)", fill: Double(charge) / 100))
+        }
+        let cycles = battery.cycleCount
+        if let rated = battery.designCycleCount, rated > 0 {
+            list.append(GaugeFact(label: "Циклы зарядки", value: "\(Fmt.integer(cycles)) из \(Fmt.integer(rated))",
+                                  fill: min(1, Double(cycles) / Double(rated))))
+        } else {
+            list.append(GaugeFact(label: "Циклы зарядки", value: Fmt.integer(cycles), fill: nil))
         }
         return list
     }
@@ -135,39 +152,54 @@ private struct DriveCard: View {
     let model: HealthModel
     let drive: DriveHealth
 
+    /// What is left of the SSD's rated write endurance (NVMe reports what is used up).
+    private var lifeLeft: Int? { drive.nvme?.percentageUsed.map { max(0, 100 - $0) } }
+    private var failing: Bool { drive.smart == .failing }
+    private var spareLow: Bool { drive.nvme?.spareBelowThreshold == true }
+
     var body: some View {
-        HealthCard(id: "drive", model: model, symbol: "internaldrive.fill", title: "Накопитель",
-                   status: status, metric: metric, rows: rows, details: details, note: HealthCopy.drive)
+        GaugeCard(id: "drive", model: model, symbol: "internaldrive.fill", title: "Диск",
+                  gauge: lifeLeft.map { Double($0) / 100 }, gaugeCaption: "ресурс",
+                  tone: tone, verdict: verdict, explanation: explanation, facts: facts,
+                  details: details, note: HealthCopy.drive)
     }
 
-    private var status: HealthStatus? {
-        if drive.smart == .failing { return .danger("Сбой SMART") }
-        if drive.nvme?.spareBelowThreshold == true { return .danger("Мало резерва") }
-        if let used = drive.nvme?.percentageUsed, used >= 100 { return .warning("Ресурс выработан") }
-        return drive.smart == .verified ? .ok : nil
+    private var tone: GaugeTone {
+        if failing || spareLow { return .bad }
+        if let left = lifeLeft, left < 20 { return .watch }
+        return .good
     }
 
-    private var smartText: String {
-        switch drive.smart {
-        case .verified: "Проверен"
-        case .failing: "Сбой — сделайте резервную копию"
-        case .notSupported: "Не поддерживается"
-        case .unknown: "Нет данных"
+    private var verdict: String {
+        if failing { return "Диск сообщает о сбое" }
+        if spareLow { return "Резерв на исходе" }
+        guard let left = lifeLeft else {
+            return drive.smart == .verified ? "Неполадок нет" : "Нет данных о здоровье"
         }
+        if left >= 90 { return "Отличное состояние" }
+        if left >= 50 { return "Хорошее состояние" }
+        if left > 0 { return "Заметный износ" }
+        return "Ресурс выработан"
     }
 
-    private var metric: HealthMetric {
-        if let used = drive.nvme?.percentageUsed {
-            return HealthMetric(value: Fmt.integer(used), unit: "%", caption: "износ SSD: сколько ресурса записи израсходовано (у нового диска — 0\(Fmt.nbsp)%)")
+    private var explanation: String {
+        if failing || spareLow { return "Сохраните важные файлы на другой диск и обратитесь в сервис." }
+        if let left = lifeLeft {
+            if left == 0 { return "Это расчёт производителя, а не дата отказа. Держите резервную копию." }
+            return "Осталось \(left)\(Fmt.nbsp)% ресурса, который производитель закладывает на запись."
         }
-        return HealthMetric(value: smartText, unit: nil, caption: "самопроверка диска (SMART)", isWord: true)
+        return drive.smart == .verified ? "Самопроверка диска не нашла неполадок." : "Этот Mac не сообщает данные о здоровье диска."
     }
 
-    private var rows: [HealthRow] {
-        var list = [HealthRow("SMART", smartText)]
-        if let written = drive.nvme?.bytesWritten { list.append(HealthRow("Записано за всё время", Fmt.size(written))) }
-        if let total = drive.containerTotal, let free = drive.containerFree {
-            list.append(HealthRow("Занято", "\(Fmt.size(max(0, total - free))) из \(Fmt.size(total))"))
+    private var facts: [GaugeFact] {
+        var list: [GaugeFact] = []
+        if let total = drive.containerTotal, let free = drive.containerFree, total > 0 {
+            let used = max(0, total - free)
+            list.append(GaugeFact(label: "Занято", value: "\(Fmt.size(used)) из \(Fmt.size(total))",
+                                  fill: Double(used) / Double(total)))
+        }
+        if let written = drive.nvme?.bytesWritten {
+            list.append(GaugeFact(label: "Записано за всё время", value: Fmt.size(written), fill: nil))
         }
         return list
     }
@@ -175,7 +207,9 @@ private struct DriveCard: View {
     private var details: [HealthRow] {
         var list: [HealthRow] = []
         if let m = drive.model { list.append(HealthRow("Модель", m)) }
+        list.append(HealthRow("Самопроверка (SMART)", HealthCopy.smart(drive.smart)))
         guard let n = drive.nvme else { return list }
+        if let used = n.percentageUsed { list.append(HealthRow("Израсходовано ресурса", "\(used)\(Fmt.nbsp)%")) }
         if let read = n.bytesRead { list.append(HealthRow("Прочитано за всё время", Fmt.size(read))) }
         if let spare = n.availableSpare { list.append(HealthRow("Резервные блоки", Fmt.percent(Double(spare) / 100))) }
         if let h = n.powerOnHours { list.append(HealthRow("Наработка", HealthCopy.hours(h))) }
@@ -392,6 +426,159 @@ private struct MetricText: View {
     }
 }
 
+private enum GaugeTone {
+    case good, watch, bad
+    var color: Color {
+        switch self {
+        case .good: AppModule.health.tint.accent
+        case .watch: Theme.warning
+        case .bad: Theme.danger
+        }
+    }
+}
+
+private struct GaugeFact: Identifiable {
+    let label: String
+    let value: String
+    /// 0…1 for a thin bar under the fact; nil = no bar.
+    let fill: Double?
+    var id: String { label }
+}
+
+/// Battery and disk: a ring with what is left, a verdict in words and one plain sentence, then two facts with
+/// bars. Numbers to decode («87 % максимальной ёмкости», «3 % износа») stay in «Подробнее».
+private struct GaugeCard: View {
+    let id: String
+    let model: HealthModel
+    let symbol: String
+    let title: String
+    /// What is left (0…1); nil shows the card's symbol in the ring instead.
+    let gauge: Double?
+    let gaugeCaption: String
+    let tone: GaugeTone
+    let verdict: String
+    let explanation: String
+    let facts: [GaugeFact]
+    let details: [HealthRow]
+    let note: String
+
+    var body: some View {
+        let open = model.expanded.contains(id)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 10) {
+                IconTile(symbol: symbol, tint: .health, size: 30)
+                Text(title).font(.cardTitle).foregroundStyle(Theme.text)
+                Spacer(minLength: 0)
+            }
+
+            HStack(alignment: .center, spacing: 18) {
+                ring
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(verdict)
+                        .font(.system(size: 21, weight: .semibold, design: .rounded))
+                        .foregroundStyle(tone == .good ? Theme.text : tone.color)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.8)
+                    Text(explanation)
+                        .font(.system(size: 12.5))
+                        .foregroundStyle(Theme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.top, 16)
+            .accessibilityElement(children: .combine)
+
+            VStack(spacing: 12) {
+                ForEach(facts) { fact in
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text(fact.label).foregroundStyle(Theme.textSecondary)
+                            Spacer(minLength: 8)
+                            Text(fact.value).foregroundStyle(Theme.text).monospacedDigit()
+                        }
+                        .font(.system(size: 12.5))
+                        if let fill = fact.fill {
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    Capsule().fill(Theme.text.opacity(0.08))
+                                    Capsule().fill(AppModule.health.tint.accent.opacity(0.85))
+                                        .frame(width: max(4, geo.size.width * min(1, max(0, fill))))
+                                }
+                            }
+                            .frame(height: 5)
+                            .accessibilityHidden(true)
+                        }
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            }
+            .padding(.top, 18)
+
+            Button { model.toggle(id) } label: {
+                HStack(spacing: 5) {
+                    Text(open ? "Скрыть" : "Подробнее")
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .bold))
+                        .rotationEffect(.degrees(open ? 90 : 0))
+                }
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(AppModule.health.tint.accent)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 14)
+            .accessibilityValue(open ? "развёрнуто" : "свёрнуто")
+
+            if open {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(details) { row in
+                        FactRow(row: row)
+                        Hairline()
+                    }
+                    Text(note)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Theme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 10)
+                }
+                .padding(.top, 8)
+                .transition(.opacity)
+            }
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glass(radius: 16, shadow: false)
+    }
+
+    private var ring: some View {
+        ZStack {
+            Circle().stroke(Theme.text.opacity(0.08), lineWidth: 8)
+            if let gauge {
+                Circle()
+                    .trim(from: 0, to: min(1, max(0.005, gauge)))
+                    .stroke(tone.color, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                VStack(spacing: 0) {
+                    Text("\(Int((gauge * 100).rounded()))\(Fmt.nbsp)%")
+                        .font(.number(19, weight: .medium))
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.text)
+                    Text(gaugeCaption)
+                        .font(.system(size: 10))
+                        .foregroundStyle(Theme.textTertiary)
+                }
+            } else {
+                Image(systemName: tone == .good ? "checkmark" : "exclamationmark")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundStyle(tone.color)
+            }
+        }
+        .frame(width: 84, height: 84)
+        .accessibilityLabel(gauge.map { "\(gaugeCaption) \(Int(($0 * 100).rounded())) процентов" } ?? verdict)
+    }
+}
+
 /// Icon + title + status, one large figure with its caption, the main facts, then «Подробнее»:
 /// more facts and a plain explanation of where the numbers come from.
 private struct HealthCard: View {
@@ -491,16 +678,25 @@ private struct FactRow: View {
 
 enum HealthCopy {
     static let battery = """
-    Процент — тот же, что в Системных настройках → Аккумулятор → Состояние аккумулятора: его берём у macOS \
-    и не пересчитываем. Миллиампер-часы — сырые данные контроллера батареи; macOS считает процент по своей \
-    формуле, поэтому эти числа могут немного расходиться, а у новой батареи ёмкость бывает выше паспортной.
+    Ёмкость — тот же процент, что в Системных настройках → Аккумулятор → Состояние аккумулятора. \
+    Батарея со временем изнашивается, это нормально: Apple считает её исправной, пока она держит от 80 %. \
+    Циклы — сколько раз она в сумме разрядилась на 100 %.
     """
 
     static let drive = """
-    SMART — самопроверка диска: «Проверен» значит, что SSD не сообщает о неполадках. Износ и объём записи \
-    сообщает сам SSD по стандарту NVMe; macOS передаёт эти счётчики с пометкой «могут меняться», поэтому \
-    на некоторых Mac их нет. 100 % износа — это расчётный ресурс производителя, а не дата отказа.
+    SSD изнашивается от записи. Ресурс — сколько записи осталось из того, что заложил производитель; \
+    его сообщает сам диск. Даже когда ресурс кончится, диск обычно продолжает работать — но резервная копия \
+    тогда особенно важна. На некоторых Mac диск этих данных не сообщает.
     """
+
+    static func smart(_ status: DriveHealth.SMARTStatus) -> String {
+        switch status {
+        case .verified: "в порядке"
+        case .failing: "сбой"
+        case .notSupported: "не поддерживается"
+        case .unknown: "нет данных"
+        }
+    }
 
     static let space = """
     Finder и «Об этом Mac» считают свободным и то место, которое macOS может освободить сама: локальные \

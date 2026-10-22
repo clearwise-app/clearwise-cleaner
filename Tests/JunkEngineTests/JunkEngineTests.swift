@@ -181,7 +181,7 @@ final class JunkEngineTests: XCTestCase {
         let broken = try XCTUnwrap(category(JunkCategoryID.brokenPreferences, in: result))
         XCTAssertEqual(Set(broken.items.map(\.name)), ["com.bad.app.plist", "com.empty.app.plist", "com.bad.host.ABC.plist"])
         XCTAssertEqual(broken.risk, .review)
-        XCTAssertTrue(broken.isSelectedByDefault, "unreadable anyway: the app recreates it with defaults")
+        XCTAssertFalse(broken.isSelectedByDefault, "user settings: never ticked by default, the user reviews them")
     }
 
     func testBrokenLaunchAgentDetection() async throws {

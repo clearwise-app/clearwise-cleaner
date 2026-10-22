@@ -178,14 +178,14 @@ final class SmartCareModel {
     var includesTrash: Bool { included.contains(.junk) && (app?.junk.includesTrash ?? false) }
 
     /// The tile's switch. Turning a section on with nothing ticked inside ticks what its own module ticks after a
-    /// scan (all old files: the user asked for them by name); if that is still nothing, the list opens.
+    /// scan; old files are the user's own documents, so nothing is ticked for them and the list opens instead.
     func setIncluded(_ area: Area, _ on: Bool) {
         guard let app else { return }
         if on && selectedCount(area) == 0 {
             switch area {
             case .junk: app.junk.selectDefaults()
             case .leftovers: app.uninstaller.selectDefaultOrphans()
-            case .oldFiles: app.oldFiles.toggleAll(in: app.oldFiles.files)
+            case .oldFiles: break
             }
             if selectedCount(area) == 0 { toggleExpanded(area) }
         }

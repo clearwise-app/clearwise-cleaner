@@ -155,6 +155,13 @@ struct ModuleTint: Equatable {
                0x1C330C, 0x3A5A14, 0x1E4E25,
                0x090F04, 0x283F0F, 0x2B5A1E] as [UInt32]).map { Color(hex: $0) }
     )
+    /// Coral: the one hue no other module uses (Здоровье Mac is green).
+    static let startup = ModuleTint(
+        accent: Color(hex: 0xFF8A80), accent2: Color(hex: 0xFF4F7B),
+        mesh: ([0x1A0608, 0x3A0E14, 0x2E0A1E,
+               0x33100F, 0x5E1A22, 0x4A1430,
+               0x120405, 0x3F1016, 0x55182C] as [UInt32]).map { Color(hex: $0) }
+    )
 }
 
 extension ModuleTint {

@@ -505,6 +505,34 @@ enum SnapshotRunner {
                                           freedBytes: MockData.trashItems.reduce(0) { $0 + $1.size }),
                     tint: .duplicates)
             },
+            Scene(name: "startup_idle") { m in m.selection = .startup },
+            Scene(name: "startup_results") { m in
+                m.selection = .startup
+                m.startup.apply(MockData.startupItems)
+                m.startup.selection = Set(m.startup.items.filter { $0.label.hasPrefix("com.google") }.map(\.id))
+            },
+            Scene(name: "startup_confirm_disable") { m in
+                m.selection = .startup
+                m.startup.apply(MockData.startupItems)
+                m.startup.requestDisable(m.startup.items.filter { $0.label == "com.google.GoogleUpdater.wake" })
+            },
+            Scene(name: "startup_confirm_remove_admin") { m in
+                m.selection = .startup
+                m.startup.apply(MockData.startupItems)
+                m.startup.requestRemove(m.startup.items.filter { $0.label == "com.docker.vmnetd" })
+            },
+            Scene(name: "startup_loginitems_read_apple") { m in
+                m.selection = .startup
+                m.startup.apply(MockData.startupItems)
+                m.startup.loginItemsState = .read
+                m.startup.showApple = true
+            },
+            Scene(name: "startup_toast_disabled", size: compact) { m in
+                m.selection = .startup
+                m.startup.apply(MockData.startupItems)
+                m.showToast(Toast(text: "Выключено: «Google Chrome»", symbol: "power", kind: .success,
+                                  actionTitle: "Включить", action: {}))
+            },
         ]
     }
 
@@ -512,6 +540,12 @@ enum SnapshotRunner {
     /// Nothing is ever removed — only scans are called.
     static var liveScenes: [Scene] {
         [
+            Scene(name: "live_startup") { m in
+                // Plists and launchd only: Background Task Management would ask for the admin password.
+                m.selection = .startup
+                await m.startup.scan()
+                print("live startup: \(m.startup.items.count) items")
+            },
             Scene(name: "live_junk") { m in
                 m.selection = .junk
                 await m.junk.scan()

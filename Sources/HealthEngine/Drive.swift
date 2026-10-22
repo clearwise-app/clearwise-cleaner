@@ -118,7 +118,8 @@ extension DriveHealth {
             return low > UInt64(Int64.max) ? .max : Int64(low)
         }
         func bytes(_ key: String) -> Int64? {
-            value(key).map { $0 > Int64.max / 512_000 ? .max : $0 * 512_000 }
+            // A counter that reads back negative is nonsense, not a crash: no value.
+            value(key).flatMap { $0 < 0 ? nil : ($0 > Int64.max / 512_000 ? .max : $0 * 512_000) }
         }
         let health = NVMeHealth(
             percentageUsed: value("PERCENTAGE_USED").map { Int($0) },

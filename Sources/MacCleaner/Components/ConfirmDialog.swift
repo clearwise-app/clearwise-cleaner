@@ -34,7 +34,9 @@ struct ConfirmDialog: View {
                     .padding(.top, 16)
 
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    BigSize(bytes: confirmation.bytes, size: 40, weight: .light)
+                    if confirmation.showsSize {
+                        BigSize(bytes: confirmation.bytes, size: 40, weight: .light)
+                    }
                     Text(countText)
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(Theme.textSecondary)
@@ -112,7 +114,7 @@ struct ConfirmDialog: View {
                 .frame(width: 58, height: 58)
                 .shadow(color: Color(hex: 0xE5395B).opacity(0.5), radius: 14, y: 6)
             } else {
-                IconTile(symbol: "trash.fill", tint: confirmation.tint, size: 58)
+                IconTile(symbol: confirmation.symbol, tint: confirmation.tint, size: 58)
             }
         }
         .accessibilityHidden(true)

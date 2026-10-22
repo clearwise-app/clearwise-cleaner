@@ -232,6 +232,13 @@ extension AppModule {
                 .init(symbol: "memorychip.fill", angle: -30, distance: 0.6, scale: 0.8),
                 .init(symbol: "cpu.fill", angle: 212, distance: 0.58, scale: 0.75),
             ])
+        case .startup:
+            HeroSpec(symbol: "power.circle.fill", satellites: [
+                .init(symbol: "person.crop.circle.fill", angle: 150, distance: 0.58),
+                .init(symbol: "gearshape.2.fill", angle: 32, distance: 0.6, scale: 0.85),
+                .init(symbol: "clock.fill", angle: -30, distance: 0.6, scale: 0.8),
+                .init(symbol: "app.badge.fill", angle: 212, distance: 0.58, scale: 0.75),
+            ])
         }
     }
 }

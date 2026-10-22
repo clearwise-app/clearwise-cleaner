@@ -51,6 +51,7 @@ final class AppModel {
     let duplicates = DuplicatesModel()
     let diskMap = DiskMapModel()
     let health = HealthModel()
+    let startup = StartupModel()
     /// Disk usage by category (sidebar widget). Measured at launch and after every cleanup.
     let storage: StorageModel
 
@@ -74,6 +75,7 @@ final class AppModel {
         oldFiles.app = self
         duplicates.app = self
         diskMap.app = self
+        startup.app = self
         if probeSystem { observeTextFocus() }
     }
 
@@ -349,6 +351,7 @@ extension AppModel {
         case .duplicates: duplicates.phase != .scanning && duplicates.phase != .cleaning
         case .diskMap: diskMap.phase != .scanning && diskMap.phase != .cleaning
         case .health: health.phase != .checking
+        case .startup: startup.phase != .scanning && !startup.isBusy
         }
     }
 
@@ -372,6 +375,7 @@ extension AppModel {
         case .duplicates: duplicates.startScan()
         case .diskMap: diskMap.startScan()
         case .health: health.startCheck()
+        case .startup: startup.startScan()
         }
     }
 
@@ -389,6 +393,7 @@ extension AppModel {
         case .duplicates: duplicates.phase == .results && !duplicates.marked.isEmpty
         case .diskMap: !diskMap.collector.isEmpty && diskMap.phase != .scanning && diskMap.phase != .cleaning
         case .health: false   // read-only: nothing to remove
+        case .startup: startup.phase == .results && !startup.isBusy && !startup.removable.isEmpty
         }
     }
 
@@ -396,7 +401,7 @@ extension AppModel {
     var primaryActionTitle: String {
         switch selection {
         case .smartCare, .junk: "Очистить…"
-        case .uninstaller: "Удалить…"
+        case .uninstaller, .startup: "Удалить…"
         case .oldFiles, .duplicates, .diskMap, .health: "Переместить в Корзину…"
         }
     }
@@ -421,6 +426,7 @@ extension AppModel {
         case .duplicates: duplicates.requestTrash()
         case .diskMap: diskMap.requestTrash()
         case .health: break
+        case .startup: startup.requestRemove(startup.removable)
         }
     }
 
@@ -559,6 +565,7 @@ extension AppModel {
         case .duplicates: if duplicates.phase == .done { duplicates.finish() }
         case .diskMap: if diskMap.phase == .done { diskMap.finish() }
         case .health: break
+        case .startup: break
         }
     }
 
