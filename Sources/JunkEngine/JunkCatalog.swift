@@ -28,7 +28,7 @@ enum JunkCatalog {
     ]
 
     static let all: [JunkRule] = [
-        userCaches, userLogs, crashReports, systemLogs, browserCaches,
+        userCaches, userLogs, crashReports, systemLogs, browserCaches, chromiumAppCaches,
         derivedData, archives, deviceSupport, simulatorCaches, deviceLogs, packageCaches, cargoRegistry, jetbrainsCaches,
         temporaryFiles, installers, mailDownloads, iosBackups, brokenPreferences, brokenLaunchAgents, trash,
     ]
@@ -37,10 +37,11 @@ enum JunkCatalog {
 
     static var userCaches: JunkRule {
         var r = JunkRule(id: JunkCategoryID.userCaches, title: "Кэш приложений",
-                         detail: "Временные данные программ из ~/Library/Caches. Приложения создадут их заново, когда понадобится.",
+                         detail: "Временные данные программ из ~/Library/Caches и их общих контейнеров. Приложения создадут их заново, когда понадобится.",
                          symbol: "internaldrive.fill", risk: .safe)
         r.priority = 0
         r.locations = [.home("Library/Caches")]
+        r.collector = { SpecialCollectors.groupContainerCaches($0) }
         // JetBrains keeps IDE Local History (the user's unsaved-change safety net) inside its cache folder,
         // so it is handled by its own rule that offers only the regenerable subfolders.
         r.excludedNames = protectedCacheNames + [.exact("JetBrains")]
@@ -83,6 +84,16 @@ enum JunkCatalog {
         // Same protected names as app caches: Safari's container keeps a CloudKit cache (bookmark/tab sync)
         // next to its page cache, and clearing it forces a full iCloud re-sync.
         r.excludedNames = protectedCacheNames
+        return r
+    }
+
+    static var chromiumAppCaches: JunkRule {
+        var r = JunkRule(id: JunkCategoryID.chromiumAppCaches, title: "Кэш программ на Electron",
+                         detail: "Кэш страниц, скриптов и графики Slack, Discord, VS Code, Notion, Figma и других программ на движке Chromium. Переписка, входы в аккаунты и офлайн-данные не затрагиваются, запущенные программы пропускаются.",
+                         symbol: "atom", risk: .safe, phase: "Кэш программ")
+        // Below browsers (priority 2), which own their user data folders; nothing else claims Application Support.
+        r.collector = { ChromiumAppCaches.candidates($0) }
+        r.skipsActiveItems = true
         return r
     }
 

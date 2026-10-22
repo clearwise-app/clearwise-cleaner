@@ -34,6 +34,24 @@ enum SpecialCollectors {
         return !isPackage
     }
 
+    // MARK: Group containers
+
+    /// Children of `~/Library/Group Containers/<id>/Library/Caches` of third-party apps. Only with Full Disk
+    /// Access (otherwise macOS shows a blocking consent prompt). Apple's containers and Safari extensions'
+    /// (their content blocker rules live there) are never opened.
+    static func groupContainerCaches(_ env: JunkEnvironment) -> [JunkCandidate] {
+        guard env.readsAppContainers else { return [] }
+        var result: [JunkCandidate] = []
+        for container in FS.children(of: env.homePath("Library/Group Containers")) where FS.isDirectory(container) {
+            let name = container.lastPathComponent.lowercased()
+            if name.hasPrefix("group.com.apple.") || name.contains(".com.apple.") || name.contains("safari") { continue }
+            let caches = container.appendingPathComponent("Library/Caches")
+            guard FS.isDirectory(container.appendingPathComponent("Library")), FS.isDirectory(caches) else { continue }
+            result += FS.children(of: caches).map { JunkCandidate($0) }
+        }
+        return result
+    }
+
     // MARK: JetBrains
 
     /// `~/Library/Caches/JetBrains/<IDE>/{caches,index,tmp,log,jcef_cache}` — only the folders listed in

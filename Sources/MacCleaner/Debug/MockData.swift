@@ -48,6 +48,10 @@ enum MockData {
                          items: items([("Library/Caches/Google/Chrome/Default/Cache", 1_140 * MB),
                                        ("Library/Caches/Google/Chrome/Default/Code Cache", 388 * MB),
                                        ("Library/Containers/com.apple.Safari/Data/Library/Caches", 214 * MB)])),
+            JunkCategory(id: "electron-app-caches", title: "Кэш программ на Electron",
+                         detail: "Кэш страниц, скриптов и графики Slack, Discord, VS Code, Notion, Figma и других программ на движке Chromium. Переписка, входы в аккаунты и офлайн-данные не затрагиваются, запущенные программы пропускаются.",
+                         symbol: "atom", risk: .safe,
+                         items: items(electronCaches.map { ($0.0, $0.1) })),
             JunkCategory(id: "user-logs", title: "Журналы приложений",
                          detail: "Текстовые отчёты о работе программ. Нужны только разработчикам при поиске ошибок.",
                          symbol: "doc.text.fill", risk: .safe,
@@ -67,6 +71,21 @@ enum MockData {
                          symbol: "trash.fill", risk: .review,
                          items: items([(".Trash/Старые скриншоты", 512 * MB), (".Trash/presentation-draft.key", 228 * MB)])),
         ]
+    }
+
+    /// Path, size and the scanner's label for the Electron caches demo.
+    static let electronCaches: [(String, Int64, String)] = [
+        ("Library/Application Support/Slack/Cache", 1_240 * MB, "Slack · Cache"),
+        ("Library/Application Support/discord/Cache", 612 * MB, "Discord · Cache"),
+        ("Library/Application Support/Notion/Partitions/notion/Cache", 402 * MB, "Notion · notion · Cache"),
+        ("Library/Application Support/Slack/Code Cache", 318 * MB, "Slack · Code Cache"),
+        ("Library/Application Support/Code/CachedExtensionVSIXs", 286 * MB, "Visual Studio Code · CachedExtensionVSIXs"),
+        ("Library/Application Support/Code/CachedData", 141 * MB, "Visual Studio Code · CachedData"),
+        ("Library/Application Support/Figma/GPUCache", 48 * MB, "Figma · GPUCache"),
+    ]
+
+    static var junkNotes: [URL: String] {
+        Dictionary(uniqueKeysWithValues: electronCaches.map { (h($0.0), $0.2) })
     }
 
     // MARK: Apps
