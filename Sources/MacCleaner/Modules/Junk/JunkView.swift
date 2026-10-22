@@ -54,10 +54,13 @@ private struct JunkResultsView: View {
             ScrollView {
                 LazyVStack(spacing: 10) {
                     SelectionBar(text: "Отмеченное попадёт в Корзину, остальное останется на месте",
-                                 onDefaults: model.selectDefaults, onNone: model.selectNone)
+                                 onDefaults: model.selectDefaults,
+                                 mode: Binding(get: { model.mode }, set: { model.select(mode: $0) }),
+                                 onNone: model.selectNone)
                     ForEach(model.categories) { cat in
                         JunkCategoryCard(model: model, category: cat)
                     }
+                    if model.dockerStatus == .notRunning { DockerNotRunningNote() }
                 }
                 .padding(.horizontal, Theme.Space.page)
                 .padding(.top, 22)
@@ -96,6 +99,12 @@ struct JunkCategoryCard: View {
                                     .font(.cardTitle)
                                     .foregroundStyle(Theme.text)
                                 RiskBadge(risk: category.risk)
+                                if let mode = category.gentlestMode, mode > .gentle {
+                                    // Ticked by itself only from this mode on; the gentle mode leaves it to the user.
+                                    Badge(text: mode.title, color: .white.opacity(0.7),
+                                          symbol: mode == .enhanced ? "dial.medium.fill" : "dial.high.fill")
+                                        .help("Отмечается само в режиме «\(mode.title)» и выше")
+                                }
                             }
                             Text(category.detail)
                                 .font(.caption12)
@@ -149,5 +158,25 @@ struct JunkCategoryCard: View {
         }
         .glass(radius: 16, shadow: false)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+}
+
+/// Docker is installed, but its engine did not answer: the sizes of images and the build cache are unknown.
+private struct DockerNotRunningNote: View {
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "shippingbox.circle")
+                .foregroundStyle(Theme.textTertiary)
+                .accessibilityHidden(true)
+            Text("Docker установлен, но не запущен. Запустите его и нажмите «Сканировать заново», чтобы посчитать образы и кэш сборки.")
+                .font(.system(size: 12.5))
+                .foregroundStyle(Theme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .glass(radius: 16, shadow: false)
+        .accessibilityElement(children: .combine)
     }
 }

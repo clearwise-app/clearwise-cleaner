@@ -70,7 +70,9 @@ private struct FileRowContent<Badges: View>: View, Equatable {
 
     private var url: URL { data.url }
     private var displayTitle: String { data.title ?? url.lastPathComponent }
-    private var showsActions: Bool { hover || focused }
+    /// Docker items are not files: no path, no Finder, no Quick Look.
+    private var isFile: Bool { url.isFileURL }
+    private var showsActions: Bool { (hover || focused) && isFile }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -78,7 +80,15 @@ private struct FileRowContent<Badges: View>: View, Equatable {
                 CheckBox(state: isChecked ? .on : .off, tint: data.tint, label: displayTitle, action: onToggle)
                     .accessibilityHidden(true) // the row itself is the toggle for VoiceOver
             }
-            FileIcon(url: url, size: 22)
+            if isFile {
+                FileIcon(url: url, size: 22)
+            } else {
+                Image(systemName: "shippingbox.circle.fill")
+                    .font(.system(size: 18))
+                    .foregroundStyle(Theme.textSecondary)
+                    .frame(width: 22, height: 22)
+                    .accessibilityHidden(true)
+            }
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 6) {
                     Text(displayTitle)
@@ -89,7 +99,7 @@ private struct FileRowContent<Badges: View>: View, Equatable {
                     badges
                 }
                 HStack(spacing: 6) {
-                    Text(Fmt.path(url))
+                    Text(isFile ? Fmt.path(url) : "Docker")
                         .font(.system(size: 11, design: .monospaced))
                         .foregroundStyle(.themeTertiary)
                         .lineLimit(1)
@@ -104,7 +114,7 @@ private struct FileRowContent<Badges: View>: View, Equatable {
                     }
                 }
             }
-            .help(url.path)
+            .help(isFile ? url.path : displayTitle)
             Spacer(minLength: 8)
             HStack(spacing: 6) {
                 if let onQuickLook {
@@ -151,11 +161,13 @@ private struct FileRowContent<Badges: View>: View, Equatable {
             return .handled
         }
         .contextMenu {
-            Button("Показать в Finder") { Finder.reveal(url) }
-            if let onQuickLook { Button("Быстрый просмотр", action: onQuickLook) }
-            Button("Скопировать путь") {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(url.path, forType: .string)
+            if isFile {
+                Button("Показать в Finder") { Finder.reveal(url) }
+                if let onQuickLook { Button("Быстрый просмотр", action: onQuickLook) }
+                Button("Скопировать путь") {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(url.path, forType: .string)
+                }
             }
         }
         .accessibilityElement(children: .combine)

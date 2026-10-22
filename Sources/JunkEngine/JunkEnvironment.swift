@@ -27,6 +27,8 @@ struct JunkEnvironment: Sendable {
     var readsAppContainers = false
     /// Snapshot of running apps, taken when a scan needs it.
     var runningApps: @Sendable () -> RunningApps = { RunningApps() }
+    /// The `docker` command, when installed. Tests inject a fake; the sandbox has none.
+    var docker: DockerTool? = nil
 
     static var live: JunkEnvironment {
         var own = ["MacCleaner", "Clearwise Cleaner", "Clearwise"]
@@ -40,7 +42,8 @@ struct JunkEnvironment: Sendable {
             applicationFolders: [URL(fileURLWithPath: "/Applications"),
                                  FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications")],
             readsAppContainers: Permissions.hasFullDiskAccess,
-            runningApps: { RunningApps.current() }
+            runningApps: { RunningApps.current() },
+            docker: DockerTool.locate(home: FileManager.default.homeDirectoryForCurrentUser)
         )
     }
 

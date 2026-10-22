@@ -237,7 +237,9 @@ private struct JunkDrawer: View {
     var body: some View {
         VStack(spacing: 10) {
             SelectionBar(text: "Отмеченное попадёт в Корзину, остальное останется на месте",
-                         onDefaults: junk.selectDefaults, onNone: junk.selectNone)
+                         onDefaults: junk.selectDefaults,
+                         mode: Binding(get: { junk.mode }, set: { junk.select(mode: $0) }),
+                         onNone: junk.selectNone)
             ForEach(junk.categories) { cat in
                 JunkCategoryCard(model: junk, category: cat, tint: .smartCare)
             }

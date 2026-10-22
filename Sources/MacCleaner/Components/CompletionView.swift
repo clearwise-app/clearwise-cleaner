@@ -24,8 +24,10 @@ struct CompletionView: View {
     @Environment(\.isSnapshot) private var isSnapshot
     @Environment(\.hasFullDiskAccess) private var hasFullDiskAccess
 
-    /// Emptying the Trash, or a cleanup that deleted for good right away («минуя Корзину»).
-    private var isPermanent: Bool { permanent || result.deletedPermanently }
+    /// Emptying the Trash, a cleanup that deleted for good right away («минуя Корзину»), or only Docker.
+    private var isPermanent: Bool { permanent || result.deletedPermanently || (result.freedForGood > 0 && result.freedForGood == result.freedBytes) }
+    /// Space Docker gave back at once, next to what went to the Trash.
+    private var dockerAside: Int64 { isPermanent ? 0 : result.freedForGood }
     private var allFailed: Bool { result.removed.isEmpty && !result.failed.isEmpty }
     private var lines: [FailureCopy.Line] {
         result.failed.map { FailureCopy.describe($0, fullDiskAccess: hasFullDiskAccess) }
@@ -49,10 +51,16 @@ struct CompletionView: View {
                         Text(isPermanent ? "Удалено навсегда" : "В Корзине")
                             .font(.system(size: 20, weight: .light))
                             .foregroundStyle(Theme.textSecondary)
-                        BigSize(bytes: result.freedBytes, size: compact ? 50 : 60)
+                        BigSize(bytes: result.freedBytes - dockerAside, size: compact ? 50 : 60)
                     }
                     .accessibilityElement(children: .combine)
                     .padding(.top, 6)
+                    if dockerAside > 0 {
+                        Text("Ещё \(Fmt.size(dockerAside)) освободил Docker — сразу, без Корзины.")
+                            .font(.system(size: 14))
+                            .foregroundStyle(Theme.textSecondary)
+                            .padding(.top, 6)
+                    }
                 }
 
                 VStack(spacing: 4) {

@@ -1,4 +1,5 @@
 import SwiftUI
+import JunkEngine
 import CleanerKit
 
 /// Full-window cleaning scene: broom in a glass disc wrapped by the progress ring, a live status line
@@ -200,7 +201,8 @@ private struct CleaningStatus: View {
     private var detail: String {
         if session.finished { return " " }
         if session.awaitingAdmin { return "macOS спрашивает пароль, чтобы удалить системные компоненты" }
-        return session.currentURL.map { Fmt.path($0) } ?? " "
+        // Docker items are not files: their name, not a path.
+        return session.currentURL.map { $0.isFileURL ? Fmt.path($0) : (DockerCleanup.Kind(url: $0)?.title ?? "Docker") } ?? " "
     }
 
     private var totals: some View {

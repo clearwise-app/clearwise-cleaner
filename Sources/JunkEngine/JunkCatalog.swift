@@ -27,12 +27,15 @@ enum JunkCatalog {
         .prefix("com.apple.findmy"), .prefix("com.apple.ScreenTimeAgent"),
     ]
 
-    /// Ticked after a scan: `.safe` rules and the regenerable ones marked `selectedByDefault`. The user's own data
-    /// (Trash, device backups, installers, Mail attachments, Xcode archives) and admin-only system logs stay unticked.
+    /// What each cleanup mode ticks after a scan:
+    /// - gentle: `.safe` rules (caches, logs, temporary files);
+    /// - enhanced: also what is downloaded or rebuilt again (device support, Cargo, JetBrains) and system logs;
+    /// - maximum: also old installers and Xcode archives, Mail attachments, broken settings, older device backups.
+    /// No mode ticks the Trash or the newest backup of a device.
     static let all: [JunkRule] = [
         userCaches, userLogs, crashReports, systemLogs, browserCaches, chromiumAppCaches,
         derivedData, archives, deviceSupport, simulatorCaches, deviceLogs, packageCaches, cargoRegistry, jetbrainsCaches,
-        temporaryFiles, installers, mailDownloads, iosBackups, brokenPreferences, brokenLaunchAgents, trash,
+        temporaryFiles, installers, mailDownloads, iosBackups, deviceFirmware, brokenPreferences, brokenLaunchAgents, trash,
     ]
 
     // MARK: Caches & logs
@@ -74,6 +77,7 @@ enum JunkCatalog {
                          detail: "Архивные журналы и отчёты о сбоях из /Library/Logs и /var/log. Текущие журналы не трогаем; для удаления macOS может запросить пароль администратора.",
                          symbol: "doc.text.magnifyingglass", risk: .review, phase: "Системные журналы")
         r.collector = { SpecialCollectors.systemLogs($0) }
+        r.mode = .enhanced   // the administrator password
         return r
     }
 
@@ -117,6 +121,7 @@ enum JunkCatalog {
         r.priority = 2
         r.locations = [.home("Library/Developer/Xcode/Archives", .grandchildren)]
         r.wantsLastUsed = true
+        r.itemMode = { item, env in olderThan(item, days: 180, env: env) ? .maximum : nil }
         return r
     }
 
@@ -128,7 +133,7 @@ enum JunkCatalog {
         r.locations = ["iOS", "iPadOS", "watchOS", "tvOS", "visionOS", "xrOS", "macOS"].map {
             .home("Library/Developer/Xcode/\($0) DeviceSupport")
         }
-        r.selectedByDefault = true
+        r.mode = .enhanced
         return r
     }
 
@@ -152,7 +157,7 @@ enum JunkCatalog {
 
     static var packageCaches: JunkRule {
         var r = JunkRule(id: JunkCategoryID.packageCaches, title: "Кэш пакетных менеджеров",
-                         detail: "Скачанные пакеты npm, Yarn, pnpm, Bun, pip, Homebrew, Gradle, CocoaPods, SwiftPM и кэш сборки Go. Загрузятся снова при необходимости.",
+                         detail: "Скачанные пакеты npm, Yarn, pnpm, Bun, pip, uv, Homebrew, Gradle, CocoaPods, SwiftPM, кэш сборки Go и браузеры Playwright. Загрузятся снова при необходимости.",
                          symbol: "shippingbox.fill", risk: .safe, phase: "Файлы разработчика")
         r.priority = 2
         r.locations = [
@@ -168,6 +173,8 @@ enum JunkCatalog {
             .home("Library/Caches/CocoaPods", .itself),
             .home("Library/Caches/org.swift.swiftpm", .itself),
             .home("Library/Caches/go-build", .itself),
+            .home(".cache/uv", .itself),
+            .home("Library/Caches/ms-playwright", .itself),   // browsers Playwright downloads for tests
         ]
         return r
     }
@@ -178,7 +185,7 @@ enum JunkCatalog {
                          symbol: "cube.box.fill", risk: .review, phase: "Файлы разработчика")
         r.priority = 2
         r.locations = [.home(".cargo/registry/cache"), .home(".cargo/registry/src")]
-        r.selectedByDefault = true
+        r.mode = .enhanced
         return r
     }
 
@@ -193,7 +200,7 @@ enum JunkCatalog {
         r.priority = 2
         r.collector = { SpecialCollectors.jetBrainsCaches($0) }
         r.skipsActiveItems = true
-        r.selectedByDefault = true
+        r.mode = .enhanced
         return r
     }
 
@@ -214,10 +221,11 @@ enum JunkCatalog {
 
     static var installers: JunkRule {
         var r = JunkRule(id: JunkCategoryID.installers, title: "Установщики",
-                         detail: "Образы и пакеты установки (.dmg, .pkg, .iso, .xip) в Загрузках и на Рабочем столе. Это ваши файлы — по умолчанию не выбраны.",
+                         detail: "Образы и пакеты установки (.dmg, .pkg, .iso, .xip) в Загрузках и на Рабочем столе. Это ваши файлы: сами отмечаются только в режиме «Максимальная» и только те, что не открывались больше месяца.",
                          symbol: "opticaldiscdrive.fill", risk: .review, phase: "Установщики")
         r.collector = { SpecialCollectors.installers($0) }
         r.wantsLastUsed = true
+        r.itemMode = { item, env in olderThan(item, days: 30, env: env) ? .maximum : nil }
         return r
     }
 
@@ -227,6 +235,7 @@ enum JunkCatalog {
                          symbol: "paperclip", risk: .review)
         r.locations = [.home("Library/Containers/com.apple.mail/Data/Library/Mail Downloads")]
         r.wantsLastUsed = true
+        r.mode = .maximum
         return r
     }
 
@@ -236,6 +245,23 @@ enum JunkCatalog {
                          symbol: "externaldrive.fill.badge.timemachine", risk: .caution, phase: "Резервные копии")
         r.collector = { SpecialCollectors.iosBackups($0) }
         r.sortsNewestFirst = true
+        // Older copies only: the newest backup of each device is marked `neverAuto` by the collector.
+        r.itemMode = { _, _ in .maximum }
+        return r
+    }
+
+    static var deviceFirmware: JunkRule {
+        var r = JunkRule(id: JunkCategoryID.deviceFirmware, title: "Прошивки iPhone и iPad",
+                         detail: "Файлы обновлений iOS (.ipsw), которые Finder скачал для подключённых устройств, — по 5–8 ГБ каждый. При следующем обновлении скачаются снова.",
+                         symbol: "arrow.down.app.fill", risk: .review, phase: "Прошивки")
+        r.collector = { env in
+            ["iPhone", "iPad", "iPod", "Apple TV"].flatMap { device in
+                FS.children(of: env.homePath("Library/iTunes/\(device) Software Updates"))
+                    .filter { $0.pathExtension.lowercased() == "ipsw" }
+                    .map { JunkCandidate($0) }
+            }
+        }
+        r.mode = .enhanced
         return r
     }
 
@@ -247,6 +273,7 @@ enum JunkCatalog {
                          symbol: "slider.horizontal.3", risk: .review, phase: "Проверка настроек")
         r.collector = { SpecialCollectors.brokenPreferences($0) }
         r.keepsEmptyItems = true
+        r.mode = .maximum
         return r
     }
 
@@ -256,6 +283,7 @@ enum JunkCatalog {
                          symbol: "bolt.slash.fill", risk: .review, phase: "Проверка автозапуска")
         r.collector = { SpecialCollectors.brokenLaunchAgents($0) }
         r.keepsEmptyItems = true
+        r.mode = .maximum
         return r
     }
 
@@ -266,5 +294,11 @@ enum JunkCatalog {
         r.locations = [.home(".Trash", includeHidden: true)]
         r.keepsEmptyItems = true
         return r
+    }
+
+    /// Not opened (or, without that, not changed) for `days`.
+    static func olderThan(_ item: FileItem, days: Double, env: JunkEnvironment) -> Bool {
+        guard let date = item.lastUsed ?? item.modified else { return false }
+        return env.now.timeIntervalSince(date) > days * 86_400
     }
 }

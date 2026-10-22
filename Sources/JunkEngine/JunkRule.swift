@@ -24,6 +24,8 @@ public enum JunkCategoryID {
     public static let brokenPreferences = "broken-preferences"
     public static let brokenLaunchAgents = "broken-launch-agents"
     public static let trash = "trash"
+    public static let docker = "docker"
+    public static let deviceFirmware = "device-firmware"
 }
 
 /// Something a rule wants to offer as one removable item, before sizing.
@@ -31,10 +33,13 @@ struct JunkCandidate: Sendable {
     let url: URL
     /// Optional human-readable label (browser name, device name, missing executable…).
     var note: String?
+    /// No cleanup mode ticks it (the newest backup of a device).
+    var neverAuto = false
 
-    init(_ url: URL, note: String? = nil) {
+    init(_ url: URL, note: String? = nil, neverAuto: Bool = false) {
         self.url = url
         self.note = note
+        self.neverAuto = neverAuto
     }
 }
 
@@ -101,9 +106,10 @@ struct JunkRule: Sendable {
     let detail: String
     let symbol: String
     let risk: RiskLevel
-    /// Ticked after a scan even though `risk` is not `.safe`: regenerable, just slow or costly to recreate.
-    /// Nil = only `.safe` rules are.
-    var selectedByDefault: Bool? = nil
+    /// The gentlest cleanup mode that ticks the category. Nil = by risk: `.safe` → every mode, otherwise none.
+    var mode: CleanupMode? = nil
+    /// A mode per item, for categories where only some items are worth ticking (old archives). Nil = none.
+    var itemMode: (@Sendable (FileItem, JunkEnvironment) -> CleanupMode?)? = nil
     /// Progress label shown while this rule is processed.
     var phase: String
     /// Rules with higher priority claim paths first. Catch-all rules (all of `~/Library/Caches`)

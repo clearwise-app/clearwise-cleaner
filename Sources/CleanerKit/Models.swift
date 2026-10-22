@@ -48,23 +48,75 @@ public struct JunkCategory: Identifiable, Sendable {
     /// SF Symbol name.
     public let symbol: String
     public let risk: RiskLevel
-    /// Ticked after a scan. Everything the system or an app recreates is; the user's own data
-    /// (backups, installers, the Trash) and items behind the administrator password are not.
-    public let isSelectedByDefault: Bool
+    /// The gentlest cleanup mode that ticks the whole category after a scan; nil = no mode ticks it as a whole.
+    public let mode: CleanupMode?
+    /// Items ticked from a mode of their own, overriding `mode` (old Xcode archives, older iPhone backups, Docker).
+    public var itemModes: [URL: CleanupMode]
+    /// Items no mode ever ticks (the newest backup of each device).
+    public var neverAuto: Set<URL>
     public var items: [FileItem]
 
+    /// - Parameter mode: nil = by risk: `.safe` categories are ticked by every mode, the rest by none.
     public init(id: String, title: String, detail: String, symbol: String, risk: RiskLevel,
-                selectedByDefault: Bool? = nil, items: [FileItem]) {
+                mode: CleanupMode? = nil, itemModes: [URL: CleanupMode] = [:], neverAuto: Set<URL> = [],
+                items: [FileItem]) {
         self.id = id
         self.title = title
         self.detail = detail
         self.symbol = symbol
         self.risk = risk
-        self.isSelectedByDefault = selectedByDefault ?? (risk == .safe)
+        self.mode = mode ?? (risk == .safe ? .gentle : nil)
+        self.itemModes = itemModes
+        self.neverAuto = neverAuto
         self.items = items
     }
 
+    /// Ticked by the gentle mode (what a scan ticked before modes existed).
+    public var isSelectedByDefault: Bool { mode == .gentle }
+
     public var totalSize: Int64 { items.reduce(0) { $0 + $1.size } }
+
+    /// What `cleanup` ticks in this category.
+    public func autoSelected(in cleanup: CleanupMode) -> [FileItem] {
+        items.filter { item in
+            guard !neverAuto.contains(item.url), let m = itemModes[item.url] ?? mode else { return false }
+            return m <= cleanup
+        }
+    }
+
+    /// The gentlest mode that ticks anything here, for the category's label.
+    public var gentlestMode: CleanupMode? {
+        (items.compactMap { neverAuto.contains($0.url) ? nil : (itemModes[$0.url] ?? mode) }).min()
+    }
+}
+
+/// How far a cleanup goes: which categories a scan ticks by itself. Every tick can still be changed by hand,
+/// and no mode ever ticks the user's own files, the Trash, Docker volumes or a device's newest backup.
+public enum CleanupMode: Int, CaseIterable, Comparable, Sendable, Codable {
+    /// What the system or an app recreates by itself.
+    case gentle
+    /// Also what is downloaded or rebuilt again at the cost of time: developer caches, Docker build cache.
+    case enhanced
+    /// Also what you are unlikely to need: unused Docker images, old installers and archives, older backups.
+    case maximum
+
+    public static func < (lhs: Self, rhs: Self) -> Bool { lhs.rawValue < rhs.rawValue }
+
+    public var title: String {
+        switch self {
+        case .gentle: "Бережная"
+        case .enhanced: "Усиленная"
+        case .maximum: "Максимальная"
+        }
+    }
+
+    public var summary: String {
+        switch self {
+        case .gentle: "Только то, что программы и macOS создадут заново сами."
+        case .enhanced: "Плюс то, что скачается или пересоберётся заново: кэши разработчика, кэш сборки Docker."
+        case .maximum: "Плюс то, что вряд ли понадобится: неиспользуемые образы Docker, старые установщики, архивы и копии."
+        }
+    }
 }
 
 // MARK: - Progress
@@ -251,6 +303,10 @@ public struct RemovalResult: Sendable {
     public var inTrash: [URL] = []
     /// The items are gone for good, not waiting in the Trash.
     public var deletedPermanently = false
+    /// Removed by a tool that frees the space at once, never through the Trash (Docker); part of `removed`.
+    public var deletedForGood: [URL] = []
+    /// Bytes of `deletedForGood`; part of `freedBytes`.
+    public var freedForGood: Int64 = 0
 
     public init(removed: [URL] = [], failed: [RemovalFailure] = [], freedBytes: Int64 = 0) {
         self.removed = removed
@@ -263,6 +319,8 @@ public struct RemovalResult: Sendable {
         failed += other.failed
         freedBytes += other.freedBytes
         inTrash += other.inTrash
+        deletedForGood += other.deletedForGood
+        freedForGood += other.freedForGood
     }
 }
 

@@ -218,6 +218,12 @@ final class JunkEngineTests: XCTestCase {
         XCTAssertEqual(installers.risk, .review)
         XCTAssertFalse(installers.isSelectedByDefault)
         XCTAssertEqual(installers.items.map(\.name), ["Some App 2.3.dmg", "driver.pkg", "macOS.xip"])
+        // The user's own files: only «Максимальная» ticks them, and only once they sat unopened for a month.
+        XCTAssertTrue(installers.autoSelected(in: .maximum).isEmpty, "fresh downloads stay unticked in every mode")
+        let (_, later) = await scan(now: Date().addingTimeInterval(40 * 86_400))
+        let aged = try XCTUnwrap(category(JunkCategoryID.installers, in: later))
+        XCTAssertEqual(aged.autoSelected(in: .maximum).count, 3)
+        XCTAssertTrue(aged.autoSelected(in: .enhanced).isEmpty)
     }
 
     func testIOSBackupsAreCautionWithDeviceNames() async throws {
@@ -233,6 +239,9 @@ final class JunkEngineTests: XCTestCase {
         let backups = try XCTUnwrap(category(JunkCategoryID.iosBackups, in: result))
         XCTAssertEqual(backups.risk, .caution)
         XCTAssertFalse(backups.isSelectedByDefault)
+        // Each device's newest copy is off limits to every mode; only older copies of a device are ticked at «Максимальная».
+        XCTAssertTrue(backups.autoSelected(in: .maximum).isEmpty, "one backup per device: nothing to tick")
+        XCTAssertEqual(backups.neverAuto.count, 2)
         let notes = await scanner.notes
         let newest = try XCTUnwrap(backups.items.first { $0.name == "00008120-BBBB" })
         let oldest = try XCTUnwrap(backups.items.first { $0.name == "00008110-AAAA" })
@@ -329,6 +338,22 @@ final class JunkEngineTests: XCTestCase {
         XCTAssertTrue(fm.fileExists(atPath: outsider.path))
     }
 
+    // MARK: Device firmware
+
+    func testFirmwareOffersOnlyIPSWFilesAndWaitsForTheEnhancedMode() async throws {
+        let ipsw = try file("Library/iTunes/iPhone Software Updates/iPhone16,1_26.1_Restore.ipsw", bytes: 30_000)
+        try file("Library/iTunes/iPhone Software Updates/Downloaded.plist", bytes: 100)
+        try file("Library/iTunes/iPad Software Updates/iPad14,1_26.1_Restore.IPSW", bytes: 20_000)
+
+        let (_, result) = await scan()
+        let firmware = try XCTUnwrap(category(JunkCategoryID.deviceFirmware, in: result))
+        XCTAssertEqual(Set(firmware.items.map(\.name)), ["iPhone16,1_26.1_Restore.ipsw", "iPad14,1_26.1_Restore.IPSW"])
+        XCTAssertEqual(firmware.risk, .review)
+        XCTAssertFalse(firmware.isSelectedByDefault)
+        XCTAssertEqual(firmware.autoSelected(in: .enhanced).count, 2)
+        XCTAssertTrue(firmware.items.contains { $0.url == ipsw.standardizedFileURL })
+    }
+
     // MARK: JetBrains
 
     func testJetBrainsOffersOnlyRegenerableFoldersAndNeverLocalHistory() async throws {
@@ -345,7 +370,8 @@ final class JunkEngineTests: XCTestCase {
         let (_, result) = await scan()
         let jb = try XCTUnwrap(category(JunkCategoryID.jetbrainsCaches, in: result))
         XCTAssertEqual(jb.risk, .review)
-        XCTAssertTrue(jb.isSelectedByDefault, "rebuilt by the IDE; Local History is never offered")
+        XCTAssertFalse(jb.isSelectedByDefault, "re-indexing takes time: not the gentle mode")
+        XCTAssertEqual(jb.mode, .enhanced, "rebuilt by the IDE; Local History is never offered")
         XCTAssertEqual(Set(relPaths(jb)), [
             "\(ide)/caches", "\(ide)/index", "\(ide)/tmp", "\(ide)/log", "\(ide)/jcef_cache",
             "Library/Caches/JetBrains/PyCharm2024.2/caches",

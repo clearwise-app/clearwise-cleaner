@@ -1,6 +1,7 @@
 #if DEBUG
 // Snapshot / mock tooling: compiled out of release builds (it can render real scan results to disk).
 import Foundation
+import JunkEngine
 import CleanerKit
 import SpaceEngine
 import HealthEngine
@@ -67,6 +68,14 @@ enum MockData {
                          detail: "Локальные копии устройств. Удаляйте, только если есть копия в iCloud или она устарела.",
                          symbol: "iphone", risk: .caution,
                          items: items([("Library/Application Support/MobileSync/Backup/00008110-001A2C3E0E78801E", 12_400 * MB)])),
+            JunkCategory(id: "docker", title: "Docker",
+                         detail: "Кэш сборки, образы и остановленные контейнеры. Их удаляет сам Docker — сразу, без Корзины; образы скачаются заново при следующем запуске. Тома с данными не трогаются.",
+                         symbol: "shippingbox.circle.fill", risk: .review,
+                         itemModes: Dictionary(uniqueKeysWithValues: DockerCleanup.Kind.allCases.map { ($0.url, $0.mode) }),
+                         items: [FileItem(url: DockerCleanup.Kind.buildCache.url, size: 3_410 * MB, isDirectory: false),
+                                 FileItem(url: DockerCleanup.Kind.unusedImages.url, size: 2_180 * MB, isDirectory: false),
+                                 FileItem(url: DockerCleanup.Kind.danglingImages.url, size: 640 * MB, isDirectory: false),
+                                 FileItem(url: DockerCleanup.Kind.stoppedContainers.url, size: 85 * MB, isDirectory: false)]),
             JunkCategory(id: "trash", title: "Корзина",
                          detail: "Файлы, которые вы уже удалили. Очистка Корзины необратима.",
                          symbol: "trash.fill", risk: .review,
@@ -86,7 +95,8 @@ enum MockData {
     ]
 
     static var junkNotes: [URL: String] {
-        Dictionary(uniqueKeysWithValues: electronCaches.map { (h($0.0), $0.2) })
+        Dictionary(uniqueKeysWithValues: electronCaches.map { (h($0.0), $0.2) }
+                   + DockerCleanup.Kind.allCases.map { ($0.url, $0.title) })
     }
 
     // MARK: Apps

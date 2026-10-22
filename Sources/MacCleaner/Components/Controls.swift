@@ -70,6 +70,8 @@ struct SelectionBar: View {
     let text: String
     /// «Как после сканирования»; nil when the scan ticks nothing (the user's own files).
     var onDefaults: (() -> Void)? = nil
+    /// The cleanup mode picker (junk): replaces «Как после сканирования», which it includes.
+    var mode: Binding<CleanupMode>? = nil
     let onNone: () -> Void
 
     var body: some View {
@@ -78,7 +80,9 @@ struct SelectionBar: View {
                 .font(.system(size: 12.5))
                 .foregroundStyle(Theme.textSecondary)
             Spacer()
-            if let onDefaults {
+            if let mode {
+                CleanupModePicker(mode: mode)
+            } else if let onDefaults {
                 Button("Как после сканирования", systemImage: "arrow.uturn.backward", action: onDefaults)
                     .buttonStyle(PillButtonStyle(kind: .quiet))
             }
@@ -86,6 +90,24 @@ struct SelectionBar: View {
                 .buttonStyle(PillButtonStyle(kind: .quiet))
         }
         .padding(.top, 2)
+    }
+}
+
+/// «Бережная / Усиленная / Максимальная»: how far a scan's ticks go. The help text says what each adds.
+struct CleanupModePicker: View {
+    @Binding var mode: CleanupMode
+
+    var body: some View {
+        Picker("Режим очистки", selection: $mode) {
+            ForEach(CleanupMode.allCases, id: \.self) { m in
+                Text(m.title).tag(m)
+            }
+        }
+        .pickerStyle(.segmented)
+        .controlSize(.small)
+        .fixedSize()
+        .help(CleanupMode.allCases.map { "\($0.title): \($0.summary)" }.joined(separator: "\n"))
+        .accessibilityValue(mode.title + ". " + mode.summary)
     }
 }
 

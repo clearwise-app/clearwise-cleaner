@@ -6,6 +6,12 @@ public enum JunkCleaner {
     /// Items that are not part of `category` are refused, so a UI bug cannot widen what gets removed.
     public static func clean(_ items: [FileItem], in category: JunkCategory,
                              progress: RemovalProgressHandler? = nil) async -> RemovalResult {
+        await clean(items, in: category, docker: { DockerTool.locate(home: FileManager.default.homeDirectoryForCurrentUser) },
+                    progress: progress)
+    }
+
+    static func clean(_ items: [FileItem], in category: JunkCategory, docker: @escaping @Sendable () -> DockerTool?,
+                      progress: RemovalProgressHandler? = nil) async -> RemovalResult {
         let known = Set(category.items.map { FS.key($0.url) })
         var result = RemovalResult()
         var accepted: [FileItem] = []
@@ -20,6 +26,10 @@ public enum JunkCleaner {
         let sizes = Dictionary(accepted.map { ($0.url, $0.size) }, uniquingKeysWith: { first, _ in first })
 
         switch category.id {
+        case JunkCategoryID.docker:
+            // Not files: Docker frees them itself, at once.
+            let urls = accepted.map(\.url)
+            result.merge(await Task.detached { DockerCleanup.clean(urls, tool: docker(), progress: progress) }.value)
         case JunkCategoryID.trash:
             result.merge(await FileRemover.deletePermanentlyFromTrash(accepted.map(\.url), knownSizes: sizes, progress: progress))
         case JunkCategoryID.systemLogs:

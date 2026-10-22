@@ -211,6 +211,7 @@ final class SmartCareModel {
             || (included.contains(.leftovers) && app.uninstaller.selectedOrphanRemnants.contains(where: \.requiresAdmin))
         app.ask(JunkModel.cleanConfirmation(count: totalCount, bytes: totalBytes,
                                             trashBytes: included.contains(.junk) ? app.junk.selectedTrashBytes : 0,
+                                            dockerBytes: included.contains(.junk) ? app.junk.selectedDockerBytes : 0,
                                             needsAdmin: needsAdmin, tint: .smartCare) { [weak self] in self?.startClean() })
     }
 

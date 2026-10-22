@@ -7,11 +7,25 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage(SettingsKeys.confirmEmptyTrash) private var confirmEmptyTrash = true
     @AppStorage(SettingsKeys.deletePermanently) private var deletePermanently = false
+    @AppStorage(SettingsKeys.cleanupMode) private var cleanupMode = CleanupMode.gentle.rawValue
 
     var body: some View {
         Form {
             Section("Доступ") {
                 accessRow
+            }
+
+            Section("Режим очистки") {
+                Picker("Что отмечать после сканирования", selection: $cleanupMode) {
+                    ForEach(CleanupMode.allCases, id: \.rawValue) { Text($0.title).tag($0.rawValue) }
+                }
+                .pickerStyle(.segmented)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text((CleanupMode(rawValue: cleanupMode) ?? .gentle).summary)
+                    Text("Режим только расставляет галочки — перед очисткой всё видно и можно поправить. Корзина, последняя копия каждого iPhone и тома Docker не отмечаются никогда.")
+                        .foregroundStyle(.secondary)
+                }
+                .font(.caption)
             }
 
             Section("Очистка") {

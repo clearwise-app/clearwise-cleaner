@@ -18,6 +18,8 @@ public actor JunkScanner {
     /// Human-readable labels for items of the last scan, e.g. "Google Chrome · Default · GPUCache",
     /// "Мой iPhone · 12 окт. 2026 г., 10:00 · самая свежая", "Программа не найдена: /Applications/…".
     public private(set) var notes: [URL: String] = [:]
+    /// Whether the last scan could ask Docker for its sizes.
+    public private(set) var docker: DockerStatus = .absent
 
     public init() {
         self.init(environment: .live, liveClock: true)
@@ -58,6 +60,7 @@ public actor JunkScanner {
         // Pass 2: sizing, bounded parallelism, progress reported in completion order.
         var items = Array(repeating: [FileItem](), count: rules.count)
         var notes: [URL: String] = [:]
+        var neverAuto: Set<URL> = []
         await withTaskGroup(of: (Int, JunkCandidate, FileItem?).self) { group in
             var next = 0
             var done = 0
@@ -71,6 +74,7 @@ public actor JunkScanner {
                 if let item {
                     items[i].append(item)
                     if let note = candidate.note { notes[item.url] = note }
+                    if candidate.neverAuto { neverAuto.insert(item.url) }
                 }
                 progress?(ScanProgress(phase: rules[i].phase,
                                        fraction: 0.05 + 0.95 * Double(done) / Double(max(jobs.count, 1)),
@@ -90,9 +94,26 @@ public actor JunkScanner {
             } else {
                 list.sort { $0.size != $1.size ? $0.size > $1.size : $0.url.path < $1.url.path }
             }
+            var itemModes: [URL: CleanupMode] = [:]
+            if let itemMode = rule.itemMode {
+                for item in list { if let m = itemMode(item, env) { itemModes[item.url] = m } }
+            }
             categories.append(JunkCategory(id: rule.id, title: rule.title, detail: rule.detail,
-                                           symbol: rule.symbol, risk: rule.risk,
-                                           selectedByDefault: rule.selectedByDefault, items: list))
+                                           symbol: rule.symbol, risk: rule.risk, mode: rule.mode,
+                                           itemModes: itemModes, neverAuto: neverAuto.intersection(list.map(\.url)),
+                                           items: list))
+        }
+        // Docker answers for its own virtual disk; it is asked last, once the files are counted.
+        if let tool = env.docker {
+            progress?(ScanProgress(phase: "Docker", fraction: 0.99))
+            let (category, status) = await Task.detached { DockerCleanup.scan(tool) }.value
+            docker = status
+            if let category {
+                categories.append(category)
+                for kind in DockerCleanup.Kind.allCases { notes[kind.url] = kind.title }
+            }
+        } else {
+            docker = .absent
         }
         categories.sort { $0.totalSize > $1.totalSize }
         self.notes = notes

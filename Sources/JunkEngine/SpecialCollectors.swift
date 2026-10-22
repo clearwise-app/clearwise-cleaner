@@ -108,16 +108,25 @@ enum SpecialCollectors {
     // MARK: iOS backups
 
     /// Each backup folder is one item, labelled with the device name and backup date from `Info.plist`.
+    /// The newest backup of each device is `neverAuto`: no cleanup mode ticks a device's last copy.
     static func iosBackups(_ env: JunkEnvironment) -> [JunkCandidate] {
         let root = env.homePath("Library/Application Support/MobileSync/Backup")
-        struct Backup { let url: URL; let device: String?; let date: Date? }
+        struct Backup { let url: URL; let device: String?; let deviceKey: String; let date: Date? }
         let backups: [Backup] = FS.children(of: root).filter(FS.isDirectory).map { url in
             let info = (try? Data(contentsOf: url.appendingPathComponent("Info.plist")))
                 .flatMap { try? PropertyListSerialization.propertyList(from: $0, format: nil) as? [String: Any] }
             let device = (info?["Device Name"] as? String) ?? (info?["Display Name"] as? String)
-            return Backup(url: url, device: device, date: info?["Last Backup Date"] as? Date)
+            // One device = one identifier; without one, every folder counts as its own device (never ticked).
+            let key = (info?["Target Identifier"] as? String) ?? (info?["Unique Identifier"] as? String) ?? url.path
+            return Backup(url: url, device: device, deviceKey: key, date: info?["Last Backup Date"] as? Date)
         }
-        let newest = backups.max { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }?.url
+        // The label marks the newest backup overall; the mode guard protects the newest of every device.
+        let newestOverall = backups.max { ($0.date ?? .distantPast) < ($1.date ?? .distantPast) }?.url
+        var newest: [String: Backup] = [:]
+        for b in backups {
+            if let current = newest[b.deviceKey], (current.date ?? .distantPast) >= (b.date ?? .distantPast) { continue }
+            newest[b.deviceKey] = b
+        }
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ru_RU")
         formatter.dateStyle = .medium
@@ -125,8 +134,8 @@ enum SpecialCollectors {
         return backups.map { b in
             var parts = [b.device ?? "Устройство"]
             if let date = b.date { parts.append(formatter.string(from: date)) }
-            if b.url == newest, backups.count > 1 { parts.append("самая свежая") }
-            return JunkCandidate(b.url, note: parts.joined(separator: " · "))
+            if b.url == newestOverall, backups.count > 1 { parts.append("самая свежая") }
+            return JunkCandidate(b.url, note: parts.joined(separator: " · "), neverAuto: newest[b.deviceKey]?.url == b.url)
         }
     }
 

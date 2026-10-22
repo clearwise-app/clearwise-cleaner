@@ -469,6 +469,16 @@ enum SettingsKeys {
     /// «Сразу удалять навсегда, минуя Корзину» (Settings → Очистка): what a cleanup moves to the Trash is then
     /// deleted from it right away. Default off. The confirmation dialog can also do it for one cleanup.
     static let deletePermanently = "settings.deletePermanentlyAfterCleaning.v1"
+    /// «Режим очистки» (Settings → Очистка, and the picker above the junk list): which categories a scan ticks.
+    static let cleanupMode = "settings.cleanupMode.v1"
+}
+
+extension CleanupMode {
+    /// The mode the user chose; «Бережная» until they pick another.
+    static var saved: CleanupMode {
+        get { CleanupMode(rawValue: UserDefaults.standard.integer(forKey: SettingsKeys.cleanupMode)) ?? .gentle }
+        set { UserDefaults.standard.set(newValue.rawValue, forKey: SettingsKeys.cleanupMode) }
+    }
 }
 
 extension AppModel {

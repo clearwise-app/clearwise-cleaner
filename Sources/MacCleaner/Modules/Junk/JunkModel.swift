@@ -13,6 +13,10 @@ final class JunkModel {
     var expanded: Set<String> = []
     /// Friendlier labels from the scanner ("Google Chrome · Default · GPUCache", iPhone name…).
     var notes: [URL: String] = [:]
+    /// Whether the scan could ask Docker; «not running» gets a hint under the list.
+    var dockerStatus: DockerStatus = .absent
+    /// Which categories a scan ticks. Changing it re-ticks the list; hand-made ticks are then replaced.
+    var mode: CleanupMode = .gentle
     var result: RemovalResult?
     /// The last clean emptied the Trash (permanent).
     var resultWasPermanent = false
@@ -87,6 +91,8 @@ final class JunkModel {
 
     func startScan() {
         app?.storage.noteUserScan()
+        // Settings may have changed it since the last scan; snapshots and tests stay gentle.
+        if app?.probesSystem ?? false { mode = .saved }
         task?.cancel()
         task = Task { await scan() }
     }
@@ -100,6 +106,7 @@ final class JunkModel {
         }
         let found = await scanner.scan(progress: relay)
         notes = await scanner.notes
+        dockerStatus = await scanner.docker
         guard !Task.isCancelled, phase == .scanning else { return }
         apply(found)
     }
@@ -111,7 +118,7 @@ final class JunkModel {
 
     func apply(_ found: [JunkCategory]) {
         categories = found.filter { !$0.items.isEmpty }.sorted { $0.totalSize > $1.totalSize }
-        selection = Set(categories.filter(\.isSelectedByDefault).flatMap { $0.items.map(\.url) })
+        selection = Set(categories.flatMap { $0.autoSelected(in: mode).map(\.url) })
         expanded = []
         rebuildTotals()
         withAnimation(Theme.spring) { phase = .results }
@@ -140,10 +147,18 @@ final class JunkModel {
         }
     }
 
-    /// Back to the selection right after the scan.
+    /// Back to what the current mode ticks after a scan.
     func selectDefaults() {
-        selection = Set(categories.filter(\.isSelectedByDefault).flatMap { $0.items.map(\.url) })
+        selection = Set(categories.flatMap { $0.autoSelected(in: mode).map(\.url) })
         rebuildTotals()
+    }
+
+    /// The picker above the list: remembers the mode and re-ticks the list for it.
+    func select(mode new: CleanupMode) {
+        guard new != mode else { return }
+        mode = new
+        if app?.probesSystem ?? false { CleanupMode.saved = new }
+        selectDefaults()
     }
 
     func selectNone() {
@@ -168,6 +183,8 @@ final class JunkModel {
 
     var includesTrash: Bool { (selectedCountByCategory[JunkCategoryID.trash] ?? 0) > 0 }
     var includesSystemLogs: Bool { (selectedCountByCategory[JunkCategoryID.systemLogs] ?? 0) > 0 }
+    /// Docker frees its part at once, never through the Trash.
+    var selectedDockerBytes: Int64 { selectedBytesByCategory[JunkCategoryID.docker] ?? 0 }
 
     /// Round button / confirm verb: «Очистить», or «Удалить навсегда» when the Trash is part of the selection.
     var cleanVerb: ConfirmCopy.Verb { includesTrash ? .deleteForever : .clean }
@@ -178,23 +195,27 @@ final class JunkModel {
     func confirmation(tint: ModuleTint, action: @escaping @MainActor () -> Void) -> Confirmation? {
         guard selectedCount > 0 else { return nil }
         return Self.cleanConfirmation(count: selectedCount, bytes: selectedSize, trashBytes: selectedTrashBytes,
-                                      needsAdmin: includesSystemLogs, tint: tint, action: action)
+                                      dockerBytes: selectedDockerBytes, needsAdmin: includesSystemLogs, tint: tint, action: action)
     }
 
     /// «Очистить N объектов?» — everything goes to the Trash, except the Trash's own content (`trashBytes`), which
     /// is deleted for good. Smart Care uses it for junk, leftovers and old files together.
-    static func cleanConfirmation(count: Int, bytes: Int64, trashBytes: Int64, needsAdmin: Bool, tint: ModuleTint,
-                                  action: @escaping @MainActor () -> Void) -> Confirmation {
+    static func cleanConfirmation(count: Int, bytes: Int64, trashBytes: Int64, dockerBytes: Int64 = 0, needsAdmin: Bool,
+                                  tint: ModuleTint, action: @escaping @MainActor () -> Void) -> Confirmation {
         let includesTrash = trashBytes > 0
         let onlyTrash = includesTrash && trashBytes == bytes
+        let docker = dockerBytes > 0 ? " Docker (\(Fmt.size(dockerBytes))) очистит себя сам — сразу, без Корзины; тома с данными не трогаются." : ""
         var title: String?
         var message: String?
         if includesTrash && !onlyTrash {
             title = "Очистить \(ConfirmCopy.accusative(count, .items))?"
-            message = "Остальное попадёт в Корзину — это можно вернуть. Содержимое самой Корзины (\(Fmt.size(trashBytes))) будет удалено навсегда."
+            message = "Остальное попадёт в Корзину — это можно вернуть. Содержимое самой Корзины (\(Fmt.size(trashBytes))) будет удалено навсегда." + docker
+        } else if !includesTrash && dockerBytes == bytes {
+            title = "Очистить Docker?"
+            message = "Docker удалит выбранное сам — сразу, без Корзины. Образы скачаются заново при следующем запуске; тома с данными не трогаются."
         } else if !includesTrash {
             title = "Очистить \(ConfirmCopy.accusative(count, .items))?"
-            message = "Всё попадёт в Корзину — это можно вернуть, пока Корзина не очищена."
+            message = "Всё попадёт в Корзину — это можно вернуть, пока Корзина не очищена." + docker
         }
         return .make(includesTrash ? .deleteForever : .clean, title: title, message: message, count: count, bytes: bytes,
                      needsAdmin: needsAdmin, tint: tint, action: action)
