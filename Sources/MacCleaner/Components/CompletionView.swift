@@ -24,6 +24,8 @@ struct CompletionView: View {
     @Environment(\.isSnapshot) private var isSnapshot
     @Environment(\.hasFullDiskAccess) private var hasFullDiskAccess
 
+    /// Emptying the Trash, or a cleanup that deleted for good right away («минуя Корзину»).
+    private var isPermanent: Bool { permanent || result.deletedPermanently }
     private var allFailed: Bool { result.removed.isEmpty && !result.failed.isEmpty }
     private var lines: [FailureCopy.Line] {
         result.failed.map { FailureCopy.describe($0, fullDiskAccess: hasFullDiskAccess) }
@@ -44,7 +46,7 @@ struct CompletionView: View {
 
                 if result.freedBytes > 0 && !allFailed {
                     HStack(alignment: .firstTextBaseline, spacing: 14) {
-                        Text(permanent ? "Удалено навсегда" : "В Корзине")
+                        Text(isPermanent ? "Удалено навсегда" : "В Корзине")
                             .font(.system(size: 20, weight: .light))
                             .foregroundStyle(Theme.textSecondary)
                         BigSize(bytes: result.freedBytes, size: compact ? 50 : 60)
@@ -56,7 +58,7 @@ struct CompletionView: View {
                 VStack(spacing: 4) {
                     Text(subtitle)
                         .foregroundStyle(Theme.textSecondary)
-                    if !permanent && !result.removed.isEmpty {
+                    if !isPermanent && !result.removed.isEmpty {
                         Text("Пока файлы лежат в Корзине, они занимают место. Чтобы освободить его, очистите Корзину.")
                             .foregroundStyle(Theme.textSecondary)
                     }
@@ -72,7 +74,7 @@ struct CompletionView: View {
                 }
 
                 HStack(spacing: 10) {
-                    if !permanent && !result.removed.isEmpty {
+                    if !isPermanent && !result.removed.isEmpty {
                         Button("Открыть Корзину") { Finder.openTrash() }
                             .buttonStyle(PillButtonStyle(kind: .secondary, large: true))
                         if let onEmptyTrash {
@@ -111,7 +113,7 @@ struct CompletionView: View {
             }
             return "Файлы остались на месте. Что помешало и что можно сделать — ниже."
         }
-        if permanent { return "Место на диске освобождено · \(Fmt.count(n, noun))" }
+        if isPermanent { return "Место на диске освобождено · \(Fmt.count(n, noun))" }
         return "\(Fmt.count(n, noun).capitalizedFirst) можно вернуть из Корзины."
     }
 
@@ -122,7 +124,7 @@ struct CompletionView: View {
         } else {
             parts.append(title)
             if result.freedBytes > 0 {
-                parts.append(permanent ? "Удалено навсегда \(Fmt.size(result.freedBytes))"
+                parts.append(isPermanent ? "Удалено навсегда \(Fmt.size(result.freedBytes))"
                                        : "В Корзине \(Fmt.size(result.freedBytes))")
             }
         }

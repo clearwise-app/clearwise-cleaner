@@ -1,11 +1,12 @@
 import SwiftUI
 import CleanerKit
 
-/// MacCleaner → Настройки… (⌘,): access status, one cleaning preference, about.
+/// MacCleaner → Настройки… (⌘,): access status, cleaning preferences, about.
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @AppStorage(SettingsKeys.confirmEmptyTrash) private var confirmEmptyTrash = true
+    @AppStorage(SettingsKeys.deletePermanently) private var deletePermanently = false
 
     var body: some View {
         Form {
@@ -22,9 +23,15 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                LabeledContent("Удаление файлов") {
-                    Text("Всегда сначала в Корзину")
-                        .foregroundStyle(.secondary)
+                Toggle(isOn: $deletePermanently) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Сразу удалять навсегда, минуя Корзину")
+                        Text(deletePermanently
+                             ? "Убранное удаляется сразу и освобождает место. Вернуть его будет нельзя. Остальное содержимое Корзины не трогается."
+                             : "Всё убранное сначала попадает в Корзину — его можно вернуть, пока Корзина не очищена.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
 

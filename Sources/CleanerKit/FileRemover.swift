@@ -23,7 +23,9 @@ public enum FileRemover {
                 }
                 let size = knownSizes[url] ?? FileSizer.allocatedSize(of: url)
                 do {
-                    try FileManager.default.trashItem(at: url, resultingItemURL: nil)
+                    var landed: NSURL?
+                    try FileManager.default.trashItem(at: url, resultingItemURL: &landed)
+                    if let landed { result.inTrash.append(landed as URL) }
                     result.removed.append(url)
                     result.freedBytes += size
                     freed = size
@@ -71,8 +73,11 @@ public enum FileRemover {
 
         let trash = SafetyGuard.home.appendingPathComponent(".Trash").path
         var commands: [String] = []
+        var destinations: [String] = []
         for url in allowed {
-            let dest = shellQuote("\(trash)/\(url.lastPathComponent) \(UUID().uuidString.prefix(8))")
+            let destPath = "\(trash)/\(url.lastPathComponent) \(UUID().uuidString.prefix(8))"
+            destinations.append(destPath)
+            let dest = shellQuote(destPath)
             let source = shellQuote(url.path)
             commands.append("{ [ ! -e \(dest) ] && [ ! -L \(dest) ] && /bin/mv -n -- \(source) \(dest); }")
         }
@@ -84,9 +89,10 @@ public enum FileRemover {
         let ok: (Bool, String?) = await Task.detached(priority: .userInitiated) {
             AdminShell.run(shell)
         }.value
-        for (url, size) in zip(allowed, sizes) {
+        for (url, (size, destPath)) in zip(allowed, zip(sizes, destinations)) {
             let gone = !FileManager.default.fileExists(atPath: url.path) && !isSymlink(url)
             if ok.0, gone {
+                if FileManager.default.fileExists(atPath: destPath) { result.inTrash.append(URL(fileURLWithPath: destPath)) }
                 result.removed.append(url)
                 result.freedBytes += size
                 progress?(RemovalStep(url: url, bytes: size, done: true))

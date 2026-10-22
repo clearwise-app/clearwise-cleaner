@@ -29,8 +29,11 @@ struct RootView: View {
             }
 
             if let c = model.confirmation {
-                ConfirmDialog(confirmation: c, onCancel: { model.dismissConfirmation() }) {
+                ConfirmDialog(confirmation: c, onCancel: { model.dismissConfirmation() }) { forever in
                     model.dismissConfirmation()
+                    // A permanent cleanup without the box (junk with the Trash) follows the Settings choice.
+                    model.deletePermanentlyOnce = forever
+                        || (c.permanent && UserDefaults.standard.bool(forKey: SettingsKeys.deletePermanently))
                     c.action()
                 }
                 .transition(Theme.motion(.opacity.combined(with: .scale(scale: 0.97))))

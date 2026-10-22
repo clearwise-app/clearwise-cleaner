@@ -24,6 +24,9 @@ final class AppModel {
     var accessFlow: AccessFlow?
     /// One transient message at the bottom of the content area.
     var toast: Toast?
+    /// Set by the confirmation right before its action: what the next cleanup moves to the Trash is then
+    /// deleted from it for good (`runCleaning`). Reset after every cleanup.
+    var deletePermanentlyOnce = false
     /// «Корзина очищена» after `requestEmptyTrash()` (covers the content area until «Готово»).
     var trashCompletion: TrashCompletion?
     /// «Хранилище» over the content area (a click on the sidebar disk widget). Closed by Esc, ✕ or any module.
@@ -463,6 +466,9 @@ struct TrashCompletion {
 enum SettingsKeys {
     /// «Показывать предупреждение перед очисткой Корзины» (Settings → Очистка). Default on.
     static let confirmEmptyTrash = "settings.confirmEmptyTrash.v1"
+    /// «Сразу удалять навсегда, минуя Корзину» (Settings → Очистка): what a cleanup moves to the Trash is then
+    /// deleted from it right away. Default off. The confirmation dialog can also do it for one cleanup.
+    static let deletePermanently = "settings.deletePermanentlyAfterCleaning.v1"
 }
 
 extension AppModel {

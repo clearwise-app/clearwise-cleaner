@@ -247,6 +247,10 @@ public struct RemovalResult: Sendable {
     public var removed: [URL]
     public var failed: [RemovalFailure]
     public var freedBytes: Int64
+    /// Where moved items landed in the Trash, so «удалять сразу навсегда» deletes exactly them and nothing else.
+    public var inTrash: [URL] = []
+    /// The items are gone for good, not waiting in the Trash.
+    public var deletedPermanently = false
 
     public init(removed: [URL] = [], failed: [RemovalFailure] = [], freedBytes: Int64 = 0) {
         self.removed = removed
@@ -258,6 +262,7 @@ public struct RemovalResult: Sendable {
         removed += other.removed
         failed += other.failed
         freedBytes += other.freedBytes
+        inTrash += other.inTrash
     }
 }
 

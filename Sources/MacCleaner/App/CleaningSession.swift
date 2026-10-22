@@ -399,6 +399,13 @@ extension AppModel {
             if let s = unit.activates { session.activate(s) }
             total.merge(await unit.run(relay.handler))
         }
+        // «Удалить навсегда, минуя Корзину»: exactly what this cleanup put in the Trash goes for good —
+        // the rest of the Trash is never touched. Root-owned items ask for the password once.
+        if deletePermanentlyOnce, probesSystem, !total.inTrash.isEmpty {
+            let purge = await FileRemover.deletePermanentlyFromTrash(total.inTrash)
+            total.deletedPermanently = purge.failed.isEmpty
+        }
+        deletePermanentlyOnce = false
         // Everything the engines reported must be counted before the scene closes the ring.
         relay.flush()
         // A cleanup that took a blink still gets a moment of sweeping.

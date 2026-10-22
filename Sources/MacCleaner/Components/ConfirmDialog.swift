@@ -9,10 +9,16 @@ struct ConfirmDialog: View {
     /// How the count is spelled; overrides `confirmation.noun` when set.
     var noun: Fmt.Noun? = nil
     let onCancel: () -> Void
-    let onConfirm: () -> Void
+    /// `deleteForever`: «Удалить навсегда, минуя Корзину» was on.
+    let onConfirm: (_ deleteForever: Bool) -> Void
 
     private enum Field: Hashable { case cancel, confirm }
     @FocusState private var focus: Field?
+    /// Starts from Settings → «Сразу удалять навсегда»; this cleanup only.
+    @State private var forever = UserDefaults.standard.bool(forKey: SettingsKeys.deletePermanently)
+
+    /// Permanent either way: emptying the Trash, or the box is ticked.
+    private var isPermanent: Bool { confirmation.permanent || (confirmation.offersPermanent && forever) }
 
     private var countText: String {
         noun.map { Fmt.count(confirmation.count, $0) } ?? confirmation.noun(confirmation.count)
@@ -44,7 +50,9 @@ struct ConfirmDialog: View {
                 .padding(.top, 10)
                 .accessibilityElement(children: .combine)
 
-                Text(confirmation.message)
+                Text(isPermanent && !confirmation.permanent
+                     ? "Файлы будут удалены навсегда, минуя Корзину. Вернуть их будет нельзя."
+                     : confirmation.message)
                     .font(.system(size: 13))
                     .foregroundStyle(Theme.textSecondary)
                     .multilineTextAlignment(.center)
@@ -62,15 +70,28 @@ struct ConfirmDialog: View {
                 }
                 .padding(.top, (confirmation.warning != nil || confirmation.needsAdmin) ? 14 : 0)
 
+                if confirmation.offersPermanent {
+                    Toggle(isOn: $forever) {
+                        Text("Удалить навсегда, минуя Корзину")
+                            .font(.system(size: 12.5))
+                            .foregroundStyle(Theme.textSecondary)
+                    }
+                    .toggleStyle(.checkbox)
+                    .padding(.top, 14)
+                    .accessibilityHint("Иначе всё попадёт в Корзину и его можно будет вернуть")
+                }
+
                 HStack(spacing: 10) {
                     Button("Отмена", action: onCancel)
                         .buttonStyle(PillButtonStyle(kind: .secondary, large: true))
                         .keyboardShortcut(.cancelAction)
                         .focused($focus, equals: .cancel)
-                    Button(confirmation.confirmTitle, action: onConfirm)
-                        .buttonStyle(PillButtonStyle(kind: confirmation.permanent ? .destructive : .primary(confirmation.tint), large: true))
-                        // Return must never wipe the Trash by reflex.
-                        .keyboardShortcut(confirmation.permanent ? nil : .defaultAction)
+                    Button(isPermanent && !confirmation.permanent ? "Удалить навсегда" : confirmation.confirmTitle) {
+                        onConfirm(isPermanent && !confirmation.permanent)
+                    }
+                        .buttonStyle(PillButtonStyle(kind: isPermanent ? .destructive : .primary(confirmation.tint), large: true))
+                        // Return must never delete for good by reflex.
+                        .keyboardShortcut(isPermanent ? nil : .defaultAction)
                         .focused($focus, equals: .confirm)
                 }
                 .padding(.top, 24)
@@ -103,7 +124,7 @@ struct ConfirmDialog: View {
 
     private var icon: some View {
         Group {
-            if confirmation.permanent {
+            if isPermanent {
                 ZStack {
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .fill(LinearGradient(colors: [Color(hex: 0xFF7A6B), Color(hex: 0xE5395B)], startPoint: .top, endPoint: .bottom))

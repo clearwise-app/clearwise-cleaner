@@ -116,6 +116,8 @@ struct Confirmation: Identifiable {
     /// How the count is spelled ("14 объектов" by default, "14 копий" for duplicates).
     var noun: (Int) -> String = Fmt.items
     var action: @MainActor () -> Void
+    /// Shows «Удалить навсегда, минуя Корзину» (cleanups that move to the Trash).
+    var offersPermanent = false
 }
 
 enum Finder {

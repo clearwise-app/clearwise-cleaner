@@ -57,6 +57,6 @@ extension Confirmation {
                      message: message ?? (verb.permanent ? ConfirmCopy.foreverMessage : ConfirmCopy.trashMessage),
                      count: count, bytes: bytes, confirmTitle: verb.button,
                      permanent: verb.permanent, needsAdmin: needsAdmin, warning: warning, tint: tint,
-                     noun: { Fmt.count($0, noun) }, action: action)
+                     noun: { Fmt.count($0, noun) }, action: action, offersPermanent: !verb.permanent)
     }
 }

@@ -106,6 +106,29 @@ final class SafetyGuardTests: XCTestCase {
         XCTAssertEqual(box.steps.filter(\.done).map(\.bytes), [0, 0])
     }
 
+    /// «Удалить навсегда, минуя Корзину» deletes exactly what the cleanup moved, wherever the Trash put it.
+    func testMovedItemsAreTrackedAndOnlyThoseAreDeletedForGood() async throws {
+        let trash = home.appendingPathComponent(".Trash")
+        try XCTSkipUnless(FileManager.default.isReadableFile(atPath: trash.path)
+                          && (try? FileManager.default.contentsOfDirectory(atPath: trash.path)) != nil,
+                          "the Trash is only readable with Full Disk Access")
+        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("sg-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tmp) }
+        let file = tmp.appendingPathComponent("clearwise-selftest-\(UUID().uuidString.prefix(6)).txt")
+        try Data("x".utf8).write(to: file)
+
+        let moved = await FileRemover.moveToTrash([file])
+        XCTAssertEqual(moved.removed, [file.standardizedFileURL])
+        let landed = try XCTUnwrap(moved.inTrash.first)
+        XCTAssertTrue(SafetyGuard.isInsideTrash(landed))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: landed.path))
+
+        let purged = await FileRemover.deletePermanentlyFromTrash(moved.inTrash)
+        XCTAssertEqual(purged.removed.count, 1)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: landed.path))
+    }
+
     func testOnlyOwnershipRefusalsAskForThePassword() {
         func cocoa(_ posix: Int32?) -> NSError {
             var info: [String: Any] = [:]
