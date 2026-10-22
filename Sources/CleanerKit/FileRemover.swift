@@ -45,7 +45,9 @@ public enum FileRemover {
     /// - ownership is NOT changed afterwards (a recursive chown as root could be redirected via hard links),
     ///   so Finder will ask for the password again when emptying the Trash, and "Put Back" is not available.
     /// A privileged helper (SMAppService + XPC, fd-based renames) would close the remaining TOCTOU window.
-    public static func moveToTrashAsAdmin(_ urls: [URL], knownSizes: [URL: Int64] = [:],
+    /// `rootPrelude` runs as root first, in the same password prompt (e.g. `launchctl bootout system/<label>`);
+    /// its result is ignored, the moves are checked on disk as always.
+    public static func moveToTrashAsAdmin(_ urls: [URL], knownSizes: [URL: Int64] = [:], rootPrelude: String? = nil,
                                           progress: RemovalProgressHandler? = nil) async -> RemovalResult {
         var result = RemovalResult()
         var allowed: [URL] = []
@@ -75,13 +77,12 @@ public enum FileRemover {
             commands.append("{ [ ! -e \(dest) ] && [ ! -L \(dest) ] && /bin/mv -n -- \(source) \(dest); }")
         }
         // Each item is checked on disk afterwards, so one failed move must not fail the whole batch.
-        let shell = commands.joined(separator: " ; ") + " ; exit 0"
-        let script = "do shell script \(appleScriptString(shell)) with administrator privileges"
+        let shell = ((rootPrelude.map { [$0] } ?? []) + commands).joined(separator: " ; ") + " ; exit 0"
 
         let sizes = allowed.map { knownSizes[$0] ?? FileSizer.allocatedSize(of: $0) }
         // osascript in a child process: shows the standard password prompt without blocking the UI.
         let ok: (Bool, String?) = await Task.detached(priority: .userInitiated) {
-            runOsascript(script)
+            AdminShell.run(shell)
         }.value
         for (url, size) in zip(allowed, sizes) {
             let gone = !FileManager.default.fileExists(atPath: url.path) && !isSymlink(url)
@@ -177,11 +178,10 @@ public enum FileRemover {
         let removals = allowed.map { "/bin/rm -rf -- \(shellQuote("./" + $0.lastPathComponent))" }
         let shell = "cd -P -- \(shellQuote(trash)) && [ \"$(/bin/pwd -P)\" = \(shellQuote(trash)) ]"
             + " && [ \"$(/usr/bin/stat -f %u .)\" = \(getuid()) ] && { \(removals.joined(separator: " ; ")) ; } ; exit 0"
-        let script = "do shell script \(appleScriptString(shell)) with administrator privileges"
 
         let sizes = allowed.map { knownSizes[$0] ?? FileSizer.allocatedSize(of: $0) }
         let ok: (Bool, String?) = await Task.detached(priority: .userInitiated) {
-            runOsascript(script)
+            AdminShell.run(shell)
         }.value
         for (url, size) in zip(allowed, sizes) {
             let gone = !FileManager.default.fileExists(atPath: url.path) && !isSymlink(url)
@@ -244,29 +244,9 @@ public enum FileRemover {
         }
     }
 
-    private static func runOsascript(_ script: String) -> (Bool, String?) {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-        process.arguments = ["-e", script]
-        let errPipe = Pipe()
-        process.standardError = errPipe
-        process.standardOutput = FileHandle.nullDevice
-        do { try process.run() } catch { return (false, error.localizedDescription) }
-        process.waitUntilExit()
-        if process.terminationStatus == 0 { return (true, nil) }
-        let message = String(data: errPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-        return (false, message.contains("-128") ? "Отменено пользователем" : "Нет прав администратора")
-    }
-
     private static func isSymlink(_ url: URL) -> Bool {
         (try? url.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink) ?? false
     }
 
-    private static func shellQuote(_ s: String) -> String {
-        "'" + s.replacingOccurrences(of: "'", with: "'\\''") + "'"
-    }
-
-    private static func appleScriptString(_ s: String) -> String {
-        "\"" + s.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"") + "\""
-    }
+    private static func shellQuote(_ s: String) -> String { AdminShell.quote(s) }
 }

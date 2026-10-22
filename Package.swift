@@ -6,6 +6,7 @@ import PackageDescription
 //   JunkEngine       — system junk scanning (caches, logs, dev junk, trash…).
 //   UninstallEngine  — installed apps inventory, leftover discovery, full uninstall, orphans.
 //   SpaceEngine      — old & large files analysis, disk space map.
+//   StartupEngine    — login items, launch agents and daemons: listing, disable/enable, removal.
 //   MacCleaner       — SwiftUI app (executable).
 let swift5: [SwiftSetting] = [.swiftLanguageMode(.v5)]
 
@@ -20,14 +21,16 @@ let package = Package(
         .target(name: "JunkEngine", dependencies: ["CleanerKit"], swiftSettings: swift5),
         .target(name: "UninstallEngine", dependencies: ["CleanerKit"], swiftSettings: swift5),
         .target(name: "SpaceEngine", dependencies: ["CleanerKit"], swiftSettings: swift5),
+        .target(name: "StartupEngine", dependencies: ["CleanerKit"], swiftSettings: swift5),
         .executableTarget(
             name: "MacCleaner",
-            dependencies: ["CleanerKit", "JunkEngine", "UninstallEngine", "SpaceEngine"],
+            dependencies: ["CleanerKit", "JunkEngine", "UninstallEngine", "SpaceEngine", "StartupEngine"],
             swiftSettings: swift5
         ),
         .testTarget(name: "CleanerKitTests", dependencies: ["CleanerKit"], swiftSettings: swift5),
         .testTarget(name: "JunkEngineTests", dependencies: ["JunkEngine"], swiftSettings: swift5),
         .testTarget(name: "UninstallEngineTests", dependencies: ["UninstallEngine"], swiftSettings: swift5),
         .testTarget(name: "SpaceEngineTests", dependencies: ["SpaceEngine"], swiftSettings: swift5),
+        .testTarget(name: "StartupEngineTests", dependencies: ["StartupEngine"], swiftSettings: swift5),
     ]
 )
