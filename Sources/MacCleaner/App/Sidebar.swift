@@ -20,6 +20,8 @@ struct Sidebar: View {
             item(.oldFiles)
             item(.duplicates)
             item(.diskMap)
+            section("Система")
+            item(.startup)
 
             Spacer(minLength: 12)
 
@@ -135,6 +137,7 @@ private struct ModuleBadge: View {
         case .oldFiles: OldFilesBadge(model: model.oldFiles)
         case .duplicates: DuplicatesBadge(model: model.duplicates)
         case .diskMap: EmptyView()
+        case .startup: StartupBadge(model: model.startup)
         }
     }
 }
@@ -185,6 +188,18 @@ private struct DuplicatesBadge: View {
             PercentBadge(percent: Int(model.progress.fraction * 100))
         } else if model.phase == .results, model.reclaimable > 0 {
             SizeBadge(bytes: model.reclaimable)
+        }
+    }
+}
+
+private struct StartupBadge: View {
+    let model: StartupModel
+    var body: some View {
+        if model.phase == .scanning {
+            BadgeText(text: "…", spoken: "проверка")
+        } else if model.phase == .results {
+            let n = model.enabledThirdPartyCount
+            BadgeText(text: Fmt.integer(n), spoken: "включено \(Fmt.items(n))")
         }
     }
 }

@@ -109,6 +109,10 @@ struct Confirmation: Identifiable {
     var needsAdmin = false
     var warning: String? = nil
     var tint: ModuleTint
+    /// Icon of the dialog (permanent deletion always shows the warning sign).
+    var symbol = "trash.fill"
+    /// The big size line; off for actions that free no space (startup items).
+    var showsSize = true
     /// How the count is spelled ("14 объектов" by default, "14 копий" for duplicates).
     var noun: (Int) -> String = Fmt.items
     var action: @MainActor () -> Void

@@ -149,6 +149,12 @@ struct ModuleTint: Equatable {
                0x31103F, 0x7A1E6C, 0x56196C,
                0x110518, 0x48134F, 0x7C1F58] as [UInt32]).map { Color(hex: $0) }
     )
+    static let startup = ModuleTint(
+        accent: Color(hex: 0xB6F05A), accent2: Color(hex: 0x3FD08A),
+        mesh: ([0x0B1405, 0x1D330B, 0x0F2E1A,
+               0x18300A, 0x3A5A12, 0x1A4A2A,
+               0x070E03, 0x24420E, 0x175034] as [UInt32]).map { Color(hex: $0) }
+    )
 }
 
 extension ModuleTint {

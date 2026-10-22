@@ -50,6 +50,7 @@ final class AppModel {
     let oldFiles = OldFilesModel()
     let duplicates = DuplicatesModel()
     let diskMap = DiskMapModel()
+    let startup = StartupModel()
     /// Disk usage by category (sidebar widget). Measured at launch and after every cleanup.
     let storage: StorageModel
 
@@ -73,6 +74,7 @@ final class AppModel {
         oldFiles.app = self
         duplicates.app = self
         diskMap.app = self
+        startup.app = self
         if probeSystem { observeTextFocus() }
     }
 
@@ -347,6 +349,7 @@ extension AppModel {
         case .oldFiles: oldFiles.phase != .scanning && oldFiles.phase != .cleaning
         case .duplicates: duplicates.phase != .scanning && duplicates.phase != .cleaning
         case .diskMap: diskMap.phase != .scanning && diskMap.phase != .cleaning
+        case .startup: startup.phase != .scanning && !startup.isBusy
         }
     }
 
@@ -369,6 +372,7 @@ extension AppModel {
         case .oldFiles: oldFiles.startScan()
         case .duplicates: duplicates.startScan()
         case .diskMap: diskMap.startScan()
+        case .startup: startup.startScan()
         }
     }
 
@@ -385,6 +389,7 @@ extension AppModel {
         case .oldFiles: oldFiles.phase == .results && !oldFiles.selection.isEmpty
         case .duplicates: duplicates.phase == .results && !duplicates.marked.isEmpty
         case .diskMap: !diskMap.collector.isEmpty && diskMap.phase != .scanning && diskMap.phase != .cleaning
+        case .startup: startup.phase == .results && !startup.isBusy && !startup.removable.isEmpty
         }
     }
 
@@ -392,7 +397,7 @@ extension AppModel {
     var primaryActionTitle: String {
         switch selection {
         case .smartCare, .junk: "Очистить…"
-        case .uninstaller: "Удалить…"
+        case .uninstaller, .startup: "Удалить…"
         case .oldFiles, .duplicates, .diskMap: "Переместить в Корзину…"
         }
     }
@@ -416,6 +421,7 @@ extension AppModel {
         case .oldFiles: oldFiles.requestTrash()
         case .duplicates: duplicates.requestTrash()
         case .diskMap: diskMap.requestTrash()
+        case .startup: startup.requestRemove(startup.removable)
         }
     }
 
@@ -553,6 +559,7 @@ extension AppModel {
         case .oldFiles: if oldFiles.phase == .done { oldFiles.finish() }
         case .duplicates: if duplicates.phase == .done { duplicates.finish() }
         case .diskMap: if diskMap.phase == .done { diskMap.finish() }
+        case .startup: break
         }
     }
 
