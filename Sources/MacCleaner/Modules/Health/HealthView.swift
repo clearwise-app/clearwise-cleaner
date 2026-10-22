@@ -22,8 +22,14 @@ private struct HealthResults: View {
     let model: HealthModel
     let report: MacHealthReport
 
-    private let columns = [GridItem(.flexible(), spacing: 14, alignment: .top),
-                           GridItem(.flexible(), spacing: 14, alignment: .top)]
+    private var cards: [AnyView] {
+        var list: [AnyView] = []
+        if let b = report.battery { list.append(AnyView(BatteryCard(model: model, battery: b))) }
+        if let d = report.drive { list.append(AnyView(DriveCard(model: model, drive: d))) }
+        if let s = report.space { list.append(AnyView(SpaceCard(model: model, space: s))) }
+        if let v = report.vitals { list.append(AnyView(MemoryCard(model: model, vitals: v))) }
+        return list
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -33,11 +39,14 @@ private struct HealthResults: View {
                     // Intel-only apps are the one thing the user can act on: first when there are any.
                     let intelFirst = report.architectures.map { !$0.intelOnly.isEmpty } ?? false
                     if intelFirst, let a = report.architectures { IntelAppsCard(model: model, report: a) }
-                    LazyVGrid(columns: columns, alignment: .leading, spacing: 14) {
-                        if let b = report.battery { BatteryCard(model: model, battery: b) }
-                        if let d = report.drive { DriveCard(model: model, drive: d) }
-                        if let s = report.space { SpaceCard(model: model, space: s) }
-                        if let v = report.vitals { MemoryCard(model: model, vitals: v) }
+                    // Two cards per row, both as tall as the taller one.
+                    Grid(horizontalSpacing: 14, verticalSpacing: 14) {
+                        ForEach(Array(stride(from: 0, to: cards.count, by: 2)), id: \.self) { i in
+                            GridRow(alignment: .top) {
+                                cards[i]
+                                if i + 1 < cards.count { cards[i + 1] } else { Color.clear.gridCellUnsizedAxes(.vertical) }
+                            }
+                        }
                     }
                     if !intelFirst, let a = report.architectures { IntelAppsCard(model: model, report: a) }
                     Label("Только чтение: эта проверка ничего не удаляет и не меняет. Данные не покидают Mac.",
@@ -302,14 +311,23 @@ private struct IntelAppsCard: View {
                 Spacer(minLength: 8)
                 StatusBadge(status: intel.isEmpty ? .ok : .warning("Проверьте"))
             }
-            HStack(alignment: .firstTextBaseline, spacing: 14) {
-                MetricText(metric: HealthMetric(value: Fmt.integer(intel.count), unit: nil, caption: ""))
-                Text(HealthCopy.intelCaption(intel: intel.count, total: report.apps.count))
+            if intel.isEmpty {
+                // Nothing to act on: one line instead of a big zero.
+                Text(HealthCopy.intelCaption(intel: 0, total: report.apps.count).capitalizedFirst)
                     .font(.system(size: 13))
                     .foregroundStyle(Theme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 10)
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: 14) {
+                    MetricText(metric: HealthMetric(value: Fmt.integer(intel.count), unit: nil, caption: ""))
+                    Text(HealthCopy.intelCaption(intel: intel.count, total: report.apps.count))
+                        .font(.system(size: 13))
+                        .foregroundStyle(Theme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.top, 10)
             }
-            .padding(.top, 10)
 
             if !intel.isEmpty {
                 Text(HealthCopy.rosetta)
@@ -329,7 +347,7 @@ private struct IntelAppsCard: View {
             Text("Универсальных: \(Fmt.integer(report.universalCount)) · только для Apple silicon: \(Fmt.integer(report.appleSiliconOnlyCount)) · программы macOS не учитываются")
                 .font(.caption11)
                 .foregroundStyle(.themeTertiary)
-                .padding(.top, 12)
+                .padding(.top, intel.isEmpty ? 6 : 12)
         }
         .padding(18)
         .glass(radius: 16, shadow: false)
@@ -508,6 +526,9 @@ private struct GaugeCard: View {
                             }
                             .frame(height: 5)
                             .accessibilityHidden(true)
+                        } else {
+                            // Same room as a bar, so the neighbouring card's rows line up.
+                            Color.clear.frame(height: 5)
                         }
                     }
                     .accessibilityElement(children: .combine)
@@ -547,7 +568,7 @@ private struct GaugeCard: View {
             }
         }
         .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .glass(radius: 16, shadow: false)
     }
 
@@ -603,8 +624,10 @@ private struct HealthCard: View {
                 Spacer(minLength: 8)
                 if let status { StatusBadge(status: status) }
             }
+            // A word («Нормальное») and a number («310 ГБ») take the same room: rows start level across a row.
             MetricText(metric: metric)
-                .padding(.top, 10)
+                .frame(height: 58, alignment: .bottomLeading)
+                .padding(.top, 4)
             Text(metric.caption)
                 .font(.caption12)
                 .foregroundStyle(Theme.textSecondary)
@@ -650,7 +673,7 @@ private struct HealthCard: View {
             }
         }
         .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .glass(radius: 16, shadow: false)
     }
 }

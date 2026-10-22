@@ -200,7 +200,7 @@ final class SmartCareModel {
     }
 
     func toggleExpanded(_ area: Area) {
-        withAnimation(Theme.spring) { expanded = expanded == area ? nil : area }
+        withAnimation(Theme.unfold) { expanded = expanded == area ? nil : area }
     }
 
     // MARK: Clean

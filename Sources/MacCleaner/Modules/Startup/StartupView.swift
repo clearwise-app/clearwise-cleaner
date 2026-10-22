@@ -143,7 +143,7 @@ private struct StartupGroupCard: View {
                 Spacer(minLength: 12)
                 // «0 объектов» would be a claim: without the password, login items are simply unknown.
                 if !items.isEmpty || group != .loginItems || model.loginItemsState == .read {
-                    Text(Fmt.items(items.count))
+                    Text(items.isEmpty ? "нет" : Fmt.items(items.count))
                         .font(.caption11)
                         .foregroundStyle(Theme.textTertiary)
                 }
@@ -214,7 +214,9 @@ private struct LoginItemsNote: View {
         case .reading:
             "Ждём пароль администратора и читаем список объектов входа…"
         case .read:
-            "Объекты входа приложений включаются и выключаются только в Системных настройках — сторонним программам macOS этого не разрешает."
+            isEmpty
+                ? "Объектов входа нет: при входе в систему ничего не открывается само. Добавить приложение можно в Системных настройках."
+                : "Объекты входа приложений включаются и выключаются только в Системных настройках — сторонним программам macOS этого не разрешает."
         case .failed:
             "Не удалось прочитать список объектов входа (пароль не введён или macOS не ответила). Его можно посмотреть в Системных настройках."
         }

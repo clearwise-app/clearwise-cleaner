@@ -242,7 +242,7 @@ private struct JunkDrawer: View {
                 JunkCategoryCard(model: junk, category: cat, tint: .smartCare)
             }
         }
-        .transition(.opacity.combined(with: .move(edge: .top)))
+        .transition(Theme.motion(.drawer))
     }
 }
 
@@ -264,7 +264,7 @@ private struct LeftoversDrawer: View {
                 }
             }
         }
-        .transition(.opacity.combined(with: .move(edge: .top)))
+        .transition(Theme.motion(.drawer))
     }
 }
 
@@ -285,7 +285,7 @@ private struct OldFilesDrawer: View {
                 }
             }
         }
-        .transition(.opacity.combined(with: .move(edge: .top)))
+        .transition(Theme.motion(.drawer))
     }
 
     /// Old files by kind, biggest kind first, biggest file first.
@@ -320,7 +320,7 @@ private struct ChoiceCard<Item: Identifiable, Row: View>: View {
         VStack(spacing: 0) {
             HStack(spacing: 14) {
                 CheckBox(state: state, tint: .smartCare, label: title, action: onToggle)
-                Button { withAnimation(Theme.spring) { onExpand() } } label: {
+                Button { withAnimation(Theme.unfold) { onExpand() } } label: {
                     HStack(spacing: 14) {
                         IconTile(symbol: symbol, tint: tint, size: 36)
                         VStack(alignment: .leading, spacing: 3) {
@@ -539,16 +539,16 @@ private struct SmartTile<Preview: View>: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
                 .padding(.top, 2)
-            if !expanded {
-                VStack(alignment: .leading, spacing: 5) { preview }
-                    .padding(.top, 12)
-            }
+            // Stays while the list is open: the tile keeps its height instead of jumping.
+            VStack(alignment: .leading, spacing: 5) { preview }
+                .padding(.top, 12)
             Spacer(minLength: 10)
             HStack(spacing: 4) {
                 if let onExpand {
                     Button(action: onExpand) {
                         HStack(spacing: 5) {
                             Text(expanded ? "Свернуть" : "Выбрать, что очистить")
+                                .contentTransition(.identity)   // a swap, not two labels fading over each other
                             Image(systemName: "chevron.down").font(.system(size: 10, weight: .bold))
                                 .rotationEffect(.degrees(expanded ? 180 : 0))
                         }

@@ -54,6 +54,21 @@ enum Theme {
     static func motion(_ transition: AnyTransition) -> AnyTransition {
         reduceMotion ? .opacity : transition
     }
+
+    /// Opening and closing a list in place: no bounce, the content below simply makes room.
+    static var unfold: Animation {
+        reduceMotion ? .easeInOut(duration: 0.15) : .easeInOut(duration: 0.26)
+    }
+}
+
+extension AnyTransition {
+    /// A list opening under its tile: fades in a few points above its place; on closing it only fades,
+    /// so it never slides across the tiles above it.
+    static var drawer: AnyTransition {
+        .asymmetric(insertion: .opacity.combined(with: .offset(y: -8)),
+                   // Gone before the content below moves up into its place.
+                   removal: .opacity.animation(.easeOut(duration: 0.1)))
+    }
 }
 
 // MARK: - Increase Contrast / Reduce Transparency
