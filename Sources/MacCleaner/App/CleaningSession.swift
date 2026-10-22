@@ -383,6 +383,9 @@ extension AppModel {
     /// The caller applies the result (phase `.done`) right after this returns, without suspending;
     /// the scene then fades into the module's completion screen.
     func runCleaning(_ plan: CleaningPlan) async -> RemovalResult {
+        // One-shot: taken by this cleanup only, before anything can suspend.
+        let forever = deletePermanentlyOnce
+        deletePermanentlyOnce = false
         let session = CleaningSession(plan: plan)
         withAnimation(.easeOut(duration: 0.45)) { cleaning = session }
         let relay = CleaningStepRelay(session)
@@ -401,11 +404,10 @@ extension AppModel {
         }
         // «Удалить навсегда, минуя Корзину»: exactly what this cleanup put in the Trash goes for good —
         // the rest of the Trash is never touched. Root-owned items ask for the password once.
-        if deletePermanentlyOnce, probesSystem, !total.inTrash.isEmpty {
+        if forever, probesSystem, !total.inTrash.isEmpty {
             let purge = await FileRemover.deletePermanentlyFromTrash(total.inTrash)
             total.deletedPermanently = purge.failed.isEmpty
         }
-        deletePermanentlyOnce = false
         // Everything the engines reported must be counted before the scene closes the ring.
         relay.flush()
         // A cleanup that took a blink still gets a moment of sweeping.

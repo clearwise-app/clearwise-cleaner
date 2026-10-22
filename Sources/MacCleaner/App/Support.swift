@@ -15,6 +15,13 @@ enum AppInfo {
 /// Wraps a MainActor setter into an engine `ProgressHandler`, coalesced to ~30 updates/s
 /// so a fast scanner cannot flood the main thread. Only the latest value is kept, and a trailing
 /// flush always delivers it, so the last update before completion is never dropped.
+/// Whether any window of the app is being drawn. With the screen locked, the window on another Space or
+/// minimized, macOS runs no animations: a transition started then may never finish and leave the old screen
+/// (the scan ring with «Остановить») over the new one, dead to clicks.
+@MainActor var appWindowIsOnScreen: Bool {
+    NSApp.windows.contains { $0.isVisible && $0.occlusionState.contains(.visible) }
+}
+
 func progressRelay(_ apply: @escaping @MainActor (ScanProgress) -> Void) -> ProgressHandler {
     let relay = LatestValueRelay(interval: 1.0 / 30.0, apply: apply)
     return { progress in relay.push(progress, urgent: progress.fraction >= 1) }

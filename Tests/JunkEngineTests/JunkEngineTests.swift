@@ -319,6 +319,9 @@ final class JunkEngineTests: XCTestCase {
 
         let foreign = FileItem(url: outsider, size: 100, isDirectory: false)
         let removal = await JunkCleaner.clean(caches.items + [foreign], in: caches)
+        // The fixture went to the real Trash: remove exactly that copy, so test runs do not pile up there.
+        defer { for url in removal.inTrash where url.lastPathComponent.hasPrefix(target.lastPathComponent) { try? fm.removeItem(at: url) } }
+        XCTAssertEqual(removal.inTrash.count, 1)
         XCTAssertEqual(removal.removed.map(\.lastPathComponent), [target.lastPathComponent])
         XCTAssertEqual(removal.failed.map(\.url), [outsider])
         XCTAssertGreaterThan(removal.freedBytes, 0)

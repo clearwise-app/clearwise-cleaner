@@ -360,6 +360,8 @@ final class DuplicatesModel {
                     skipped += remove.map { RemovalFailure(url: $0.item.url, reason: "Оставляемая копия не найдена на диске — группа пропущена") }
                 }
             }
+            // Nothing to clean: the confirmed «навсегда» must not carry over to a later cleanup.
+            if urls.isEmpty { app?.deletePermanentlyOnce = false }
             var r = urls.isEmpty ? RemovalResult() : (await app?.runCleaning(Self.plan(picked, urls: urls)) ?? RemovalResult())
             r.failed += skipped
             result = r

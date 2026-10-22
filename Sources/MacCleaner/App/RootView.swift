@@ -62,6 +62,12 @@ struct RootView: View {
                     .zIndex(30)
             }
         }
+        // Nobody sees the window: state changes land at once instead of as transitions that may never finish.
+        .transaction { t in
+            guard !isSnapshot, !MainActor.assumeIsolated({ appWindowIsOnScreen }) else { return }
+            t.animation = nil
+            t.disablesAnimations = true
+        }
         .environment(\.moduleTint, model.selection.tint)
         .environment(\.hasFullDiskAccess, model.hasFullDiskAccess)
         .dropDestination(for: URL.self) { urls, _ in
