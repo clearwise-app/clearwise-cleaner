@@ -128,8 +128,7 @@ final class StorageBreakdownTests: FixtureTestCase {
     func testTitlesAndSymbols() {
         XCTAssertEqual(StorageCategory.Kind.allCases.count, 9)
         XCTAssertEqual(Set(StorageCategory.Kind.allCases.map(\.title)).count, 9)
-        XCTAssertEqual(StorageCategory.Kind.system.title, "Система и прочее")
-        XCTAssertTrue(StorageCategory.Kind.allCases.allSatisfy { !$0.symbol.isEmpty && !$0.shortTitle.isEmpty })
+        XCTAssertTrue(StorageCategory.Kind.allCases.allSatisfy { !$0.title.isEmpty && !$0.symbol.isEmpty && !$0.shortTitle.isEmpty })
     }
 }
 

@@ -10,10 +10,10 @@ enum ConfirmCopy {
         /// Label of the round button and of the confirm button.
         var button: String {
             switch self {
-            case .clean: "Очистить"
-            case .delete: "Удалить"
-            case .trash: "В Корзину"
-            case .deleteForever: "Удалить навсегда"
+            case .clean: String(localized: "Очистить")
+            case .delete: String(localized: "Удалить")
+            case .trash: String(localized: "В Корзину")
+            case .deleteForever: String(localized: "Удалить навсегда")
             }
         }
 
@@ -24,25 +24,25 @@ enum ConfirmCopy {
     static func title(_ verb: Verb, count: Int, noun: Fmt.Noun) -> String {
         let what = accusative(count, noun)
         return switch verb {
-        case .trash: "Переместить \(what) в Корзину?"
-        case .clean: "Очистить \(what)?"
-        case .delete: "Удалить \(what)?"
-        case .deleteForever: "Удалить навсегда \(what)?"
+        case .trash: String(localized: "Переместить \(what) в Корзину?")
+        case .clean: String(localized: "Очистить \(what)?")
+        case .delete: String(localized: "Удалить \(what)?")
+        case .deleteForever: String(localized: "Удалить навсегда \(what)?")
         }
     }
 
     /// Count in the accusative: only «копия» changes («1 копию»); the other nouns are inanimate masculine/neuter.
     static func accusative(_ n: Int, _ noun: Fmt.Noun) -> String {
-        if noun == .copies, n % 10 == 1, n % 100 != 11 { return "\(Fmt.integer(n)) копию" }
+        if !AppLanguage.isEnglish, noun == .copies, n % 10 == 1, n % 100 != 11 { return String(localized: "\(Fmt.integer(n)) копию") }
         return Fmt.count(n, noun)
     }
 
-    static let trashMessage = "Всё попадёт в Корзину — это можно вернуть, пока Корзина не очищена."
-    static let foreverMessage = "Содержимое Корзины будет удалено навсегда. Это действие нельзя отменить."
+    static let trashMessage = String(localized: "Всё попадёт в Корзину — это можно вернуть, пока Корзина не очищена.")
+    static let foreverMessage = String(localized: "Содержимое Корзины будет удалено навсегда. Это действие нельзя отменить.")
 
     /// Footer hint next to the round button.
     static func footerNote(permanent: Bool) -> String {
-        permanent ? "Корзина будет очищена навсегда" : "Всё попадёт в Корзину"
+        permanent ? String(localized: "Корзина будет очищена навсегда") : String(localized: "Всё попадёт в Корзину")
     }
 }
 

@@ -128,7 +128,7 @@ public actor FileAnalyzer {
         let sorted = unique.sorted {
             $0.item.size != $1.item.size ? $0.item.size > $1.item.size : $0.item.url.path < $1.item.url.path
         }
-        monitor.force(phase: "Готово", fraction: 1)
+        monitor.force(phase: FileWalker.donePhase, fraction: 1)
         return sorted
     }
 

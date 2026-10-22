@@ -7,7 +7,7 @@ import CleanerKit
 struct CompletionView: View {
     let tint: ModuleTint
     let result: RemovalResult
-    var title: String = "Готово"
+    var title: String = String(localized: "Готово")
     /// Items were deleted permanently (emptying the Trash).
     var permanent = false
     /// How counts are spelled: «14 копий», «3 файла», «1 приложение».
@@ -41,7 +41,7 @@ struct CompletionView: View {
                 SuccessMark(tint: tint, failed: allFailed, scale: compact ? 0.72 : 1)
                     .padding(.bottom, compact ? 12 : 26)
 
-                Text(allFailed ? "Не удалось убрать выбранное" : title)
+                Text(allFailed ? String(localized: "Не удалось убрать выбранное") : title)
                     .font(.pageTitle)
                     .foregroundStyle(Theme.text)
                     .multilineTextAlignment(.center)
@@ -113,30 +113,30 @@ struct CompletionView: View {
     private var subtitle: String {
         let n = result.removed.count
         if allFailed {
-            if result.failed.contains(where: { $0.reason == "Приложение запущено" }) {
-                return "Приложение всё ещё запущено и не закрылось. Закройте его и попробуйте снова."
+            if result.failed.contains(where: { $0.reason == RemovalFailure.appRunning }) {
+                return String(localized: "Приложение всё ещё запущено и не закрылось. Закройте его и попробуйте снова.")
             }
             if lines.allSatisfy({ $0.action == .grantAccess }) {
-                return "macOS не дала \(AppInfo.name) доступ к этим файлам. Дайте полный доступ к диску и повторите."
+                return String(localized: "macOS не дала \(AppInfo.name) доступ к этим файлам. Дайте полный доступ к диску и повторите.")
             }
-            return "Файлы остались на месте. Что помешало и что можно сделать — ниже."
+            return String(localized: "Файлы остались на месте. Что помешало и что можно сделать — ниже.")
         }
-        if isPermanent { return "Место на диске освобождено · \(Fmt.count(n, noun))" }
-        return "\(Fmt.count(n, noun).capitalizedFirst) можно вернуть из Корзины."
+        if isPermanent { return String(localized: "Место на диске освобождено · \(Fmt.count(n, noun))") }
+        return String(localized: "\(Fmt.count(n, noun).capitalizedFirst) можно вернуть из Корзины.")
     }
 
     private var announcement: String {
         var parts: [String] = []
         if allFailed {
-            parts.append("Не удалось убрать выбранное")
+            parts.append(String(localized: "Не удалось убрать выбранное"))
         } else {
             parts.append(title)
             if result.freedBytes > 0 {
-                parts.append(isPermanent ? "Удалено навсегда \(Fmt.size(result.freedBytes))"
-                                       : "В Корзине \(Fmt.size(result.freedBytes))")
+                parts.append(isPermanent ? String(localized: "Удалено навсегда \(Fmt.size(result.freedBytes))")
+                                       : String(localized: "В Корзине \(Fmt.size(result.freedBytes))"))
             }
         }
-        if !result.failed.isEmpty { parts.append("Пропущено: \(Fmt.count(result.failed.count, noun))") }
+        if !result.failed.isEmpty { parts.append(String(localized: "Пропущено: \(Fmt.count(result.failed.count, noun))")) }
         return parts.joined(separator: ". ")
     }
 

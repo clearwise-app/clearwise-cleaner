@@ -1,0 +1,76 @@
+{
+  "sourceLanguage": "ru",
+  "strings": {
+    "Анализ приложений": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analyzing apps"
+          }
+        }
+      }
+    },
+    "Готово": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      }
+    },
+    "Подсчёт размера": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measuring size"
+          }
+        }
+      }
+    },
+    "Поиск остатков удалённых приложений": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looking for leftovers of removed apps"
+          }
+        }
+      }
+    },
+    "Поиск приложений": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looking for apps"
+          }
+        }
+      }
+    },
+    "Сбор сведений о приложениях": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gathering app details"
+          }
+        }
+      }
+    },
+    "Системное приложение нельзя удалить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System apps cannot be removed"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

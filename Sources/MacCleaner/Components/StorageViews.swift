@@ -186,7 +186,7 @@ struct StorageTooltip: View {
                     .foregroundStyle(Theme.text)
                     .lineLimit(1)
                 HStack(spacing: 5) {
-                    Text(StorageFmt.precisePercent(breakdown.share(category.bytes)) + " диска")
+                    Text("\(StorageFmt.precisePercent(breakdown.share(category.bytes))) диска")
                         .foregroundStyle(category.kind.color)
                     Text("·").foregroundStyle(Theme.textTertiary)
                     Text(Fmt.size(category.bytes)).foregroundStyle(Theme.textSecondary)
@@ -278,7 +278,7 @@ struct StorageDetailCard: View {
                         .foregroundStyle(Theme.textTertiary)
                 }
                 if let onClose {
-                    IconButton(symbol: "xmark", help: "Закрыть", size: 20, action: onClose)
+                    IconButton(symbol: "xmark", help: String(localized: "Закрыть"), size: 20, action: onClose)
                         .padding(.leading, 2)
                 }
             }
@@ -304,11 +304,11 @@ struct StorageDetailCard: View {
             }
 
             HStack(spacing: 0) {
-                total("Занято", b.used, color: Theme.text)
+                total(String(localized: "Занято"), b.used, color: Theme.text)
                 Spacer(minLength: 6)
-                total("Свободно", b.free, color: Theme.success)
+                total(String(localized: "Свободно"), b.free, color: Theme.success)
                 Spacer(minLength: 6)
-                total("Всего", b.total, color: Theme.textSecondary)
+                total(String(localized: "Всего"), b.total, color: Theme.textSecondary)
             }
 
             if !b.fullDiskAccess {

@@ -51,7 +51,7 @@ struct ConfirmDialog: View {
                 .accessibilityElement(children: .combine)
 
                 Text(isPermanent && !confirmation.permanent
-                     ? "Файлы будут удалены навсегда, минуя Корзину. Вернуть их будет нельзя."
+                     ? String(localized: "Файлы будут удалены навсегда, минуя Корзину. Вернуть их будет нельзя.")
                      : confirmation.message)
                     .font(.system(size: 13))
                     .foregroundStyle(Theme.textSecondary)
@@ -65,7 +65,7 @@ struct ConfirmDialog: View {
                     }
                     if confirmation.needsAdmin {
                         note(symbol: "lock.fill", color: Theme.textSecondary,
-                             text: "Для некоторых файлов macOS попросит пароль администратора.")
+                             text: String(localized: "Для некоторых файлов macOS попросит пароль администратора."))
                     }
                 }
                 .padding(.top, (confirmation.warning != nil || confirmation.needsAdmin) ? 14 : 0)
@@ -86,7 +86,7 @@ struct ConfirmDialog: View {
                         .buttonStyle(PillButtonStyle(kind: .secondary, large: true))
                         .keyboardShortcut(.cancelAction)
                         .focused($focus, equals: .cancel)
-                    Button(isPermanent && !confirmation.permanent ? "Удалить навсегда" : confirmation.confirmTitle) {
+                    Button(isPermanent && !confirmation.permanent ? String(localized: "Удалить навсегда") : confirmation.confirmTitle) {
                         onConfirm(isPermanent && !confirmation.permanent)
                     }
                         .buttonStyle(PillButtonStyle(kind: isPermanent ? .destructive : .primary(confirmation.tint), large: true))

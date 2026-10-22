@@ -34,6 +34,9 @@ public actor JunkScanner {
 
     public func note(for url: URL) -> String? { notes[url] }
 
+    /// The last progress label of a scan.
+    static let donePhase = String(localized: "Готово", bundle: .module)
+
     /// Scans all junk categories. Returns only categories with at least one item, sorted by size desc.
     public func scan(progress: ProgressHandler? = nil) async -> [JunkCategory] {
         var env = environment
@@ -42,7 +45,7 @@ public actor JunkScanner {
             env.readsAppContainers = Permissions.hasFullDiskAccess   // may have been granted since launch
         }
         let rules = self.rules
-        progress?(ScanProgress(phase: "Поиск файлов", fraction: 0))
+        progress?(ScanProgress(phase: String(localized: "Поиск файлов", bundle: .module), fraction: 0))
 
         // Pass 1: discovery.
         let raw: [[JunkCandidate]] = await withTaskGroup(of: (Int, [JunkCandidate]).self) { group in
@@ -55,7 +58,7 @@ public actor JunkScanner {
         }
         let assigned = JunkPlanner.assign(rules, raw, env: env)
         let jobs: [(Int, JunkCandidate)] = assigned.enumerated().flatMap { i, list in list.map { (i, $0) } }
-        progress?(ScanProgress(phase: "Подсчёт размера", fraction: 0.05))
+        progress?(ScanProgress(phase: String(localized: "Подсчёт размера", bundle: .module), fraction: 0.05))
 
         // Pass 2: sizing, bounded parallelism, progress reported in completion order.
         var items = Array(repeating: [FileItem](), count: rules.count)
@@ -117,7 +120,7 @@ public actor JunkScanner {
         }
         categories.sort { $0.totalSize > $1.totalSize }
         self.notes = notes
-        progress?(ScanProgress(phase: "Готово", fraction: 1))
+        progress?(ScanProgress(phase: Self.donePhase, fraction: 1))
         return categories
     }
 }

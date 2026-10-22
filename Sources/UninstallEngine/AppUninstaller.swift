@@ -10,12 +10,12 @@ public enum AppUninstaller {
     public static func uninstall(_ app: InstalledApp, remnants: [AppRemnant], removeBundle: Bool = true,
                                  progress: RemovalProgressHandler? = nil) async -> RemovalResult {
         if app.isSystemApp || SafetyGuard.isProtected(app.url) {
-            return RemovalResult(failed: [RemovalFailure(url: app.url, reason: "Системное приложение нельзя удалить")])
+            return RemovalResult(failed: [RemovalFailure(url: app.url, reason: String(localized: "Системное приложение нельзя удалить", bundle: .module))])
         }
         if isRunning(app) {
             let quit = await requestQuit(app)
             if !quit {
-                let reason = "Приложение запущено"
+                let reason = RemovalFailure.appRunning
                 var result = RemovalResult()
                 if removeBundle { result.failed.append(RemovalFailure(url: app.url, reason: reason)) }
                 result.failed += remnants.map { RemovalFailure(url: $0.item.url, reason: reason) }

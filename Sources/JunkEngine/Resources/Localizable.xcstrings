@@ -1,0 +1,746 @@
+{
+  "sourceLanguage": "ru",
+  "strings": {
+    "%@ · кэш": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · cache"
+          }
+        }
+      }
+    },
+    "Cargo: кэш реестра": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cargo: registry cache"
+          }
+        }
+      }
+    },
+    "Docker · остатки старых сборок": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Docker · leftovers of old builds"
+          }
+        }
+      }
+    },
+    "Docker · скачаются заново при следующем запуске": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Docker · downloaded again on the next run"
+          }
+        }
+      }
+    },
+    "Docker · следующая сборка пройдёт дольше": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Docker · the next build will take longer"
+          }
+        }
+      }
+    },
+    "Docker · удалится и то, что записано внутри контейнеров": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Docker · anything written inside the containers goes too"
+          }
+        }
+      }
+    },
+    "Docker не найден": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Docker not found"
+          }
+        }
+      }
+    },
+    "Docker не ответил — проверьте, что он запущен": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Docker did not respond — check that it is running"
+          }
+        }
+      }
+    },
+    "JetBrains: кэш и индексы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JetBrains: caches and indexes"
+          }
+        }
+      }
+    },
+    "Xcode: архивы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xcode: archives"
+          }
+        }
+      }
+    },
+    "Xcode: поддержка устройств": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xcode: device support"
+          }
+        }
+      }
+    },
+    "Агенты автозапуска из ~/Library/LaunchAgents, чья программа уже удалена. Они только засоряют журнал ошибками.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launch agents from ~/Library/LaunchAgents whose program is already gone. They only fill the log with errors."
+          }
+        }
+      }
+    },
+    "Архивные журналы и отчёты о сбоях из /Library/Logs и /var/log. Текущие журналы не трогаем; для удаления macOS может запросить пароль администратора.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archived logs and crash reports from /Library/Logs and /var/log. Current logs are left alone; macOS may ask for the administrator password to remove them."
+          }
+        }
+      }
+    },
+    "Архивы сборок (.xcarchive). Нужны для разбора отчётов о сбоях выпущенных версий — проверьте перед удалением.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Build archives (.xcarchive). Needed to symbolicate crash reports of released versions — check before removing."
+          }
+        }
+      }
+    },
+    "Вложения Mail": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mail attachments"
+          }
+        }
+      }
+    },
+    "Временные данные программ из ~/Library/Caches и их общих контейнеров. Приложения создадут их заново, когда понадобится.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temporary app data from ~/Library/Caches and their group containers. Apps recreate it when needed."
+          }
+        }
+      }
+    },
+    "Временные файлы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temporary files"
+          }
+        }
+      }
+    },
+    "Готово": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      }
+    },
+    "Журналы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Logs"
+          }
+        }
+      }
+    },
+    "Журналы и отчёты о сбоях, скопированные Xcode с подключённых устройств.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Logs and crash reports Xcode copied from connected devices."
+          }
+        }
+      }
+    },
+    "Журналы приложений": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App logs"
+          }
+        }
+      }
+    },
+    "Журналы устройств Xcode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xcode device logs"
+          }
+        }
+      }
+    },
+    "Копии вложений, которые вы открывали из Mail. Сами письма и вложения в них не удаляются.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copies of attachments you opened from Mail. The messages and their attachments are not removed."
+          }
+        }
+      }
+    },
+    "Корзина": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trash"
+          }
+        }
+      }
+    },
+    "Кэш браузеров": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Browser caches"
+          }
+        }
+      }
+    },
+    "Кэш пакетных менеджеров": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Package manager caches"
+          }
+        }
+      }
+    },
+    "Кэш приложений": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App caches"
+          }
+        }
+      }
+    },
+    "Кэш программ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Electron caches"
+          }
+        }
+      }
+    },
+    "Кэш программ на Electron": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Electron app caches"
+          }
+        }
+      }
+    },
+    "Кэш сборки": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Build cache"
+          }
+        }
+      }
+    },
+    "Кэш сборки, образы и остановленные контейнеры. Их удаляет сам Docker — сразу, без Корзины; образы скачаются заново при следующем запуске. Тома с данными не трогаются.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Build cache, images and stopped containers. Docker removes them itself — at once, not through the Trash; images are downloaded again on the next run. Volumes with data are not touched."
+          }
+        }
+      }
+    },
+    "Кэш симуляторов": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulator caches"
+          }
+        }
+      }
+    },
+    "Кэш страниц, скриптов и графики Slack, Discord, VS Code, Notion, Figma и других программ на движке Chromium. Переписка, входы в аккаунты и офлайн-данные не затрагиваются, запущенные программы пропускаются.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Page, script and image caches of Slack, Discord, VS Code, Notion, Figma and other Chromium-based apps. Messages, sign-ins and offline data are not touched; running apps are skipped."
+          }
+        }
+      }
+    },
+    "Кэши CoreSimulator. Сами симуляторы и их данные остаются, кэш создаётся заново.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CoreSimulator caches. The simulators and their data stay; the cache is recreated."
+          }
+        }
+      }
+    },
+    "Кэши, индексы и временные файлы IntelliJ IDEA, PyCharm, WebStorm, Android Studio и других IDE. Они пересоздаются при следующем запуске, но индексация проекта займёт время. История изменений (Local History) не затрагивается.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caches, indexes and temporary files of IntelliJ IDEA, PyCharm, WebStorm, Android Studio and other IDEs. Recreated on the next launch, but indexing a project takes time. Local History is not touched."
+          }
+        }
+      }
+    },
+    "Локальные резервные копии устройств. Удалённую копию нельзя вернуть — оставьте хотя бы самую свежую.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local device backups. A removed backup cannot be brought back — keep at least the newest one."
+          }
+        }
+      }
+    },
+    "Не входит в категорию «%@»": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not part of the “%@” category"
+          }
+        }
+      }
+    },
+    "Не входит в категорию «Docker»": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not part of the “Docker” category"
+          }
+        }
+      }
+    },
+    "Неиспользуемые образы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unused images"
+          }
+        }
+      }
+    },
+    "Неработающие агенты запуска": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Broken launch agents"
+          }
+        }
+      }
+    },
+    "Нужен пароль администратора": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Administrator password required"
+          }
+        }
+      }
+    },
+    "Образы без имени (<none>)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Untagged images (<none>)"
+          }
+        }
+      }
+    },
+    "Образы и пакеты установки (.dmg, .pkg, .iso, .xip) в Загрузках и на Рабочем столе. Это ваши файлы: сами отмечаются только в режиме «Максимальная» и только те, что не открывались больше месяца.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disk images and installer packages (.dmg, .pkg, .iso, .xip) in Downloads and on the Desktop. These are your files: only the Maximum mode ticks them, and only those not opened for more than a month."
+          }
+        }
+      }
+    },
+    "Остановленные контейнеры": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopped containers"
+          }
+        }
+      }
+    },
+    "Отладочные символы для iPhone, iPad, Apple Watch и др. Xcode скачает их снова при подключении устройства.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Debug symbols for iPhone, iPad, Apple Watch and others. Xcode downloads them again when a device is connected."
+          }
+        }
+      }
+    },
+    "Отчёты о падениях и зависаниях программ. Уже отправлены разработчикам или больше не нужны.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reports of app crashes and hangs. Already sent to developers or no longer needed."
+          }
+        }
+      }
+    },
+    "Отчёты о сбоях": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crash reports"
+          }
+        }
+      }
+    },
+    "Повреждённые настройки": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Broken preferences"
+          }
+        }
+      }
+    },
+    "Подсчёт размера": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measuring size"
+          }
+        }
+      }
+    },
+    "Поиск файлов": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looking for files"
+          }
+        }
+      }
+    },
+    "Проверка автозапуска": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking launch agents"
+          }
+        }
+      }
+    },
+    "Проверка настроек": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking preferences"
+          }
+        }
+      }
+    },
+    "Программа не найдена: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Program not found: %@"
+          }
+        }
+      }
+    },
+    "Промежуточные файлы сборки и индексы Xcode. Пересоздаются при следующей сборке проекта.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intermediate build files and indexes of Xcode. Recreated on the next build of a project."
+          }
+        }
+      }
+    },
+    "Прошивки": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Firmware"
+          }
+        }
+      }
+    },
+    "Прошивки iPhone и iPad": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iPhone and iPad firmware"
+          }
+        }
+      }
+    },
+    "Пустой файл": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empty file"
+          }
+        }
+      }
+    },
+    "Резервные копии": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backups"
+          }
+        }
+      }
+    },
+    "Резервные копии iPhone и iPad": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iPhone and iPad backups"
+          }
+        }
+      }
+    },
+    "Системные журналы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System logs"
+          }
+        }
+      }
+    },
+    "Скачанные и распакованные крейты Rust из ~/.cargo/registry. Загрузятся снова, но без сети сборка не пройдёт.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloaded and unpacked Rust crates from ~/.cargo/registry. Downloaded again, but a build will fail without a network connection."
+          }
+        }
+      }
+    },
+    "Скачанные пакеты npm, Yarn, pnpm, Bun, pip, uv, Homebrew, Gradle, CocoaPods, SwiftPM, кэш сборки Go и браузеры Playwright. Загрузятся снова при необходимости.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloaded packages of npm, Yarn, pnpm, Bun, pip, uv, Homebrew, Gradle, CocoaPods and SwiftPM, the Go build cache and Playwright browsers. Downloaded again when needed."
+          }
+        }
+      }
+    },
+    "Текстовые журналы программ из ~/Library/Logs. Нужны только для диагностики проблем.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text logs of apps from ~/Library/Logs. Only needed to diagnose problems."
+          }
+        }
+      }
+    },
+    "Только кэш страниц и графики Safari, Chrome, Firefox и других браузеров. История, пароли, cookies и профили не затрагиваются.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only the page and image cache of Safari, Chrome, Firefox and other browsers. History, passwords, cookies and profiles are not touched."
+          }
+        }
+      }
+    },
+    "Установщики": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installers"
+          }
+        }
+      }
+    },
+    "Устройство": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Device"
+          }
+        }
+      }
+    },
+    "Файл повреждён и не читается": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File is damaged and cannot be read"
+          }
+        }
+      }
+    },
+    "Файлы в Корзине будут удалены безвозвратно — проверьте, что там нет нужного.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files in the Trash will be deleted permanently — make sure nothing there is still needed."
+          }
+        }
+      }
+    },
+    "Файлы во временной папке пользователя, которые никто не менял больше 3 дней.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files in the user's temporary folder that nothing has changed for more than 3 days."
+          }
+        }
+      }
+    },
+    "Файлы настроек (.plist), которые не читаются. Приложение создаст новые с настройками по умолчанию.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preference files (.plist) that cannot be read. The app creates new ones with default settings."
+          }
+        }
+      }
+    },
+    "Файлы обновлений iOS (.ipsw), которые Finder скачал для подключённых устройств, — по 5–8 ГБ каждый. При следующем обновлении скачаются снова.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iOS update files (.ipsw) that Finder downloaded for connected devices, 5–8 GB each. Downloaded again on the next update."
+          }
+        }
+      }
+    },
+    "Файлы разработчика": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Developer files"
+          }
+        }
+      }
+    },
+    "Яндекс Браузер": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yandex Browser"
+          }
+        }
+      }
+    },
+    "самая свежая": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "newest"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

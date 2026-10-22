@@ -12,8 +12,8 @@ public actor SpaceMapper {
         self.avoidPrivacyPrompts = avoidPrivacyPrompts
     }
 
-    /// Name of the synthetic node that aggregates small siblings.
-    public static let otherName = "Прочее"
+    /// Name of the synthetic node that aggregates small siblings (the same value `DirectoryNode.name` gives it).
+    public static let otherName = DirectoryNode.aggregateName
     /// Children smaller than this share of their parent are folded into "Прочее".
     public static let minChildShare = 0.01
     /// Hard cap of real children per node (an extra "Прочее" node may follow).
@@ -188,7 +188,7 @@ private final class SpaceScan: @unchecked Sendable {
     private let keySet: Set<URLResourceKey>
     private var rootVolume: (any NSObjectProtocol)?
     private let visitedDirectories = VisitedDirectories()
-    private let phase = "Карта диска"
+    private let phase = String(localized: "Карта диска", bundle: .module)
 
     /// Folders whose children are not opened (see `SpaceMapper.init(avoidPrivacyPrompts:)`).
     let blockedParents: Set<String>
@@ -274,7 +274,7 @@ private final class SpaceScan: @unchecked Sendable {
         pool.submit { process(rootState) }
         done.wait()
         pool.shutdown()
-        monitor.force(phase: "Готово", fraction: 1)
+        monitor.force(phase: FileWalker.donePhase, fraction: 1)
         resultLock.lock(); defer { resultLock.unlock() }
         return result ?? DirectoryNode(url: root, size: 0, isDirectory: true, children: [])
     }

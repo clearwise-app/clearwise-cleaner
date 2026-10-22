@@ -41,8 +41,8 @@ enum JunkCatalog {
     // MARK: Caches & logs
 
     static var userCaches: JunkRule {
-        var r = JunkRule(id: JunkCategoryID.userCaches, title: "Кэш приложений",
-                         detail: "Временные данные программ из ~/Library/Caches и их общих контейнеров. Приложения создадут их заново, когда понадобится.",
+        var r = JunkRule(id: JunkCategoryID.userCaches, title: String(localized: "Кэш приложений", bundle: .module),
+                         detail: String(localized: "Временные данные программ из ~/Library/Caches и их общих контейнеров. Приложения создадут их заново, когда понадобится.", bundle: .module),
                          symbol: "internaldrive.fill", risk: .safe)
         r.priority = 0
         r.locations = [.home("Library/Caches")]
@@ -55,9 +55,9 @@ enum JunkCatalog {
     }
 
     static var userLogs: JunkRule {
-        var r = JunkRule(id: JunkCategoryID.userLogs, title: "Журналы приложений",
-                         detail: "Текстовые журналы программ из ~/Library/Logs. Нужны только для диагностики проблем.",
-                         symbol: "doc.text.fill", risk: .safe, phase: "Журналы")
+        var r = JunkRule(id: JunkCategoryID.userLogs, title: String(localized: "Журналы приложений", bundle: .module),
+                         detail: String(localized: "Текстовые журналы программ из ~/Library/Logs. Нужны только для диагностики проблем.", bundle: .module),
+                         symbol: "doc.text.fill", risk: .safe, phase: String(localized: "Журналы", bundle: .module))
         r.priority = 0
         r.locations = [.home("Library/Logs")]
         r.skipsActiveItems = true
@@ -65,25 +65,25 @@ enum JunkCatalog {
     }
 
     static var crashReports: JunkRule {
-        var r = JunkRule(id: JunkCategoryID.crashReports, title: "Отчёты о сбоях",
-                         detail: "Отчёты о падениях и зависаниях программ. Уже отправлены разработчикам или больше не нужны.",
-                         symbol: "exclamationmark.triangle.fill", risk: .safe, phase: "Журналы")
+        var r = JunkRule(id: JunkCategoryID.crashReports, title: String(localized: "Отчёты о сбоях", bundle: .module),
+                         detail: String(localized: "Отчёты о падениях и зависаниях программ. Уже отправлены разработчикам или больше не нужны.", bundle: .module),
+                         symbol: "exclamationmark.triangle.fill", risk: .safe, phase: String(localized: "Журналы", bundle: .module))
         r.locations = [.home("Library/Logs/DiagnosticReports")]
         return r
     }
 
     static var systemLogs: JunkRule {
-        var r = JunkRule(id: JunkCategoryID.systemLogs, title: "Системные журналы",
-                         detail: "Архивные журналы и отчёты о сбоях из /Library/Logs и /var/log. Текущие журналы не трогаем; для удаления macOS может запросить пароль администратора.",
-                         symbol: "doc.text.magnifyingglass", risk: .review, phase: "Системные журналы")
+        var r = JunkRule(id: JunkCategoryID.systemLogs, title: String(localized: "Системные журналы", bundle: .module),
+                         detail: String(localized: "Архивные журналы и отчёты о сбоях из /Library/Logs и /var/log. Текущие журналы не трогаем; для удаления macOS может запросить пароль администратора.", bundle: .module),
+                         symbol: "doc.text.magnifyingglass", risk: .review)
         r.collector = { SpecialCollectors.systemLogs($0) }
         r.mode = .enhanced   // the administrator password
         return r
     }
 
     static var browserCaches: JunkRule {
-        var r = JunkRule(id: JunkCategoryID.browserCaches, title: "Кэш браузеров",
-                         detail: "Только кэш страниц и графики Safari, Chrome, Firefox и других браузеров. История, пароли, cookies и профили не затрагиваются.",
+        var r = JunkRule(id: JunkCategoryID.browserCaches, title: String(localized: "Кэш браузеров", bundle: .module),
+                         detail: String(localized: "Только кэш страниц и графики Safari, Chrome, Firefox и других браузеров. История, пароли, cookies и профили не затрагиваются.", bundle: .module),
                          symbol: "globe", risk: .safe)
         r.priority = 2
         r.collector = { env in BrowserCacheSpec.all.flatMap { $0.candidates(in: env) } }
@@ -94,9 +94,9 @@ enum JunkCatalog {
     }
 
     static var chromiumAppCaches: JunkRule {
-        var r = JunkRule(id: JunkCategoryID.chromiumAppCaches, title: "Кэш программ на Electron",
-                         detail: "Кэш страниц, скриптов и графики Slack, Discord, VS Code, Notion, Figma и других программ на движке Chromium. Переписка, входы в аккаунты и офлайн-данные не затрагиваются, запущенные программы пропускаются.",
-                         symbol: "atom", risk: .safe, phase: "Кэш программ")
+        var r = JunkRule(id: JunkCategoryID.chromiumAppCaches, title: String(localized: "Кэш программ на Electron", bundle: .module),
+                         detail: String(localized: "Кэш страниц, скриптов и графики Slack, Discord, VS Code, Notion, Figma и других программ на движке Chromium. Переписка, входы в аккаунты и офлайн-данные не затрагиваются, запущенные программы пропускаются.", bundle: .module),
+                         symbol: "atom", risk: .safe, phase: String(localized: "Кэш программ", bundle: .module))
         // Below browsers (priority 2), which own their user data folders; nothing else claims Application Support.
         r.collector = { ChromiumAppCaches.candidates($0) }
         r.skipsActiveItems = true
@@ -107,17 +107,17 @@ enum JunkCatalog {
 
     static var derivedData: JunkRule {
         var r = JunkRule(id: JunkCategoryID.xcodeDerivedData, title: "Xcode: DerivedData",
-                         detail: "Промежуточные файлы сборки и индексы Xcode. Пересоздаются при следующей сборке проекта.",
-                         symbol: "hammer.fill", risk: .safe, phase: "Файлы разработчика")
+                         detail: String(localized: "Промежуточные файлы сборки и индексы Xcode. Пересоздаются при следующей сборке проекта.", bundle: .module),
+                         symbol: "hammer.fill", risk: .safe, phase: developerPhase)
         r.priority = 2
         r.locations = [.home("Library/Developer/Xcode/DerivedData")]
         return r
     }
 
     static var archives: JunkRule {
-        var r = JunkRule(id: JunkCategoryID.xcodeArchives, title: "Xcode: архивы",
-                         detail: "Архивы сборок (.xcarchive). Нужны для разбора отчётов о сбоях выпущенных версий — проверьте перед удалением.",
-                         symbol: "archivebox.fill", risk: .review, phase: "Файлы разработчика")
+        var r = JunkRule(id: JunkCategoryID.xcodeArchives, title: String(localized: "Xcode: архивы", bundle: .module),
+                         detail: String(localized: "Архивы сборок (.xcarchive). Нужны для разбора отчётов о сбоях выпущенных версий — проверьте перед удалением.", bundle: .module),
+                         symbol: "archivebox.fill", risk: .review, phase: developerPhase)
         r.priority = 2
         r.locations = [.home("Library/Developer/Xcode/Archives", .grandchildren)]
         r.wantsLastUsed = true
@@ -126,9 +126,9 @@ enum JunkCatalog {
     }
 
     static var deviceSupport: JunkRule {
-        var r = JunkRule(id: JunkCategoryID.xcodeDeviceSupport, title: "Xcode: поддержка устройств",
-                         detail: "Отладочные символы для iPhone, iPad, Apple Watch и др. Xcode скачает их снова при подключении устройства.",
-                         symbol: "iphone", risk: .review, phase: "Файлы разработчика")
+        var r = JunkRule(id: JunkCategoryID.xcodeDeviceSupport, title: String(localized: "Xcode: поддержка устройств", bundle: .module),
+                         detail: String(localized: "Отладочные символы для iPhone, iPad, Apple Watch и др. Xcode скачает их снова при подключении устройства.", bundle: .module),
+                         symbol: "iphone", risk: .review, phase: developerPhase)
         r.priority = 2
         r.locations = ["iOS", "iPadOS", "watchOS", "tvOS", "visionOS", "xrOS", "macOS"].map {
             .home("Library/Developer/Xcode/\($0) DeviceSupport")
@@ -138,27 +138,27 @@ enum JunkCatalog {
     }
 
     static var simulatorCaches: JunkRule {
-        var r = JunkRule(id: JunkCategoryID.simulatorCaches, title: "Кэш симуляторов",
-                         detail: "Кэши CoreSimulator. Сами симуляторы и их данные остаются, кэш создаётся заново.",
-                         symbol: "ipad.and.iphone", risk: .safe, phase: "Файлы разработчика")
+        var r = JunkRule(id: JunkCategoryID.simulatorCaches, title: String(localized: "Кэш симуляторов", bundle: .module),
+                         detail: String(localized: "Кэши CoreSimulator. Сами симуляторы и их данные остаются, кэш создаётся заново.", bundle: .module),
+                         symbol: "ipad.and.iphone", risk: .safe, phase: developerPhase)
         r.priority = 2
         r.locations = [.home("Library/Developer/CoreSimulator/Caches")]
         return r
     }
 
     static var deviceLogs: JunkRule {
-        var r = JunkRule(id: JunkCategoryID.deviceLogs, title: "Журналы устройств Xcode",
-                         detail: "Журналы и отчёты о сбоях, скопированные Xcode с подключённых устройств.",
-                         symbol: "list.bullet.rectangle.fill", risk: .safe, phase: "Файлы разработчика")
+        var r = JunkRule(id: JunkCategoryID.deviceLogs, title: String(localized: "Журналы устройств Xcode", bundle: .module),
+                         detail: String(localized: "Журналы и отчёты о сбоях, скопированные Xcode с подключённых устройств.", bundle: .module),
+                         symbol: "list.bullet.rectangle.fill", risk: .safe, phase: developerPhase)
         r.priority = 2
         r.locations = [.home("Library/Developer/Xcode/iOS Device Logs"), .home("Library/Developer/Xcode/watchOS Device Logs")]
         return r
     }
 
     static var packageCaches: JunkRule {
-        var r = JunkRule(id: JunkCategoryID.packageCaches, title: "Кэш пакетных менеджеров",
-                         detail: "Скачанные пакеты npm, Yarn, pnpm, Bun, pip, uv, Homebrew, Gradle, CocoaPods, SwiftPM, кэш сборки Go и браузеры Playwright. Загрузятся снова при необходимости.",
-                         symbol: "shippingbox.fill", risk: .safe, phase: "Файлы разработчика")
+        var r = JunkRule(id: JunkCategoryID.packageCaches, title: String(localized: "Кэш пакетных менеджеров", bundle: .module),
+                         detail: String(localized: "Скачанные пакеты npm, Yarn, pnpm, Bun, pip, uv, Homebrew, Gradle, CocoaPods, SwiftPM, кэш сборки Go и браузеры Playwright. Загрузятся снова при необходимости.", bundle: .module),
+                         symbol: "shippingbox.fill", risk: .safe, phase: developerPhase)
         r.priority = 2
         r.locations = [
             .home(".npm/_cacache", .itself),
@@ -180,9 +180,9 @@ enum JunkCatalog {
     }
 
     static var cargoRegistry: JunkRule {
-        var r = JunkRule(id: JunkCategoryID.cargoRegistry, title: "Cargo: кэш реестра",
-                         detail: "Скачанные и распакованные крейты Rust из ~/.cargo/registry. Загрузятся снова, но без сети сборка не пройдёт.",
-                         symbol: "cube.box.fill", risk: .review, phase: "Файлы разработчика")
+        var r = JunkRule(id: JunkCategoryID.cargoRegistry, title: String(localized: "Cargo: кэш реестра", bundle: .module),
+                         detail: String(localized: "Скачанные и распакованные крейты Rust из ~/.cargo/registry. Загрузятся снова, но без сети сборка не пройдёт.", bundle: .module),
+                         symbol: "cube.box.fill", risk: .review, phase: developerPhase)
         r.priority = 2
         r.locations = [.home(".cargo/registry/cache"), .home(".cargo/registry/src")]
         r.mode = .enhanced
@@ -194,9 +194,9 @@ enum JunkCatalog {
     static let jetBrainsRegenerableFolders = ["caches", "index", "tmp", "log", "jcef_cache"]
 
     static var jetbrainsCaches: JunkRule {
-        var r = JunkRule(id: JunkCategoryID.jetbrainsCaches, title: "JetBrains: кэш и индексы",
-                         detail: "Кэши, индексы и временные файлы IntelliJ IDEA, PyCharm, WebStorm, Android Studio и других IDE. Они пересоздаются при следующем запуске, но индексация проекта займёт время. История изменений (Local History) не затрагивается.",
-                         symbol: "curlybraces", risk: .review, phase: "Файлы разработчика")
+        var r = JunkRule(id: JunkCategoryID.jetbrainsCaches, title: String(localized: "JetBrains: кэш и индексы", bundle: .module),
+                         detail: String(localized: "Кэши, индексы и временные файлы IntelliJ IDEA, PyCharm, WebStorm, Android Studio и других IDE. Они пересоздаются при следующем запуске, но индексация проекта займёт время. История изменений (Local History) не затрагивается.", bundle: .module),
+                         symbol: "curlybraces", risk: .review, phase: developerPhase)
         r.priority = 2
         r.collector = { SpecialCollectors.jetBrainsCaches($0) }
         r.skipsActiveItems = true
@@ -207,8 +207,8 @@ enum JunkCatalog {
     // MARK: Temporary & user files
 
     static var temporaryFiles: JunkRule {
-        var r = JunkRule(id: JunkCategoryID.temporaryFiles, title: "Временные файлы",
-                         detail: "Файлы во временной папке пользователя, которые никто не менял больше 3 дней.",
+        var r = JunkRule(id: JunkCategoryID.temporaryFiles, title: String(localized: "Временные файлы", bundle: .module),
+                         detail: String(localized: "Файлы во временной папке пользователя, которые никто не менял больше 3 дней.", bundle: .module),
                          symbol: "hourglass", risk: .safe)
         r.priority = 0
         r.locations = [.temporary()]
@@ -220,9 +220,9 @@ enum JunkCatalog {
     }
 
     static var installers: JunkRule {
-        var r = JunkRule(id: JunkCategoryID.installers, title: "Установщики",
-                         detail: "Образы и пакеты установки (.dmg, .pkg, .iso, .xip) в Загрузках и на Рабочем столе. Это ваши файлы: сами отмечаются только в режиме «Максимальная» и только те, что не открывались больше месяца.",
-                         symbol: "opticaldiscdrive.fill", risk: .review, phase: "Установщики")
+        var r = JunkRule(id: JunkCategoryID.installers, title: String(localized: "Установщики", bundle: .module),
+                         detail: String(localized: "Образы и пакеты установки (.dmg, .pkg, .iso, .xip) в Загрузках и на Рабочем столе. Это ваши файлы: сами отмечаются только в режиме «Максимальная» и только те, что не открывались больше месяца.", bundle: .module),
+                         symbol: "opticaldiscdrive.fill", risk: .review)
         r.collector = { SpecialCollectors.installers($0) }
         r.wantsLastUsed = true
         r.itemMode = { item, env in olderThan(item, days: 30, env: env) ? .maximum : nil }
@@ -230,8 +230,8 @@ enum JunkCatalog {
     }
 
     static var mailDownloads: JunkRule {
-        var r = JunkRule(id: JunkCategoryID.mailDownloads, title: "Вложения Mail",
-                         detail: "Копии вложений, которые вы открывали из Mail. Сами письма и вложения в них не удаляются.",
+        var r = JunkRule(id: JunkCategoryID.mailDownloads, title: String(localized: "Вложения Mail", bundle: .module),
+                         detail: String(localized: "Копии вложений, которые вы открывали из Mail. Сами письма и вложения в них не удаляются.", bundle: .module),
                          symbol: "paperclip", risk: .review)
         r.locations = [.home("Library/Containers/com.apple.mail/Data/Library/Mail Downloads")]
         r.wantsLastUsed = true
@@ -240,9 +240,9 @@ enum JunkCatalog {
     }
 
     static var iosBackups: JunkRule {
-        var r = JunkRule(id: JunkCategoryID.iosBackups, title: "Резервные копии iPhone и iPad",
-                         detail: "Локальные резервные копии устройств. Удалённую копию нельзя вернуть — оставьте хотя бы самую свежую.",
-                         symbol: "externaldrive.fill.badge.timemachine", risk: .caution, phase: "Резервные копии")
+        var r = JunkRule(id: JunkCategoryID.iosBackups, title: String(localized: "Резервные копии iPhone и iPad", bundle: .module),
+                         detail: String(localized: "Локальные резервные копии устройств. Удалённую копию нельзя вернуть — оставьте хотя бы самую свежую.", bundle: .module),
+                         symbol: "externaldrive.fill.badge.timemachine", risk: .caution, phase: String(localized: "Резервные копии", bundle: .module))
         r.collector = { SpecialCollectors.iosBackups($0) }
         r.sortsNewestFirst = true
         // Older copies only: the newest backup of each device is marked `neverAuto` by the collector.
@@ -251,9 +251,9 @@ enum JunkCatalog {
     }
 
     static var deviceFirmware: JunkRule {
-        var r = JunkRule(id: JunkCategoryID.deviceFirmware, title: "Прошивки iPhone и iPad",
-                         detail: "Файлы обновлений iOS (.ipsw), которые Finder скачал для подключённых устройств, — по 5–8 ГБ каждый. При следующем обновлении скачаются снова.",
-                         symbol: "arrow.down.app.fill", risk: .review, phase: "Прошивки")
+        var r = JunkRule(id: JunkCategoryID.deviceFirmware, title: String(localized: "Прошивки iPhone и iPad", bundle: .module),
+                         detail: String(localized: "Файлы обновлений iOS (.ipsw), которые Finder скачал для подключённых устройств, — по 5–8 ГБ каждый. При следующем обновлении скачаются снова.", bundle: .module),
+                         symbol: "arrow.down.app.fill", risk: .review, phase: String(localized: "Прошивки", bundle: .module))
         r.collector = { env in
             ["iPhone", "iPad", "iPod", "Apple TV"].flatMap { device in
                 FS.children(of: env.homePath("Library/iTunes/\(device) Software Updates"))
@@ -268,9 +268,9 @@ enum JunkCatalog {
     // MARK: Broken items
 
     static var brokenPreferences: JunkRule {
-        var r = JunkRule(id: JunkCategoryID.brokenPreferences, title: "Повреждённые настройки",
-                         detail: "Файлы настроек (.plist), которые не читаются. Приложение создаст новые с настройками по умолчанию.",
-                         symbol: "slider.horizontal.3", risk: .review, phase: "Проверка настроек")
+        var r = JunkRule(id: JunkCategoryID.brokenPreferences, title: String(localized: "Повреждённые настройки", bundle: .module),
+                         detail: String(localized: "Файлы настроек (.plist), которые не читаются. Приложение создаст новые с настройками по умолчанию.", bundle: .module),
+                         symbol: "slider.horizontal.3", risk: .review, phase: String(localized: "Проверка настроек", bundle: .module))
         r.collector = { SpecialCollectors.brokenPreferences($0) }
         r.keepsEmptyItems = true
         r.mode = .maximum
@@ -278,9 +278,9 @@ enum JunkCatalog {
     }
 
     static var brokenLaunchAgents: JunkRule {
-        var r = JunkRule(id: JunkCategoryID.brokenLaunchAgents, title: "Неработающие агенты запуска",
-                         detail: "Агенты автозапуска из ~/Library/LaunchAgents, чья программа уже удалена. Они только засоряют журнал ошибками.",
-                         symbol: "bolt.slash.fill", risk: .review, phase: "Проверка автозапуска")
+        var r = JunkRule(id: JunkCategoryID.brokenLaunchAgents, title: String(localized: "Неработающие агенты запуска", bundle: .module),
+                         detail: String(localized: "Агенты автозапуска из ~/Library/LaunchAgents, чья программа уже удалена. Они только засоряют журнал ошибками.", bundle: .module),
+                         symbol: "bolt.slash.fill", risk: .review, phase: String(localized: "Проверка автозапуска", bundle: .module))
         r.collector = { SpecialCollectors.brokenLaunchAgents($0) }
         r.keepsEmptyItems = true
         r.mode = .maximum
@@ -288,13 +288,16 @@ enum JunkCatalog {
     }
 
     static var trash: JunkRule {
-        var r = JunkRule(id: JunkCategoryID.trash, title: "Корзина",
-                         detail: "Файлы в Корзине будут удалены безвозвратно — проверьте, что там нет нужного.",
+        var r = JunkRule(id: JunkCategoryID.trash, title: String(localized: "Корзина", bundle: .module),
+                         detail: String(localized: "Файлы в Корзине будут удалены безвозвратно — проверьте, что там нет нужного.", bundle: .module),
                          symbol: "trash.fill", risk: .review)
         r.locations = [.home(".Trash", includeHidden: true)]
         r.keepsEmptyItems = true
         return r
     }
+
+    /// Progress label shared by the developer rules.
+    static var developerPhase: String { String(localized: "Файлы разработчика", bundle: .module) }
 
     /// Not opened (or, without that, not changed) for `days`.
     static func olderThan(_ item: FileItem, days: Double, env: JunkEnvironment) -> Bool {

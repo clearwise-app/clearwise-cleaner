@@ -90,7 +90,7 @@ struct RootView: View {
             model.startAccessFlowIfNeeded(onboardingDone: onboardingDone)
         }
         .preferredColorScheme(.dark)
-        .environment(\.locale, Locale(identifier: "ru_RU"))
+        .environment(\.locale, AppLanguage.locale)
     }
 
     private var mainUI: some View {
@@ -162,7 +162,7 @@ private struct TrashCompletionScreen: View {
     var body: some View {
         ZStack {
             ModuleBackground(tint: completion.tint)
-            CompletionView(tint: completion.tint, result: completion.result, title: "Корзина очищена",
+            CompletionView(tint: completion.tint, result: completion.result, title: String(localized: "Корзина очищена"),
                            permanent: true, noun: .items,
                            onGrantAccess: { model.dismissTrashCompletion(); model.presentAccessSheet() },
                            onRetry: { model.dismissTrashCompletion(); model.requestEmptyTrash() },
@@ -218,7 +218,7 @@ struct ToastView: View {
                 }
                 .buttonStyle(PillButtonStyle(kind: .secondary))
             }
-            IconButton(symbol: "xmark", help: "Закрыть", size: 22) { model.dismissToast() }
+            IconButton(symbol: "xmark", help: String(localized: "Закрыть"), size: 22) { model.dismissToast() }
         }
         .padding(.leading, 16)
         .padding(.trailing, 10)

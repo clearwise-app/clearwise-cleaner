@@ -144,15 +144,18 @@ enum FileWalker {
 
     static func displayPhase(for root: URL) -> String {
         switch root.lastPathComponent {
-        case "Documents": return "Документы"
-        case "Desktop": return "Рабочий стол"
-        case "Downloads": return "Загрузки"
-        case "Movies": return "Фильмы"
-        case "Music": return "Музыка"
-        case "Pictures": return "Изображения"
-        default: return root.lastPathComponent.isEmpty ? "Диск" : root.lastPathComponent
+        case "Documents": return String(localized: "Документы", bundle: .module)
+        case "Desktop": return String(localized: "Рабочий стол", bundle: .module)
+        case "Downloads": return String(localized: "Загрузки", bundle: .module)
+        case "Movies": return String(localized: "Фильмы", bundle: .module)
+        case "Music": return String(localized: "Музыка", bundle: .module)
+        case "Pictures": return String(localized: "Изображения", bundle: .module)
+        default: return root.lastPathComponent.isEmpty ? String(localized: "Диск", bundle: .module) : root.lastPathComponent
         }
     }
+
+    /// The last progress label of every scan in this module.
+    static let donePhase = String(localized: "Готово", bundle: .module)
 
     /// Removes roots that live inside another root so nothing is scanned (and reported) twice.
     static func normalizedRoots(_ roots: [URL]) -> [URL] {

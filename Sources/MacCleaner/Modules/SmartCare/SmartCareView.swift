@@ -17,7 +17,7 @@ struct SmartCareView: View {
                             ? .progress(ScanProgress(phase: SmartCareModel.phaseText(of: areas),
                                                      fraction: SmartCareModel.fraction(of: areas),
                                                      currentPath: model.currentPath))
-                            : .idle(button: "Сканировать", enabled: true),
+                            : .idle(button: String(localized: "Сканировать"), enabled: true),
                         onAction: model.startScan, onStop: model.stop, dimsOptionsWhileWorking: false, showsTrashHint: true,
                         onGrantAccess: { app.presentAccessSheet() }) {
                 LastCleanupChip()
@@ -28,7 +28,7 @@ struct SmartCareView: View {
             // While cleaning, the overlay covers this screen; the overview stays underneath.
             SmartCareResults(model: model)
         case .done:
-            CompletionView(tint: .smartCare, result: model.result ?? RemovalResult(), title: "Mac стал чище",
+            CompletionView(tint: .smartCare, result: model.result ?? RemovalResult(), title: String(localized: "Mac стал чище"),
                            permanent: model.resultWasPermanent,
                            onGrantAccess: { app.presentAccessSheet() },
                            onRetry: model.retryFailed,
@@ -236,7 +236,7 @@ private struct JunkDrawer: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            SelectionBar(text: "Отмеченное попадёт в Корзину, остальное останется на месте",
+            SelectionBar(text: String(localized: "Отмеченное попадёт в Корзину, остальное останется на месте"),
                          onDefaults: junk.selectDefaults,
                          mode: Binding(get: { junk.mode }, set: { junk.select(mode: $0) }),
                          onNone: junk.selectNone)
@@ -254,7 +254,7 @@ private struct LeftoversDrawer: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            SelectionBar(text: "Следы приложений, которых уже нет. Сразу отмечены только точные совпадения",
+            SelectionBar(text: String(localized: "Следы приложений, которых уже нет. Сразу отмечены только точные совпадения"),
                          onDefaults: uninstaller.selectDefaultOrphans, onNone: { uninstaller.orphanSelection = [] })
             ForEach(uninstaller.orphans) { g in
                 ChoiceCard(state: uninstaller.orphanState(of: g), symbol: "app.dashed", tint: .uninstaller,
@@ -276,7 +276,7 @@ private struct OldFilesDrawer: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            SelectionBar(text: "Это ваши файлы — отметьте то, что больше не нужно", onNone: { oldFiles.selection = [] })
+            SelectionBar(text: String(localized: "Это ваши файлы — отметьте то, что больше не нужно"), onNone: { oldFiles.selection = [] })
             ForEach(groups, id: \.kind) { g in
                 ChoiceCard(state: CheckState(selected: oldFiles.selectedCount(in: g.files), total: g.files.count),
                            symbol: g.kind.symbol, tint: .oldFiles, title: g.kind.title, detail: Fmt.files(g.files.count),
@@ -401,9 +401,9 @@ private struct JunkTile: View {
     var body: some View {
         let on = model.included.contains(.junk)
         let empty = junk.categories.isEmpty
-        SmartTile(module: .junk, title: "Системный мусор", bytes: junk.totalSize,
-                  caption: empty ? "Кэши и журналы в порядке"
-                    : on ? "выбрано \(Fmt.size(junk.selectedSize))" : "не входит в очистку",
+        SmartTile(module: .junk, title: String(localized: "Системный мусор"), bytes: junk.totalSize,
+                  caption: empty ? String(localized: "Кэши и журналы в порядке")
+                    : on ? String(localized: "выбрано \(Fmt.size(junk.selectedSize))") : String(localized: "не входит в очистку"),
                   included: empty ? nil : on, onInclude: { model.setIncluded(.junk, $0) },
                   expanded: model.expanded == .junk, onExpand: empty ? nil : { model.toggleExpanded(.junk) },
                   opens: .junk, onOpen: onOpen) {
@@ -421,10 +421,10 @@ private struct LeftoversTile: View {
     var body: some View {
         let n = uninstaller.orphans.count
         let on = model.included.contains(.leftovers)
-        SmartTile(module: .uninstaller, title: "Остатки удалённых приложений", bytes: digest.orphansBytes,
-                  caption: n == 0 ? "Следов удалённых приложений не найдено"
-                    : on ? "выбрано \(Fmt.size(uninstaller.selectedOrphansSize))"
-                    : "\(Fmt.apps(n)) \(Fmt.verb(n, one: "оставило", other: "оставили")) после себя файлы",
+        SmartTile(module: .uninstaller, title: String(localized: "Остатки удалённых приложений"), bytes: digest.orphansBytes,
+                  caption: n == 0 ? String(localized: "Следов удалённых приложений не найдено")
+                    : on ? String(localized: "выбрано \(Fmt.size(uninstaller.selectedOrphansSize))")
+                    : String(localized: "\(Fmt.apps(n)) \(Fmt.verb(n, one: "оставило", other: "оставили")) после себя файлы"),
                   included: n == 0 ? nil : on, onInclude: { model.setIncluded(.leftovers, $0) },
                   expanded: model.expanded == .leftovers, onExpand: n == 0 ? nil : { model.toggleExpanded(.leftovers) },
                   opens: .uninstaller, onOpen: onOpen) {
@@ -442,10 +442,10 @@ private struct OldFilesTile: View {
     var body: some View {
         let n = digest.oldCount
         let on = model.included.contains(.oldFiles)
-        SmartTile(module: .oldFiles, title: "Старые файлы", bytes: digest.oldBytes,
-                  caption: n == 0 ? "Крупных забытых файлов нет"
-                    : on ? "выбрано \(Fmt.size(oldFiles.selectedSize))"
-                    : "\(Fmt.files(n)) \(Fmt.verb(n, one: "не открывался", other: "не открывались")) больше \(Fmt.months(oldFiles.months))",
+        SmartTile(module: .oldFiles, title: String(localized: "Старые файлы"), bytes: digest.oldBytes,
+                  caption: n == 0 ? String(localized: "Крупных забытых файлов нет")
+                    : on ? String(localized: "выбрано \(Fmt.size(oldFiles.selectedSize))")
+                    : String(localized: "\(Fmt.files(n)) \(Fmt.verb(n, one: "не открывался", other: "не открывались")) больше \(Fmt.months(oldFiles.months))"),
                   included: n == 0 ? nil : on, onInclude: { model.setIncluded(.oldFiles, $0) },
                   expanded: model.expanded == .oldFiles, onExpand: n == 0 ? nil : { model.toggleExpanded(.oldFiles) },
                   opens: .oldFiles, onOpen: onOpen) {
@@ -461,11 +461,11 @@ private struct UnusedAppsTile: View {
 
     var body: some View {
         let n = digest.unusedCount
-        SmartTile(module: .uninstaller, symbol: "app.badge.fill", title: "Неиспользуемые приложения",
+        SmartTile(module: .uninstaller, symbol: "app.badge.fill", title: String(localized: "Неиспользуемые приложения"),
                   bytes: digest.unusedBytes,
                   caption: n == 0
-                    ? "Все приложения в ходу"
-                    : "\(Fmt.apps(n)) \(Fmt.verb(n, one: "не открывалось", other: "не открывались")) больше \(Fmt.months(6))",
+                    ? String(localized: "Все приложения в ходу")
+                    : String(localized: "\(Fmt.apps(n)) \(Fmt.verb(n, one: "не открывалось", other: "не открывались")) больше \(Fmt.months(6))"),
                   showsChoiceBadge: true, opens: .uninstaller, onOpen: onOpen) {
             HStack(spacing: 6) {
                 ForEach(digest.unusedTop) { a in
@@ -526,7 +526,7 @@ private struct SmartTile<Preview: View>: View {
                         .help(included ? "Входит в очистку — выключите, чтобы не трогать" : "Не входит в очистку — включите, чтобы очистить")
                         .accessibilityLabel("\(title): входит в очистку")
                 } else if showsChoiceBadge {
-                    Badge(text: "На ваш выбор", color: .white.opacity(0.7), symbol: "hand.point.up.left.fill")
+                    Badge(text: String(localized: "На ваш выбор"), color: .white.opacity(0.7), symbol: "hand.point.up.left.fill")
                 }
             }
             Text(title)

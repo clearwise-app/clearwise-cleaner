@@ -42,21 +42,21 @@ struct CheckBox: View {
         .opacity(disabled ? 0.35 : 1)
         .animation(Theme.quick, value: state)
         .help(helpText)
-        .accessibilityLabel(label.isEmpty ? "Отметить" : label)
+        .accessibilityLabel(label.isEmpty ? String(localized: "Отметить") : label)
         .accessibilityValue(stateText)
         .accessibilityAddTraits(.isToggle)
     }
 
     private var stateText: String {
         switch state {
-        case .on: "отмечено"
-        case .off: "не отмечено"
-        case .mixed: "частично"
+        case .on: String(localized: "отмечено")
+        case .off: String(localized: "не отмечено")
+        case .mixed: String(localized: "частично")
         }
     }
 
     private var helpText: String {
-        let verb = state == .off ? "Отметить" : "Снять отметку"
+        let verb = state == .off ? String(localized: "Отметить") : String(localized: "Снять отметку")
         return label.isEmpty ? verb : "\(verb): \(label)"
     }
 }
@@ -170,9 +170,9 @@ struct RiskBadge: View {
 
     var body: some View {
         switch risk {
-        case .safe: Badge(text: "Безопасно", color: Self.safeFill, symbol: "checkmark.shield.fill")
-        case .review: Badge(text: "Проверьте", color: Self.reviewFill, symbol: "eye.fill")
-        case .caution: Badge(text: "Осторожно", color: Self.cautionFill, symbol: "exclamationmark.triangle.fill")
+        case .safe: Badge(text: String(localized: "Безопасно"), color: Self.safeFill, symbol: "checkmark.shield.fill")
+        case .review: Badge(text: String(localized: "Проверьте"), color: Self.reviewFill, symbol: "eye.fill")
+        case .caution: Badge(text: String(localized: "Осторожно"), color: Self.cautionFill, symbol: "exclamationmark.triangle.fill")
         }
     }
 }

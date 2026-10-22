@@ -9,7 +9,7 @@ struct JunkView: View {
         switch model.phase {
         case .idle, .scanning:
             ModuleStage(module: .junk,
-                        state: model.phase == .scanning ? .progress(model.progress) : .idle(button: "Сканировать", enabled: true),
+                        state: model.phase == .scanning ? .progress(model.progress) : .idle(button: String(localized: "Сканировать"), enabled: true),
                         onAction: model.startScan, onStop: model.stop,
                         onGrantAccess: { app.presentAccessSheet() })
         case .results, .cleaning:
@@ -18,16 +18,16 @@ struct JunkView: View {
                 JunkResultsView(model: model)
             } else if model.phase == .results {
                 VStack(spacing: 4) {
-                    EmptyState(symbol: "checkmark.seal.fill", title: "Мусора не найдено",
-                               message: "Кэши и журналы уже в порядке. Загляните позже — приложения со временем накопят новые.",
-                               tint: .junk, actionTitle: "Сканировать заново", action: model.startScan)
+                    EmptyState(symbol: "checkmark.seal.fill", title: String(localized: "Мусора не найдено"),
+                               message: String(localized: "Кэши и журналы уже в порядке. Загляните позже — приложения со временем накопят новые."),
+                               tint: .junk, actionTitle: String(localized: "Сканировать заново"), action: model.startScan)
                     PartialAccessNote(onGrantAccess: { app.presentAccessSheet() })
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         case .done:
             CompletionView(tint: .junk, result: model.result ?? RemovalResult(),
-                           title: "Мусор убран", permanent: model.resultWasPermanent,
+                           title: String(localized: "Мусор убран"), permanent: model.resultWasPermanent,
                            onGrantAccess: { app.presentAccessSheet() },
                            onRetry: model.retryFailed,
                            onEmptyTrash: { app.requestEmptyTrash() },
@@ -43,7 +43,7 @@ private struct JunkResultsView: View {
     var body: some View {
         VStack(spacing: 0) {
             ResultsHeader(module: .junk, bytes: model.totalSize,
-                          caption: "найдено · \(Fmt.categories(model.categories.count)) · \(Fmt.items(model.itemCount))",
+                          caption: String(localized: "найдено · \(Fmt.categories(model.categories.count)) · \(Fmt.items(model.itemCount))"),
                           onGrantAccess: { app.presentAccessSheet() }) {
                 Button { model.startScan() } label: {
                     Label("Сканировать заново", systemImage: "arrow.clockwise")
@@ -53,7 +53,7 @@ private struct JunkResultsView: View {
 
             ScrollView {
                 LazyVStack(spacing: 10) {
-                    SelectionBar(text: "Отмеченное попадёт в Корзину, остальное останется на месте",
+                    SelectionBar(text: String(localized: "Отмеченное попадёт в Корзину, остальное останется на месте"),
                                  onDefaults: model.selectDefaults,
                                  mode: Binding(get: { model.mode }, set: { model.select(mode: $0) }),
                                  onNone: model.selectNone)

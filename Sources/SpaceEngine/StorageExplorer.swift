@@ -74,20 +74,25 @@ public struct StorageExplorer: Sendable {
 
     /// APFS volumes of the startup disk that hold macOS itself (their used space comes from the file system).
     static let systemVolumes: [(paths: [String], title: String, detail: String)] = [
-        (["/"], "macOS", "Сама система. Защищена от изменений, удалить нельзя"),
+        (["/"], "macOS", String(localized: "Сама система. Защищена от изменений, удалить нельзя", bundle: .module)),
         (["/System/Volumes/Preboot", "/System/Volumes/Update", "/System/Volumes/iSCPreboot",
           "/System/Volumes/xarts", "/System/Volumes/Hardware"],
-         "Загрузка и обновления", "Файлы запуска macOS и подготовленные обновления"),
-        (["/System/Volumes/VM"], "Подкачка и сон", "Память, выгруженная на диск, и образ режима сна. macOS управляет сама"),
+         String(localized: "Загрузка и обновления", bundle: .module),
+         String(localized: "Файлы запуска macOS и подготовленные обновления", bundle: .module)),
+        (["/System/Volumes/VM"], String(localized: "Подкачка и сон", bundle: .module),
+         String(localized: "Память, выгруженная на диск, и образ режима сна. macOS управляет сама", bundle: .module)),
     ]
 
     /// Folders outside every category, with what they are.
     static let systemFolders: [(path: String, title: String, detail: String)] = [
-        ("/Library", "Общая библиотека", "Данные программ для всех пользователей Mac"),
-        ("/private/var", "Служебные данные macOS", "Журналы, кэши и временные файлы системы"),
-        ("/opt/homebrew", "Homebrew", "Программы, установленные через brew"),
-        ("/usr/local", "/usr/local", "Консольные программы (Homebrew на Intel)"),
-        ("/Users/Shared", "Общая папка", "Файлы, доступные всем пользователям"),
+        ("/Library", String(localized: "Общая библиотека", bundle: .module),
+         String(localized: "Данные программ для всех пользователей Mac", bundle: .module)),
+        ("/private/var", String(localized: "Служебные данные macOS", bundle: .module),
+         String(localized: "Журналы, кэши и временные файлы системы", bundle: .module)),
+        ("/opt/homebrew", "Homebrew", String(localized: "Программы, установленные через brew", bundle: .module)),
+        ("/usr/local", "/usr/local", String(localized: "Консольные программы (Homebrew на Intel)", bundle: .module)),
+        ("/Users/Shared", String(localized: "Общая папка", bundle: .module),
+         String(localized: "Файлы, доступные всем пользователям", bundle: .module)),
     ]
 
     /// What «Система и прочее» is made of, as far as macOS lets it be measured: the system volumes, shared
@@ -107,7 +112,8 @@ public struct StorageExplorer: Sendable {
         urls += uncountedHomeItems()
         let measured = await measure(urls).map { e -> StorageEntry in
             guard let i = info[e.url.path] else {
-                return StorageEntry(url: e.url, bytes: e.bytes, isFolder: e.isFolder, detail: "Скрытое в домашней папке")
+                return StorageEntry(url: e.url, bytes: e.bytes, isFolder: e.isFolder,
+                                    detail: String(localized: "Скрытое в домашней папке", bundle: .module))
             }
             return StorageEntry(url: e.url, bytes: e.bytes, isFolder: e.isFolder, title: i.title, detail: i.detail)
         }

@@ -73,7 +73,7 @@ final class AccessFlow {
             // The relaunch flag stays until the flow closes: macOS often grants access and then asks to
             // «Выйти и открыть снова» right away, and the new instance must still show «Доступ открыт».
             stopPolling()
-            if live { AccessibilityNotification.Announcement("Полный доступ к диску включён").post() }
+            if live { AccessibilityNotification.Announcement(String(localized: "Полный доступ к диску включён")).post() }
         }
     }
 

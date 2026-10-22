@@ -36,13 +36,13 @@ final class SmartCareModel {
         let oldDone = app.oldFiles.phase != .scanning
         let orphansDone = app.uninstaller.orphanState == .loaded
         return [
-            AreaStatus(title: "Системный мусор", symbol: AppModule.junk.symbol,
+            AreaStatus(title: String(localized: "Системный мусор"), symbol: AppModule.junk.symbol,
                        fraction: junkDone ? 1 : app.junk.progress.fraction, done: junkDone,
                        detail: junkDone ? Fmt.size(app.junk.totalSize) : app.junk.progress.phase),
-            AreaStatus(title: "Остатки приложений", symbol: AppModule.uninstaller.symbol,
+            AreaStatus(title: String(localized: "Остатки приложений"), symbol: AppModule.uninstaller.symbol,
                        fraction: orphansDone ? 1 : app.uninstaller.orphanProgress.fraction, done: orphansDone,
                        detail: orphansDone ? Fmt.size(app.uninstaller.orphansSize) : app.uninstaller.orphanProgress.phase),
-            AreaStatus(title: "Старые файлы", symbol: AppModule.oldFiles.symbol,
+            AreaStatus(title: String(localized: "Старые файлы"), symbol: AppModule.oldFiles.symbol,
                        fraction: oldDone ? 1 : app.oldFiles.progress.fraction, done: oldDone,
                        detail: oldDone ? Fmt.size(app.oldFiles.totalSize) : app.oldFiles.progress.phase),
         ]
@@ -56,7 +56,7 @@ final class SmartCareModel {
 
     static func phaseText(of areas: [AreaStatus]) -> String {
         let active = areas.filter { !$0.done }
-        return active.isEmpty ? "Завершаем" : "Проверяем: " + active.map { $0.title.lowercased() }.joined(separator: ", ")
+        return active.isEmpty ? String(localized: "Завершаем") : String(localized: "Проверяем: \(active.map { $0.title.lowercased() }.joined(separator: ", "))")
     }
 
     // MARK: Results digest
@@ -218,7 +218,7 @@ final class SmartCareModel {
     /// One cleaning scene for everything: junk categories, then leftovers by app, then old files by kind.
     static func plan(junk: [(JunkCategory, [FileItem])], leftovers: [AppRemnant], groups: [OrphanGroup],
                      oldFiles: [AnalyzedFile]) -> CleaningPlan {
-        var plan = CleaningPlan(title: "Умная очистка", module: .smartCare)
+        var plan = CleaningPlan(title: String(localized: "Умная очистка"), module: .smartCare)
         if !junk.isEmpty { plan.append(JunkModel.plan(junk, title: plan.title, module: .smartCare)) }
         if !leftovers.isEmpty {
             plan.append(UninstallerModel.removalPlan(leftovers, title: plan.title, byApp: true, groups: groups))

@@ -93,7 +93,7 @@ enum SpecialCollectors {
     }
 
     private static func note(for url: URL) -> String? {
-        FileManager.default.isDeletableFile(atPath: url.path) ? nil : "Нужен пароль администратора"
+        FileManager.default.isDeletableFile(atPath: url.path) ? nil : String(localized: "Нужен пароль администратора", bundle: .module)
     }
 
     static func isRotatedLog(_ name: String) -> Bool {
@@ -106,6 +106,9 @@ enum SpecialCollectors {
     }
 
     // MARK: iOS backups
+
+    /// Suffix of the newest backup's label.
+    static let newestBackupLabel = String(localized: "самая свежая", bundle: .module)
 
     /// Each backup folder is one item, labelled with the device name and backup date from `Info.plist`.
     /// The newest backup of each device is `neverAuto`: no cleanup mode ticks a device's last copy.
@@ -128,13 +131,13 @@ enum SpecialCollectors {
             newest[b.deviceKey] = b
         }
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.locale = .autoupdatingCurrent
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return backups.map { b in
-            var parts = [b.device ?? "Устройство"]
+            var parts = [b.device ?? String(localized: "Устройство", bundle: .module)]
             if let date = b.date { parts.append(formatter.string(from: date)) }
-            if b.url == newestOverall, backups.count > 1 { parts.append("самая свежая") }
+            if b.url == newestOverall, backups.count > 1 { parts.append(newestBackupLabel) }
             return JunkCandidate(b.url, note: parts.joined(separator: " · "), neverAuto: newest[b.deviceKey]?.url == b.url)
         }
     }
@@ -156,7 +159,7 @@ enum SpecialCollectors {
             guard let data = try? Data(contentsOf: url) else { return nil }   // unreadable ≠ broken
             // A preferences file is always a dictionary; a bare word would parse as an OpenStep string.
             if (try? PropertyListSerialization.propertyList(from: data, format: nil)) is [String: Any] { return nil }
-            return JunkCandidate(url, note: data.isEmpty ? "Пустой файл" : "Файл повреждён и не читается")
+            return JunkCandidate(url, note: data.isEmpty ? String(localized: "Пустой файл", bundle: .module) : unreadableFileNote)
         }
     }
 
@@ -170,16 +173,18 @@ enum SpecialCollectors {
             guard url.pathExtension == "plist", !FS.isDirectory(url) else { return nil }
             guard let data = try? Data(contentsOf: url) else { return nil }
             guard let plist = (try? PropertyListSerialization.propertyList(from: data, format: nil)) as? [String: Any] else {
-                return JunkCandidate(url, note: "Файл повреждён и не читается")
+                return JunkCandidate(url, note: unreadableFileNote)
             }
             guard let program = executablePath(of: plist) else { return nil }   // BundleProgram etc. — can't verify
             let expanded = program.hasPrefix("~") ? env.home.path + program.dropFirst() : program
             guard expanded.hasPrefix("/") else { return nil }                    // resolved via PATH — can't verify
             let exe = URL(fileURLWithPath: expanded)
             if FS.exists(exe) || !isVerifiablyMissing(exe) { return nil }
-            return JunkCandidate(url, note: "Программа не найдена: \(program)")
+            return JunkCandidate(url, note: String(localized: "Программа не найдена: \(program)", bundle: .module))
         }
     }
+
+    private static let unreadableFileNote = String(localized: "Файл повреждён и не читается", bundle: .module)
 
     static func executablePath(of plist: [String: Any]) -> String? {
         if let program = plist["Program"] as? String, !program.isEmpty { return program }

@@ -14,14 +14,14 @@ struct Sidebar: View {
 
             // Two groups, no one-item sections: what gets cleaned (junk, apps) and the user's own files.
             item(.smartCare)
-            section("Очистка")
+            section(String(localized: "Очистка"))
             item(.junk)
             item(.uninstaller)
-            section("Файлы")
+            section(String(localized: "Файлы"))
             item(.oldFiles)
             item(.duplicates)
             item(.diskMap)
-            section("Система")
+            section(String(localized: "Система"))
             item(.health)
             item(.startup)
 
@@ -148,7 +148,7 @@ private struct ModuleBadge: View {
 private struct SmartCareBadge: View {
     let model: SmartCareModel
     var body: some View {
-        if model.phase == .scanning { BadgeText(text: "…", spoken: "сканирование") }
+        if model.phase == .scanning { BadgeText(text: "…", spoken: String(localized: "сканирование")) }
     }
 }
 
@@ -199,9 +199,9 @@ private struct HealthBadge: View {
     let model: HealthModel
     var body: some View {
         if model.phase == .checking {
-            BadgeText(text: "…", spoken: "проверка")
+            BadgeText(text: "…", spoken: String(localized: "проверка"))
         } else if let n = model.report?.concerns.count, n > 0 {
-            BadgeText(text: Fmt.integer(n), spoken: "обратить внимание: \(Fmt.integer(n))")
+            BadgeText(text: Fmt.integer(n), spoken: String(localized: "обратить внимание: \(Fmt.integer(n))"))
         }
     }
 }
@@ -210,10 +210,10 @@ private struct StartupBadge: View {
     let model: StartupModel
     var body: some View {
         if model.phase == .scanning {
-            BadgeText(text: "…", spoken: "проверка")
+            BadgeText(text: "…", spoken: String(localized: "проверка"))
         } else if model.phase == .results {
             let n = model.enabledThirdPartyCount
-            BadgeText(text: Fmt.integer(n), spoken: "включено \(Fmt.items(n))")
+            BadgeText(text: Fmt.integer(n), spoken: String(localized: "включено \(Fmt.items(n))"))
         }
     }
 }
@@ -221,14 +221,14 @@ private struct StartupBadge: View {
 private struct PercentBadge: View, Equatable {
     let percent: Int
     var body: some View {
-        BadgeText(text: Fmt.percent(Double(percent) / 100), spoken: "сканирование \(Fmt.percent(Double(percent) / 100))")
+        BadgeText(text: Fmt.percent(Double(percent) / 100), spoken: String(localized: "сканирование \(Fmt.percent(Double(percent) / 100))"))
     }
 }
 
 private struct SizeBadge: View, Equatable {
     let bytes: Int64
     var body: some View {
-        BadgeText(text: Fmt.size(bytes), spoken: "найдено \(Fmt.size(bytes))")
+        BadgeText(text: Fmt.size(bytes), spoken: String(localized: "найдено \(Fmt.size(bytes))"))
     }
 }
 
@@ -337,14 +337,14 @@ private struct SidebarStorage: View {
     // MARK: Accessibility
 
     private var accessibilityTitle: String {
-        "\(name): свободно \(Fmt.size(free)) из \(Fmt.size(total))"
+        String(localized: "\(name): свободно \(Fmt.size(free)) из \(Fmt.size(total))")
     }
 
     /// «Приложения — 14 %, 71,3 ГБ», in the bar's order, then free space.
     private var accessibilityRows: [String] {
         guard let b = storage.breakdown else { return [] }
-        return StorageSegmentBar.order(b).map { "\($0.title) — \(StorageFmt.percent(b.share($0.bytes))), \(Fmt.size($0.bytes))" }
-            + ["Свободно — \(StorageFmt.percent(b.share(b.free))), \(Fmt.size(b.free))"]
+        return StorageSegmentBar.order(b).map { String(localized: "\($0.title) — \(StorageFmt.percent(b.share($0.bytes))), \(Fmt.size($0.bytes))") }
+            + [String(localized: "Свободно — \(StorageFmt.percent(b.share(b.free))), \(Fmt.size(b.free))")]
     }
 
     // MARK: Parts
@@ -354,7 +354,7 @@ private struct SidebarStorage: View {
     private var name: String { model.disk?.name ?? storage.breakdown?.volumeName ?? "Macintosh HD" }
 
     private var titleRow: some View {
-        let freeText = "свободно \(Fmt.size(free)) из \(Fmt.size(total))"
+        let freeText = String(localized: "свободно \(Fmt.size(free)) из \(Fmt.size(total))")
         let nameLabel = HStack(spacing: 5) {
             Image(systemName: "internaldrive.fill")
                 .font(.system(size: 10.5))

@@ -12,7 +12,7 @@ struct OldFilesView: View {
         case .idle, .scanning:
             ModuleStage(module: .oldFiles,
                         state: model.phase == .scanning ? .progress(model.progress)
-                            : .idle(button: "Сканировать", enabled: !model.activeRoots.isEmpty),
+                            : .idle(button: String(localized: "Сканировать"), enabled: !model.activeRoots.isEmpty),
                         onAction: model.startScan, onStop: model.stop,
                         onGrantAccess: app.presentAccessSheet) {
                 OldFilesOptionsView(model: model)
@@ -21,7 +21,7 @@ struct OldFilesView: View {
             // While files move, the cleaning scene covers this screen; there is no screen of its own.
             OldFilesResults(model: model)
         case .done:
-            CompletionView(tint: .oldFiles, result: model.result ?? RemovalResult(), title: "Перемещено в Корзину",
+            CompletionView(tint: .oldFiles, result: model.result ?? RemovalResult(), title: String(localized: "Перемещено в Корзину"),
                            noun: .files,
                            onGrantAccess: app.presentAccessSheet,
                            onRetry: model.retryFailed,
@@ -36,17 +36,17 @@ private struct OldFilesOptionsView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Segmented(options: [(OldFilesModel.Mode.old, "Давно не открывались"), (.large, "Большие")],
+            Segmented(options: [(OldFilesModel.Mode.old, String(localized: "Давно не открывались")), (.large, String(localized: "Большие"))],
                       selection: $model.mode, tint: .oldFiles)
 
             HStack(spacing: 22) {
                 if model.mode == .old {
-                    labeled("Не открывались") {
-                        Segmented(options: OldFilesModel.periodOptions.map { ($0, "\($0) мес.") },
+                    labeled(String(localized: "Не открывались")) {
+                        Segmented(options: OldFilesModel.periodOptions.map { ($0, String(localized: "\($0) мес.")) },
                                   selection: $model.months, tint: .oldFiles, compact: true)
                     }
                 }
-                labeled("Размер от") {
+                labeled(String(localized: "Размер от")) {
                     Segmented(options: OldFilesModel.sizeOptions.map { ($0, Fmt.size($0)) },
                               selection: $model.minSize, tint: .oldFiles, compact: true)
                 }
@@ -61,7 +61,7 @@ private struct OldFilesOptionsView: View {
                         model.toggleRoot(url)
                     }
                 }
-                Chip(title: "Папка…", symbol: "plus", selected: false, tint: .oldFiles) { model.addRoot() }
+                Chip(title: String(localized: "Папка…"), symbol: "plus", selected: false, tint: .oldFiles) { model.addRoot() }
             }
         }
     }
@@ -81,9 +81,9 @@ private struct OldFilesResults: View {
     var body: some View {
         if model.files.isEmpty {
             VStack(spacing: 0) {
-                EmptyState(symbol: "checkmark.seal.fill", title: "Ничего не нашлось",
+                EmptyState(symbol: "checkmark.seal.fill", title: String(localized: "Ничего не нашлось"),
                            message: emptyMessage, tint: .oldFiles,
-                           actionTitle: "Изменить параметры", action: model.newScan)
+                           actionTitle: String(localized: "Изменить параметры"), action: model.newScan)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 PartialAccessNote(onGrantAccess: app.presentAccessSheet)
                     .padding(.bottom, 26)
@@ -109,7 +109,7 @@ private struct OldFilesResults: View {
                 .padding(.top, 22)
                 .padding(.bottom, 4)
 
-                ActionFooter(title: "В Корзину", tint: .oldFiles, enabled: !model.selection.isEmpty,
+                ActionFooter(title: String(localized: "В Корзину"), tint: .oldFiles, enabled: !model.selection.isEmpty,
                              action: model.requestTrash) {
                     SelectionSummary(bytes: model.selectedSize, count: model.selection.count, noun: .files)
                 } trailing: {
@@ -132,18 +132,18 @@ private struct OldFilesResults: View {
         let n = model.files.count
         switch model.resultMode {
         case .old:
-            return "\(Fmt.files(n)) \(Fmt.verb(n, one: "не открывался", other: "не открывались")) больше \(Fmt.months(model.months))"
+            return String(localized: "\(Fmt.files(n)) \(Fmt.verb(n, one: "не открывался", other: "не открывались")) больше \(Fmt.months(model.months))")
         case .large:
-            return "\(Fmt.files(n)) крупнее \(Fmt.size(model.largeMinSize))"
+            return String(localized: "\(Fmt.files(n)) крупнее \(Fmt.size(model.largeMinSize))")
         }
     }
 
     private var emptyMessage: String {
         switch model.resultMode {
         case .old:
-            "Нет файлов от \(Fmt.size(model.oldMinSize)), которые не открывались больше \(Fmt.months(model.months)). Уменьшите размер или срок — или добавьте папку."
+            String(localized: "Нет файлов от \(Fmt.size(model.oldMinSize)), которые не открывались больше \(Fmt.months(model.months)). Уменьшите размер или срок — или добавьте папку.")
         case .large:
-            "Нет файлов крупнее \(Fmt.size(model.largeMinSize)) в выбранных папках. Уменьшите размер или добавьте папку."
+            String(localized: "Нет файлов крупнее \(Fmt.size(model.largeMinSize)) в выбранных папках. Уменьшите размер или добавьте папку.")
         }
     }
 }
@@ -153,7 +153,7 @@ private struct KindsColumn: View {
 
     var body: some View {
         VStack(spacing: 2) {
-            KindRow(symbol: "square.grid.2x2.fill", title: "Все файлы", count: model.files.count, size: model.totalSize,
+            KindRow(symbol: "square.grid.2x2.fill", title: String(localized: "Все файлы"), count: model.files.count, size: model.totalSize,
                     fraction: 1, selected: model.kindFilter == nil) { model.kindFilter = nil }
             Hairline().padding(.vertical, 4).padding(.horizontal, 8)
             ForEach(model.kinds, id: \.kind) { k in
@@ -220,14 +220,14 @@ private struct FilesList: View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
                 CheckBox(state: CheckState(selected: model.selectedCount(in: files), total: files.count),
-                         tint: .oldFiles, label: "Выбрать все в списке") {
+                         tint: .oldFiles, label: String(localized: "Выбрать все в списке")) {
                     model.toggleAll(in: files)
                 }
-                Text(model.kindFilter?.title ?? "Все файлы")
+                Text(model.kindFilter?.title ?? String(localized: "Все файлы"))
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Theme.text)
                 Spacer()
-                Segmented(options: [(OldFilesModel.Sort.size, "Размер"), (.date, "Дата"), (.name, "Имя")],
+                Segmented(options: [(OldFilesModel.Sort.size, String(localized: "Размер")), (.date, String(localized: "Дата")), (.name, String(localized: "Имя"))],
                           selection: $model.sort, tint: .oldFiles, compact: true)
             }
             .padding(.horizontal, 16)
@@ -249,8 +249,8 @@ private struct FilesList: View {
     }
 
     private func detail(_ f: AnalyzedFile) -> String {
-        if let used = f.item.lastUsed { return "открывался \(Fmt.ago(used))" }
-        if let mod = f.item.modified { return "изменён \(Fmt.ago(mod))" }
-        return "не открывался"
+        if let used = f.item.lastUsed { return String(localized: "открывался \(Fmt.ago(used))") }
+        if let mod = f.item.modified { return String(localized: "изменён \(Fmt.ago(mod))") }
+        return String(localized: "не открывался")
     }
 }

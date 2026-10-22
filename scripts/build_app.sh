@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Builds "build/Clearwise Cleaner.app" from a clean checkout: release binary, generated icon, Info.plist, ad-hoc signature.
-# Usage: scripts/build_app.sh            (SCRATCH_PATH=.build-release scripts/build_app.sh to use another build dir)
+# Usage: scripts/build_app.sh            (SCRATCH_PATH=.build-release scripts/build_app.sh to use another build dir;
+#                                          CONFIGURATION=debug for a bundle with the --snapshot runner)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -12,22 +13,34 @@ APP="build/$APP_NAME.app"
 ICONSET="build/AppIcon.iconset"
 VERSION="${VERSION:-1.0}"
 BUILD_NUMBER="${BUILD_NUMBER:-1}"
+CONFIGURATION="${CONFIGURATION:-release}"
 
 # UNIVERSAL=1 builds for Apple silicon and Intel in one binary (releases); otherwise this Mac's architecture only.
 ARCH_FLAGS=()
 [[ "${UNIVERSAL:-0}" == 1 ]] && ARCH_FLAGS=(--arch arm64 --arch x86_64)
 
-echo "==> Compiling (release${ARCH_FLAGS[*]:+, universal})"
-swift build -c release --product MacCleaner --scratch-path "$SCRATCH" ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"}
+echo "==> Compiling (${CONFIGURATION}${ARCH_FLAGS[*]:+, universal})"
+swift build -c "$CONFIGURATION" --product MacCleaner --scratch-path "$SCRATCH" ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"}
 # The MCP server ships inside the bundle (Contents/MacOS/clearwise-mcp) so an AI client can be pointed at it.
-swift build -c release --product clearwise-mcp --scratch-path "$SCRATCH" ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"}
-BIN_DIR="$(swift build -c release --product MacCleaner --scratch-path "$SCRATCH" ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"} --show-bin-path)"
+swift build -c "$CONFIGURATION" --product clearwise-mcp --scratch-path "$SCRATCH" ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"}
+BIN_DIR="$(swift build -c "$CONFIGURATION" --product MacCleaner --scratch-path "$SCRATCH" ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"} --show-bin-path)"
 
 echo "==> Assembling $APP"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/MacCleaner" "$APP/Contents/MacOS/MacCleaner"
 cp "$BIN_DIR/clearwise-mcp" "$APP/Contents/MacOS/clearwise-mcp"
+# String catalogs (Russian and English): Bundle.module looks for MacCleaner_<Target>.bundle in Bundle.main's
+# Resources, and for the MCP server inside Contents/MacOS the main bundle is this app too. Without them the first
+# localized string stops the program. Only Resources: a bundle in Contents/MacOS would count as nested code to sign.
+for bundle in "$BIN_DIR"/MacCleaner_*.bundle; do
+    [ -d "$bundle" ] && cp -R "$bundle" "$APP/Contents/Resources/"
+done
+# The app's own strings: String(localized:) and SwiftUI Text look in Bundle.main, i.e. Contents/Resources/<lang>.lproj,
+# while the catalog compiles into the nested bundle. Russian is the development region (keys), so only the others are copied.
+for lproj in "$BIN_DIR"/MacCleaner_MacCleaner.bundle/Contents/Resources/*.lproj; do
+    [ -d "$lproj" ] && cp -R "$lproj" "$APP/Contents/Resources/"
+done
 # The debug map holds absolute paths of the sources and object files (the builder's home folder); like Xcode's
 # release builds, the shipped binary keeps only what dyld needs.
 strip -S -x "$APP/Contents/MacOS/MacCleaner" "$APP/Contents/MacOS/clearwise-mcp"

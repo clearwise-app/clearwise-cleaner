@@ -10,25 +10,25 @@ public struct StorageCategory: Identifiable, Sendable, Equatable, Codable {
 
         public var title: String {
             switch self {
-            case .apps: return "Приложения"
-            case .documents: return "Документы"
-            case .media: return "Фото и видео"
-            case .music: return "Музыка"
-            case .developer: return "Разработка"
+            case .apps: return String(localized: "Приложения", bundle: .module)
+            case .documents: return String(localized: "Документы", bundle: .module)
+            case .media: return String(localized: "Фото и видео", bundle: .module)
+            case .music: return String(localized: "Музыка", bundle: .module)
+            case .developer: return String(localized: "Разработка", bundle: .module)
             case .iCloud: return "iCloud Drive"
-            case .appData: return "Данные приложений"
-            case .trash: return "Корзина"
-            case .system: return "Система и прочее"
+            case .appData: return String(localized: "Данные приложений", bundle: .module)
+            case .trash: return String(localized: "Корзина", bundle: .module)
+            case .system: return String(localized: "Система и прочее", bundle: .module)
             }
         }
 
         /// Fits the narrow sidebar legend.
         public var shortTitle: String {
             switch self {
-            case .media: return "Медиа"
-            case .appData: return "Данные"
+            case .media: return String(localized: "Медиа", bundle: .module)
+            case .appData: return String(localized: "Данные", bundle: .module)
             case .iCloud: return "iCloud"
-            case .system: return "Система"
+            case .system: return String(localized: "Система", bundle: .module)
             default: return title
             }
         }
@@ -298,7 +298,7 @@ final class ParallelTally: @unchecked Sendable {
             rootIdentity.append(id)
             if let id { fenced.insert(id) }
         }
-        let phase = "Анализ диска"
+        let phase = String(localized: "Анализ диска", bundle: .module)
         for i in roots.indices {
             // Missing, a symlink, or the same folder as an earlier root: nothing (more) to measure.
             guard let id = rootIdentity[i], visited.insert(id) else {

@@ -114,15 +114,15 @@ struct ScanButton: View {
     private var helpText: String {
         switch mode {
         case .action(let title): returnTriggers ? "\(title) (↩)" : title
-        case .progress, .busy: canStop ? "Остановить (Esc)" : "Идёт работа…"
+        case .progress, .busy: canStop ? String(localized: "Остановить (Esc)") : String(localized: "Идёт работа…")
         }
     }
 
     private var accessibilityLabel: String {
         switch mode {
         case .action(let title): title
-        case .progress: canStop ? "Остановить сканирование" : "Сканирование"
-        case .busy: canStop ? "Остановить" : "Идёт работа"
+        case .progress: canStop ? String(localized: "Остановить сканирование") : String(localized: "Сканирование")
+        case .busy: canStop ? String(localized: "Остановить") : String(localized: "Идёт работа")
         }
     }
 

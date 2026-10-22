@@ -27,7 +27,7 @@ final class DiskMapModel {
 
         var title: String {
             switch self {
-            case .home: "Домашняя папка"
+            case .home: String(localized: "Домашняя папка")
             case .startup: "Macintosh HD"
             case .custom(let u): u.lastPathComponent
             }
@@ -102,7 +102,7 @@ final class DiskMapModel {
     func scan() async {
         let target = location.url
         withAnimation(Theme.spring) { phase = .scanning }
-        progress = ScanProgress(phase: "Подготовка", fraction: 0)
+        progress = ScanProgress(phase: String(localized: "Подготовка"), fraction: 0)
         let relay = progressRelay { [weak self] p in
             guard let self, self.phase == .scanning else { return }
             self.progress = p
@@ -133,7 +133,7 @@ final class DiskMapModel {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
-        panel.prompt = "Выбрать"
+        panel.prompt = String(localized: "Выбрать")
         guard panel.runModal() == .OK, let url = panel.url else { return false }
         location = .custom(url)
         return true
@@ -215,13 +215,13 @@ final class DiskMapModel {
         // Never collect a folder that is on the current zoom path (e.g. the scanned root itself).
         if stack.contains(where: { $0.url.standardizedFileURL == item.url.standardizedFileURL }) {
             NSSound.beep()
-            lastRefusal = Refusal(title: "«\(item.name)» сейчас открыта на карте",
-                                  detail: "Выберите отдельные папки и файлы внутри неё.")
+            lastRefusal = Refusal(title: String(localized: "«\(item.name)» сейчас открыта на карте"),
+                                  detail: String(localized: "Выберите отдельные папки и файлы внутри неё."))
             return
         }
         if let reason = SafetyGuard.refusalReason(for: item.url) {
             NSSound.beep()
-            lastRefusal = Refusal(title: "«\(item.name)» нельзя переместить в Корзину",
+            lastRefusal = Refusal(title: String(localized: "«\(item.name)» нельзя переместить в Корзину"),
                                   detail: reason.hasSuffix(".") ? reason : reason + ".")
             return
         }
@@ -297,10 +297,10 @@ final class DiskMapModel {
 
     /// The collector as one stage; Trash calls go in chunks, so «Остановить» works between chunks.
     static func plan(_ picked: [CollectedItem]) -> CleaningPlan {
-        var plan = CleaningPlan(title: "Удаление собранных объектов", module: .diskMap)
+        var plan = CleaningPlan(title: String(localized: "Удаление собранных объектов"), module: .diskMap)
         let sizes = CleaningPrep.sizes(picked.map { ($0.url, $0.size) })
         let urls = CleaningPrep.dedupe(picked.map(\.url))
-        plan.addStage("Собранные объекты", symbol: "tray.full.fill", items: urls.map { ($0, sizes[$0] ?? 0) })
+        plan.addStage(String(localized: "Собранные объекты"), symbol: "tray.full.fill", items: urls.map { ($0, sizes[$0] ?? 0) })
         plan.addTrashUnits(urls, knownSizes: sizes)
         return plan
     }

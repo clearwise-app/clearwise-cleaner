@@ -42,7 +42,7 @@ struct CleaningPlan {
         self.title = title
         self.symbol = module.symbol
         self.tint = tint ?? module.tint
-        self.activity = module == .uninstaller ? "Удаляем" : "Сейчас"
+        self.activity = module == .uninstaller ? String(localized: "Удаляем") : String(localized: "Сейчас")
     }
 
     @discardableResult
@@ -181,7 +181,7 @@ final class CleaningSession {
     /// Item order, for the snapshot driver.
     @ObservationIgnored private var orderedItems: [(key: String, url: URL)] = []
 
-    init(title: String, symbol: String, tint: ModuleTint, activity: String = "Сейчас", stages plan: [CleaningPlan.Stage]) {
+    init(title: String, symbol: String, tint: ModuleTint, activity: String = String(localized: "Сейчас"), stages plan: [CleaningPlan.Stage]) {
         self.title = title
         self.symbol = symbol
         self.tint = tint

@@ -5,7 +5,7 @@ import Foundation
 /// Internal to CleanerKit: other modules get typed operations only (`FileRemover`, `LaunchdRootCommand`),
 /// never a free-form root shell.
 enum AdminShell {
-    /// Runs `shell` as root. Returns success, or a Russian reason («Отменено пользователем»…).
+    /// Runs `shell` as root. Returns success, or a localized reason («Отменено пользователем»…).
     /// Blocks until the prompt is answered: call it off the main thread.
     static func run(_ shell: String) -> (ok: Bool, error: String?) {
         let script = "do shell script \(appleScriptString(shell)) with administrator privileges"
@@ -19,7 +19,8 @@ enum AdminShell {
         process.waitUntilExit()
         if process.terminationStatus == 0 { return (true, nil) }
         let message = String(data: errPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-        return (false, message.contains("-128") ? "Отменено пользователем" : "Нет прав администратора")
+        return (false, message.contains("-128") ? String(localized: "Отменено пользователем", bundle: .module)
+                                                : String(localized: "Нет прав администратора", bundle: .module))
     }
 
     /// Single-quoted for /bin/sh.

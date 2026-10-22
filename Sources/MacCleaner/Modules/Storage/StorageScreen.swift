@@ -67,7 +67,7 @@ struct StorageScreen: View {
             .labelsHidden()
             .fixedSize()
             .help("Порядок категорий и файлов по размеру")
-            IconButton(symbol: "xmark", help: "Закрыть (Esc)", size: 28, action: app.closeStorage)
+            IconButton(symbol: "xmark", help: String(localized: "Закрыть (Esc)"), size: 28, action: app.closeStorage)
         }
     }
 
@@ -181,7 +181,7 @@ private struct StorageContentsPanel: View {
     @ViewBuilder private var content: some View {
         if let entries = explorer.sortedEntries {
             if entries.isEmpty {
-                note(symbol: "tray", title: "Здесь пусто", text: "В этой папке нет файлов, которые занимают место.")
+                note(symbol: "tray", title: String(localized: "Здесь пусто"), text: String(localized: "В этой папке нет файлов, которые занимают место."))
             } else {
                 list(entries)
             }
@@ -219,12 +219,12 @@ private struct StorageContentsPanel: View {
     /// «Система и прочее» is a remainder: say what the rows are and how much macOS does not let us list.
     private func systemNote(listed: Int64) -> some View {
         let rest = breakdown.bytes(.system) - listed
-        var text = "Всё, что не попало в другие категории. Ниже — части, которые можно измерить."
+        var text = String(localized: "Всё, что не попало в другие категории. Ниже — части, которые можно измерить.")
         if rest > 1_000_000_000 {
-            text += " Ещё \(Fmt.size(rest)) macOS не раскладывает по файлам: локальные снимки Time Machine, служебные данные файловой системы"
-            text += breakdown.fullDiskAccess ? " и файлы других пользователей." : ", файлы других пользователей и — без полного доступа к диску — данные других приложений."
+            text += String(localized: " Ещё \(Fmt.size(rest)) macOS не раскладывает по файлам: локальные снимки Time Machine, служебные данные файловой системы")
+            text += breakdown.fullDiskAccess ? String(localized: " и файлы других пользователей.") : String(localized: ", файлы других пользователей и — без полного доступа к диску — данные других приложений.")
         }
-        text += " Освободить место здесь можно в основном через «Общую библиотеку», Homebrew и скрытые папки; macOS и подкачку система держит сама."
+        text += String(localized: " Освободить место здесь можно в основном через «Общую библиотеку», Homebrew и скрытые папки; macOS и подкачку система держит сама.")
         return HStack(alignment: .top, spacing: 10) {
             Image(systemName: "info.circle.fill")
                 .font(.system(size: 13))
@@ -277,8 +277,8 @@ private struct StorageEntryRow: View {
         let prefix = "com_apple_MobileAsset_", suffix = "SimulatorRuntime"
         if let custom = entry.title { return custom }
         if raw.hasPrefix(prefix), raw.hasSuffix(suffix) {
-            let platform = raw.dropFirst(prefix.count).dropLast(suffix.count)
-            return "Симуляторы \(platform)"
+            let platform = String(raw.dropFirst(prefix.count).dropLast(suffix.count))
+            return String(localized: "Симуляторы \(platform)")
         }
         return entry.name
     }
@@ -338,7 +338,7 @@ private struct StorageEntryRow: View {
             .buttonStyle(.plain)
             .accessibilityLabel([title, entry.detail, Fmt.size(entry.bytes)].compactMap { $0 }.joined(separator: ", "))
             .accessibilityHint(entry.isFolder ? "Открыть папку" : "")
-            IconButton(symbol: "magnifyingglass", help: "Показать в Finder", size: 24) { Finder.reveal(entry.url) }
+            IconButton(symbol: "magnifyingglass", help: String(localized: "Показать в Finder"), size: 24) { Finder.reveal(entry.url) }
                 .opacity(hover ? 1 : 0.001)
             Image(systemName: "chevron.right")
                 .font(.system(size: 11, weight: .bold))

@@ -12,7 +12,7 @@ struct DuplicatesView: View {
         case .idle, .scanning:
             ModuleStage(module: .duplicates,
                         state: model.phase == .scanning ? .progress(model.progress)
-                            : .idle(button: "Сканировать", enabled: !model.activeRoots.isEmpty),
+                            : .idle(button: String(localized: "Сканировать"), enabled: !model.activeRoots.isEmpty),
                         onAction: model.startScan, onStop: model.stop,
                         onGrantAccess: app.presentAccessSheet) {
                 DuplicatesOptionsView(model: model)
@@ -21,7 +21,7 @@ struct DuplicatesView: View {
             // While copies move, the cleaning scene covers this screen; there is no screen of its own.
             DuplicatesResults(model: model)
         case .done:
-            CompletionView(tint: .duplicates, result: model.result ?? RemovalResult(), title: "Перемещено в Корзину",
+            CompletionView(tint: .duplicates, result: model.result ?? RemovalResult(), title: String(localized: "Перемещено в Корзину"),
                            noun: .copies,
                            onGrantAccess: app.presentAccessSheet,
                            onRetry: model.retryFailed,
@@ -52,7 +52,7 @@ private struct DuplicatesOptionsView: View {
                         model.toggleRoot(url)
                     }
                 }
-                Chip(title: "Папка…", symbol: "plus", selected: false, tint: .duplicates) { model.addRoot() }
+                Chip(title: String(localized: "Папка…"), symbol: "plus", selected: false, tint: .duplicates) { model.addRoot() }
             }
             Label("Сравниваем содержимое, а не имена: в каждой группе файлы совпадают байт в байт.",
                   systemImage: "checkmark.shield.fill")
@@ -71,9 +71,9 @@ private struct DuplicatesResults: View {
     var body: some View {
         if model.groups.isEmpty {
             VStack(spacing: 0) {
-                EmptyState(symbol: "checkmark.seal.fill", title: "Дубликатов не нашлось",
-                           message: "Среди файлов от \(Fmt.size(model.minSize)) в выбранных папках одинаковых нет. Уменьшите порог или добавьте папку.",
-                           tint: .duplicates, actionTitle: "Изменить параметры", action: model.newScan)
+                EmptyState(symbol: "checkmark.seal.fill", title: String(localized: "Дубликатов не нашлось"),
+                           message: String(localized: "Среди файлов от \(Fmt.size(model.minSize)) в выбранных папках одинаковых нет. Уменьшите порог или добавьте папку."),
+                           tint: .duplicates, actionTitle: String(localized: "Изменить параметры"), action: model.newScan)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 PartialAccessNote(onGrantAccess: app.presentAccessSheet)
                     .padding(.bottom, 26)
@@ -99,7 +99,7 @@ private struct DuplicatesResults: View {
                 .padding(.top, 22)
                 .padding(.bottom, 4)
 
-                ActionFooter(title: "В Корзину", tint: .duplicates, enabled: model.markedCount > 0,
+                ActionFooter(title: String(localized: "В Корзину"), tint: .duplicates, enabled: model.markedCount > 0,
                              action: model.requestTrash) {
                     SelectionSummary(bytes: model.markedBytes, count: model.markedCount, noun: .copies)
                 } trailing: {
@@ -144,7 +144,7 @@ private struct DupKindsColumn: View {
 
     var body: some View {
         VStack(spacing: 2) {
-            DupKindRow(symbol: "square.grid.2x2.fill", title: "Все дубликаты", count: model.groups.count,
+            DupKindRow(symbol: "square.grid.2x2.fill", title: String(localized: "Все дубликаты"), count: model.groups.count,
                        size: model.reclaimable, fraction: 1, selected: model.kindFilter == nil) {
                 withAnimation(Theme.quick) { model.kindFilter = nil }
             }
@@ -225,12 +225,12 @@ private struct GroupsList: View {
                 .fixedSize()
                 .help("Отметить все копии, кроме одной в каждой группе, или снять отметки")
 
-                Text(model.kindFilter?.title ?? "Все дубликаты")
+                Text(model.kindFilter?.title ?? String(localized: "Все дубликаты"))
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Theme.text)
                     .lineLimit(1)
                 Spacer(minLength: 8)
-                Segmented(options: [(DuplicatesModel.Sort.size, "Размер"), (.name, "Имя")],
+                Segmented(options: [(DuplicatesModel.Sort.size, String(localized: "Размер")), (.name, String(localized: "Имя"))],
                           selection: $model.sort, tint: .duplicates, compact: true)
             }
             .padding(.horizontal, 12)
@@ -327,7 +327,7 @@ private struct RuleLine: View {
             Text("·").foregroundStyle(.themeSecondary).accessibilityHidden(true)
             Menu {
                 ForEach(group.files) { f in
-                    let title = "Оставить копию в «\(folder(f))»"
+                    let title = String(localized: "Оставить копию в «\(folder(f))»")
                     let current = kept.count == 1 && kept[0].id == f.id
                     Button {
                         model.keepOnly(f, in: group)
@@ -349,9 +349,9 @@ private struct RuleLine: View {
 
     private func rule(_ kept: [AnalyzedFile]) -> String {
         switch kept.count {
-        case 1: "Оставляем копию в «\(folder(kept[0]))», остальные — в Корзину"
-        case group.files.count: "Все копии остаются на диске"
-        default: "Остаётся \(Fmt.copies(kept.count)), остальные — в Корзину"
+        case 1: String(localized: "Оставляем копию в «\(folder(kept[0]))», остальные — в Корзину")
+        case group.files.count: String(localized: "Все копии остаются на диске")
+        default: String(localized: "Остаётся \(Fmt.copies(kept.count)), остальные — в Корзину")
         }
     }
 
@@ -409,8 +409,8 @@ private struct CopyRow: View {
                          color: removing ? Theme.textSecondary : Theme.textTertiary)
                     .opacity(hover ? 0 : 1)
                 HStack(spacing: 6) {
-                    IconButton(symbol: "eye.fill", help: "Быстрый просмотр", size: 24) { model.quickLookURL = url }
-                    IconButton(symbol: "magnifyingglass", help: "Показать в Finder", size: 24) { Finder.reveal(url) }
+                    IconButton(symbol: "eye.fill", help: String(localized: "Быстрый просмотр"), size: 24) { model.quickLookURL = url }
+                    IconButton(symbol: "magnifyingglass", help: String(localized: "Показать в Finder"), size: 24) { Finder.reveal(url) }
                 }
                 .opacity(hover ? 1 : 0)
             }
@@ -455,7 +455,7 @@ private struct CopyRow: View {
     }
 
     private var detail: String {
-        guard let m = file.item.modified else { return "дата неизвестна" }
+        guard let m = file.item.modified else { return String(localized: "дата неизвестна") }
         return Fmt.date(m)
     }
 }
@@ -471,8 +471,8 @@ private struct KeepToggle: View {
 
     var body: some View {
         HStack(spacing: 2) {
-            segment("Оставить", symbol: "checkmark", keep: true, active: !removing) { onChange(false) }
-            segment("В Корзину", symbol: "trash.fill", keep: false, active: removing) { onChange(true) }
+            segment(String(localized: "Оставить"), symbol: "checkmark", keep: true, active: !removing) { onChange(false) }
+            segment(String(localized: "В Корзину"), symbol: "trash.fill", keep: false, active: removing) { onChange(true) }
         }
         .padding(2)
         .background(Capsule().fill(.black.opacity(0.24)))

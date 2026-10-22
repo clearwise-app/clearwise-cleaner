@@ -8,11 +8,31 @@ struct SettingsView: View {
     @AppStorage(SettingsKeys.confirmEmptyTrash) private var confirmEmptyTrash = true
     @AppStorage(SettingsKeys.deletePermanently) private var deletePermanently = false
     @AppStorage(SettingsKeys.cleanupMode) private var cleanupMode = CleanupMode.gentle.rawValue
+    @State private var language = AppLanguage.chosen
 
     var body: some View {
         Form {
             Section("Доступ") {
                 accessRow
+            }
+
+            Section("Язык / Language") {
+                Picker("Язык интерфейса", selection: $language) {
+                    Text("Как в системе").tag(AppLanguage.system)
+                    Text("Русский").tag(AppLanguage.russian)
+                    Text("English").tag(AppLanguage.english)
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: language) { _, new in AppLanguage.chosen = new }
+                if language.resolved != AppLanguage.running {
+                    HStack {
+                        Text("Язык изменится после перезапуска приложения.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Перезапустить") { AppLanguage.relaunch() }
+                    }
+                }
             }
 
             Section("Режим очистки") {
@@ -67,7 +87,7 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 520)
         .fixedSize(horizontal: false, vertical: true)
-        .environment(\.locale, Locale(identifier: "ru_RU"))
+        .environment(\.locale, AppLanguage.locale)
     }
 
     @ViewBuilder private var accessRow: some View {
@@ -110,9 +130,9 @@ struct SettingsView: View {
         let version = info?["CFBundleShortVersionString"] as? String
         let build = info?["CFBundleVersion"] as? String
         switch (version, build) {
-        case let (v?, b?): return "Версия \(v) (\(b))"
-        case let (v?, nil): return "Версия \(v)"
-        default: return "Сборка для разработки"
+        case let (v?, b?): return String(localized: "Версия \(v) (\(b))")
+        case let (v?, nil): return String(localized: "Версия \(v)")
+        default: return String(localized: "Сборка для разработки")
         }
     }
 }

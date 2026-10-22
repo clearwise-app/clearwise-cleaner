@@ -287,7 +287,7 @@ final class StartupEngineTests: XCTestCase {
         XCTAssertNotNil(StartupActions.refusal(.disable, for: item("com.example.a", source: .userAgent, overridden: true)))
         XCTAssertNil(StartupActions.refusal(.enable, for: item("com.example.a", source: .userAgent, overridden: true)))
         XCTAssertEqual(StartupActions.refusal(.enable, for: item("com.example.a", source: .userAgent, settingsOff: true)),
-                       "Включается в Системных настройках → Объекты входа")
+                       StartupActions.Reason.enableInSettings)
         XCTAssertNotNil(StartupActions.refusal(.disable, for: item("x; rm -rf ~", source: .userAgent)))
         XCTAssertNotNil(StartupActions.refusal(.disable, for: item("com.example.e", source: .userAgent, malformed: true)))
         XCTAssertNil(StartupActions.refusal(.remove, for: item("com.example.e", source: .userAgent, malformed: true)))
@@ -333,15 +333,15 @@ final class StartupEngineTests: XCTestCase {
         let target = try plist("real.plist", in: root, job("com.example.l"))
         let link = userAgents.appendingPathComponent("com.example.l.plist")
         try fm.createSymbolicLink(at: link, withDestinationURL: target)
-        XCTAssertEqual(StartupActions.changedOnDisk(item("com.example.l", source: .userAgent, plist: link), env), "Это ссылка, а не файл")
+        XCTAssertEqual(StartupActions.changedOnDisk(item("com.example.l", source: .userAgent, plist: link), env), StartupActions.Reason.notAFile)
 
         let elsewhere = try plist("com.example.w.plist", in: root, job("com.example.w"))
         XCTAssertNotNil(StartupActions.changedOnDisk(item("com.example.w", source: .userAgent, plist: elsewhere), env))
 
         // Global agents and daemons must be root's; a fixture file is ours.
         let g = try plist("com.example.g.plist", in: globalAgents, job("com.example.g"))
-        XCTAssertEqual(StartupActions.changedOnDisk(item("com.example.g", source: .globalAgent, plist: g), env), "Неожиданный владелец файла")
-        XCTAssertEqual(StartupActions.changedOnDisk(item("com.example.gone", source: .userAgent), env), "Файла уже нет")
+        XCTAssertEqual(StartupActions.changedOnDisk(item("com.example.g", source: .globalAgent, plist: g), env), StartupActions.Reason.unexpectedOwner)
+        XCTAssertEqual(StartupActions.changedOnDisk(item("com.example.gone", source: .userAgent), env), StartupActions.Reason.fileGone)
     }
 
     func testDisableThenEnableUserAgent() async throws {

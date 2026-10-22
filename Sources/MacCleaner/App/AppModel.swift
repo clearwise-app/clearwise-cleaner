@@ -122,9 +122,9 @@ final class AppModel {
         } else if changed {
             markOnboardingDone()
             if accessFlow == nil {
-                showToast(Toast(text: "Полный доступ включён — пересканируйте, чтобы увидеть всё",
+                showToast(Toast(text: String(localized: "Полный доступ включён — пересканируйте, чтобы увидеть всё"),
                                 symbol: "checkmark.shield.fill", kind: .success,
-                                actionTitle: canRescan ? "Сканировать заново" : nil,
+                                actionTitle: canRescan ? String(localized: "Сканировать заново") : nil,
                                 action: { [weak self] in self?.rescanCurrent() }))
             }
         }
@@ -137,7 +137,7 @@ final class AppModel {
         if appsState == .loaded && !force { return apps }
         if let appsTask { return await appsTask.value }
         appsState = .loading
-        appsProgress = ScanProgress(phase: "Ищем приложения", fraction: 0)
+        appsProgress = ScanProgress(phase: String(localized: "Ищем приложения"), fraction: 0)
         let relay = progressRelay { [weak self] in self?.appsProgress = $0 }
         let task = Task { await AppInventory().installedApps(progress: relay) }
         appsTask = task
@@ -175,7 +175,7 @@ final class AppModel {
     func presentAccessSheet() {
         guard accessFlow == nil, cleaning == nil else { return }
         if hasFullDiskAccess {
-            showToast(Toast(text: "Полный доступ к диску уже включён", symbol: "checkmark.shield.fill", kind: .success))
+            showToast(Toast(text: String(localized: "Полный доступ к диску уже включён"), symbol: "checkmark.shield.fill", kind: .success))
             return
         }
         if confirmation != nil { dismissConfirmation() }
@@ -403,9 +403,9 @@ extension AppModel {
     /// Menu title of ⌘⌫, the same verb as the module's round button.
     var primaryActionTitle: String {
         switch selection {
-        case .smartCare, .junk: "Очистить…"
-        case .uninstaller, .startup: "Удалить…"
-        case .oldFiles, .duplicates, .diskMap, .health: "Переместить в Корзину…"
+        case .smartCare, .junk: String(localized: "Очистить…")
+        case .uninstaller, .startup: String(localized: "Удалить…")
+        case .oldFiles, .duplicates, .diskMap, .health: String(localized: "Переместить в Корзину…")
         }
     }
 
@@ -516,11 +516,11 @@ extension AppModel {
             guard let self else { return }
             switch listing {
             case .unreadable:
-                self.showToast(Toast(text: "Нет доступа к Корзине — macOS показывает её только с полным доступом к диску",
-                                     symbol: "lock.shield.fill", kind: .warning, actionTitle: "Дать доступ",
+                self.showToast(Toast(text: String(localized: "Нет доступа к Корзине — macOS показывает её только с полным доступом к диску"),
+                                     symbol: "lock.shield.fill", kind: .warning, actionTitle: String(localized: "Дать доступ"),
                                      action: { [weak self] in self?.presentAccessSheet() }))
             case .items(let items) where items.isEmpty:
-                self.showToast(Toast(text: "Корзина уже пуста", symbol: "trash", kind: .info))
+                self.showToast(Toast(text: String(localized: "Корзина уже пуста"), symbol: "trash", kind: .info))
             case .items(let items):
                 self.confirmEmptyTrash(items)
             }
@@ -533,7 +533,7 @@ extension AppModel {
         let warn = probesSystem ? (UserDefaults.standard.object(forKey: SettingsKeys.confirmEmptyTrash) as? Bool ?? true) : true
         let run: @MainActor () -> Void = { [weak self] in self?.emptyTrash(items) }
         guard warn else { run(); return }
-        ask(.make(.deleteForever, title: "Очистить Корзину?",
+        ask(.make(.deleteForever, title: String(localized: "Очистить Корзину?"),
                   count: items.count, bytes: items.reduce(0) { $0 + $1.size }, noun: .items,
                   tint: selection.tint, action: run))
     }
@@ -543,10 +543,10 @@ extension AppModel {
         guard cleaning == nil, probesSystem else { return }
         let tint = selection.tint
         let pairs = items.map { (url: $0.url, size: $0.size) }
-        var plan = CleaningPlan(title: "Очистка Корзины", module: selection, tint: tint)
+        var plan = CleaningPlan(title: String(localized: "Очистка Корзины"), module: selection, tint: tint)
         plan.symbol = "trash.fill"
-        plan.activity = "Сейчас"
-        plan.addStage("Корзина", symbol: "trash.fill", items: pairs)
+        plan.activity = String(localized: "Сейчас")
+        plan.addStage(String(localized: "Корзина"), symbol: "trash.fill", items: pairs)
         let sizes = CleaningPrep.sizes(pairs.map { ($0.url, $0.size) })
         // Items the user may not delete (apps uninstalled with the admin password) go in one unit last:
         // a single password prompt, like Finder's «Очистить Корзину».

@@ -26,14 +26,14 @@ struct WelcomeStep: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            StepHeader(symbol: "sparkles", title: "Освободим место — бережно",
-                       subtitle: "\(AppInfo.name) находит кэши, остатки приложений, дубликаты и забытые файлы. Что удалить, решаете вы.",
+            StepHeader(symbol: "sparkles", title: String(localized: "Освободим место — бережно"),
+                       subtitle: String(localized: "\(AppInfo.name) находит кэши, остатки приложений, дубликаты и забытые файлы. Что удалить, решаете вы."),
                        metrics: metrics)
 
             VStack(alignment: .leading, spacing: Theme.Space.m) {
-                promise("arrow.uturn.backward", "Всё удалённое сначала попадает в Корзину — его можно вернуть.")
-                promise("hand.raised.fill", "Личные файлы никогда не отмечаются сами.")
-                promise("wifi.slash", "\(AppInfo.name) работает без интернета и ничего никуда не отправляет.")
+                promise("arrow.uturn.backward", String(localized: "Всё удалённое сначала попадает в Корзину — его можно вернуть."))
+                promise("hand.raised.fill", String(localized: "Личные файлы никогда не отмечаются сами."))
+                promise("wifi.slash", String(localized: "\(AppInfo.name) работает без интернета и ничего никуда не отправляет."))
             }
             .frame(maxWidth: 520, alignment: .leading)
             .padding(.top, metrics.compact ? Theme.Space.l : Theme.Space.xl)
@@ -78,8 +78,8 @@ struct AccessRequestStep: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            StepHeader(symbol: "lock.shield.fill", title: "Разрешите доступ ко всему диску",
-                       subtitle: "macOS скрывает от программ часть файлов — почту, кэши Safari, контейнеры приложений, резервные копии. Чтобы найти весь мусор, \(AppInfo.name) нужен полный доступ к диску. Его даёте вы в Системных настройках — там же его можно отключить в любой момент.",
+            StepHeader(symbol: "lock.shield.fill", title: String(localized: "Разрешите доступ ко всему диску"),
+                       subtitle: String(localized: "macOS скрывает от программ часть файлов — почту, кэши Safari, контейнеры приложений, резервные копии. Чтобы найти весь мусор, \(AppInfo.name) нужен полный доступ к диску. Его даёте вы в Системных настройках — там же его можно отключить в любой момент."),
                        metrics: metrics)
 
             Group {
@@ -167,13 +167,13 @@ private struct HowToCard: View {
             Text("Как включить")
                 .font(.cardTitle)
                 .foregroundStyle(Theme.text)
-            row(1, done: waiting, "Нажмите «Открыть настройки» — откроется раздел «Полный доступ к диску».")
+            row(1, done: waiting, String(localized: "Нажмите «Открыть настройки» — откроется раздел «Полный доступ к диску»."))
             VStack(alignment: .leading, spacing: Theme.Space.s) {
-                row(2, done: false, "Включите переключатель рядом с \(AppInfo.name). Если его нет в списке — нажмите «+» или перетащите значок ниже.")
+                row(2, done: false, String(localized: "Включите переключатель рядом с \(AppInfo.name). Если его нет в списке — нажмите «+» или перетащите значок ниже."))
                 AppIconDragRow()
                     .padding(.leading, 34)
             }
-            row(3, done: false, "Вернитесь сюда — \(AppInfo.name) заметит доступ сам.")
+            row(3, done: false, String(localized: "Вернитесь сюда — \(AppInfo.name) заметит доступ сам."))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(metrics.compact || metrics.inSheet ? 16 : 18)
@@ -303,9 +303,9 @@ private struct WithoutAccessCard: View {
             Text("Продолжить без полного доступа?")
                 .font(.cardTitle)
                 .foregroundStyle(Theme.text)
-            point("eye.slash.fill", "Кэши Safari и Mail, часть контейнеров приложений и резервные копии останутся невидимы — найдём меньше мусора.")
-            point("folder.badge.questionmark", "При первом сканировании macOS отдельно спросит доступ к Рабочему столу, Документам и Загрузкам.")
-            point("forward.fill", "Часть файлов при очистке может быть пропущена.")
+            point("eye.slash.fill", String(localized: "Кэши Safari и Mail, часть контейнеров приложений и резервные копии останутся невидимы — найдём меньше мусора."))
+            point("folder.badge.questionmark", String(localized: "При первом сканировании macOS отдельно спросит доступ к Рабочему столу, Документам и Загрузкам."))
+            point("forward.fill", String(localized: "Часть файлов при очистке может быть пропущена."))
             Text("Включить доступ можно в любой момент — кнопкой «Дать доступ» внизу боковой панели или в меню \(AppInfo.name) → «Полный доступ к диску…».")
                 .font(.caption12)
                 .foregroundStyle(.themeTertiary)

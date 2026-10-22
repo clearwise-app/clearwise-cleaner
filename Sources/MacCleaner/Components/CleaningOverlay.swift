@@ -59,8 +59,8 @@ struct CleaningOverlay: View {
         .onChange(of: session.finished) { _, finished in
             guard finished, !isSnapshot else { return }
             announce(session.stopped
-                     ? "Остановлено. Убрано \(Fmt.size(session.freedBytes)) из \(Fmt.size(session.totalBytes))"
-                     : "Готово. Убрано \(Fmt.size(session.freedBytes))")
+                     ? String(localized: "Остановлено. Убрано \(Fmt.size(session.freedBytes)) из \(Fmt.size(session.totalBytes))")
+                     : String(localized: "Готово. Убрано \(Fmt.size(session.freedBytes))"))
         }
     }
 
@@ -200,15 +200,15 @@ private struct CleaningStatus: View {
 
     private var detail: String {
         if session.finished { return " " }
-        if session.awaitingAdmin { return "macOS спрашивает пароль, чтобы удалить системные компоненты" }
+        if session.awaitingAdmin { return String(localized: "macOS спрашивает пароль, чтобы удалить системные компоненты") }
         // Docker items are not files: their name, not a path.
         return session.currentURL.map { $0.isFileURL ? Fmt.path($0) : (DockerCleanup.Kind(url: $0)?.title ?? "Docker") } ?? " "
     }
 
     private var totals: some View {
         let freed = Text(Fmt.size(session.freedBytes)).foregroundStyle(Theme.text).fontWeight(.semibold)
-        let ofTotal = session.totalBytes > 0 ? " из \(Fmt.size(session.totalBytes))" : ""
-        let items = "\(Fmt.integer(min(session.processedItems, session.totalItems))) из \(Fmt.integer(session.totalItems))"
+        let ofTotal = session.totalBytes > 0 ? String(localized: " из \(Fmt.size(session.totalBytes))") : ""
+        let items = String(localized: "\(Fmt.integer(min(session.processedItems, session.totalItems))) из \(Fmt.integer(session.totalItems))")
         return Text("Убрано \(freed)\(ofTotal)  ·  \(items)")
             .foregroundStyle(Theme.textSecondary)
         .font(.system(size: 13, weight: .medium))
@@ -260,7 +260,7 @@ private struct StageList: View {
             .padding(.bottom, 8)
 
             if w.hiddenAbove > 0 {
-                moreLine("Выполнено: ещё \(w.hiddenAbove) \(Fmt.plural(w.hiddenAbove, "этап", "этапа", "этапов"))",
+                moreLine(String(localized: "Выполнено: ещё \(w.hiddenAbove) \(Fmt.plural(w.hiddenAbove, "этап", "этапа", "этапов"))"),
                          symbol: "checkmark")
             }
             VStack(spacing: 2) {
@@ -272,7 +272,7 @@ private struct StageList: View {
             }
             .padding(.horizontal, 6)
             if w.hiddenBelow > 0 {
-                moreLine("И ещё \(w.hiddenBelow) \(Fmt.plural(w.hiddenBelow, "этап", "этапа", "этапов"))", symbol: "ellipsis")
+                moreLine(String(localized: "И ещё \(w.hiddenBelow) \(Fmt.plural(w.hiddenBelow, "этап", "этапа", "этапов"))"), symbol: "ellipsis")
             }
         }
         .padding(.bottom, 8)

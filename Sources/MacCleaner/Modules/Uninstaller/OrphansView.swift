@@ -30,7 +30,7 @@ struct OrphanListPanel: View {
             VStack(spacing: 12) {
                 Spacer()
                 ScanButton(mode: .progress(model.orphanProgress.fraction), tint: .uninstaller, diameter: 76)
-                Text(model.orphanProgress.phase.isEmpty ? "Сканирование…" : model.orphanProgress.phase)
+                Text(model.orphanProgress.phase.isEmpty ? String(localized: "Сканирование…") : model.orphanProgress.phase)
                     .font(.system(size: 12.5, weight: .medium))
                     .foregroundStyle(Theme.textSecondary)
                 Spacer()
@@ -154,10 +154,10 @@ private struct OrphanRow: View {
         .help(group.id)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(group.displayName), \(Fmt.size(group.totalSize)), \(Fmt.items(group.remnants.count))")
-        .accessibilityValue(state == .on ? "отмечено" : state == .mixed ? "частично отмечено" : "")
+        .accessibilityValue(state == .on ? String(localized: "отмечено") : state == .mixed ? String(localized: "частично отмечено") : "")
         .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
         .accessibilityAction { onSelect() }
-        .accessibilityAction(named: state == .on ? "Снять отметку" : "Отметить для удаления") { onCheck() }
+        .accessibilityAction(named: state == .on ? String(localized: "Снять отметку") : String(localized: "Отметить для удаления")) { onCheck() }
     }
 }
 
@@ -225,21 +225,21 @@ struct OrphanDetailView: View {
                     .padding(.bottom, 12)
                 }
 
-                ActionFooter(title: "Удалить", tint: .uninstaller, enabled: !picked.isEmpty,
+                ActionFooter(title: String(localized: "Удалить"), tint: .uninstaller, enabled: !picked.isEmpty,
                              action: model.requestRemoveOrphans) {
                     SelectionSummary(bytes: picked.reduce(0) { $0 + $1.item.size },
-                                     count: picked.count, label: "Выбрано во всех приложениях", noun: .items)
+                                     count: picked.count, label: String(localized: "Выбрано во всех приложениях"), noun: .items)
                 } trailing: {
                     FooterNote()
                 }
             }
         } else if model.orphanState == .loaded {
-            EmptyState(symbol: "checkmark.seal.fill", title: "Следов не осталось",
-                       message: "Удалённые приложения не оставили на этом Mac настроек, кэшей и служб. Если удалите что-то перетаскиванием в Корзину — загляните сюда снова.",
-                       tint: .uninstaller, actionTitle: "Проверить снова", action: model.startOrphanScan)
+            EmptyState(symbol: "checkmark.seal.fill", title: String(localized: "Следов не осталось"),
+                       message: String(localized: "Удалённые приложения не оставили на этом Mac настроек, кэшей и служб. Если удалите что-то перетаскиванием в Корзину — загляните сюда снова."),
+                       tint: .uninstaller, actionTitle: String(localized: "Проверить снова"), action: model.startOrphanScan)
         } else {
-            EmptyState(symbol: "questionmark.folder.fill", title: "Остатки удалённых приложений",
-                       message: "Когда приложение удаляют простым перетаскиванием в Корзину, его настройки и кэши остаются. Здесь их можно найти и убрать.",
+            EmptyState(symbol: "questionmark.folder.fill", title: String(localized: "Остатки удалённых приложений"),
+                       message: String(localized: "Когда приложение удаляют простым перетаскиванием в Корзину, его настройки и кэши остаются. Здесь их можно найти и убрать."),
                        tint: .uninstaller)
         }
     }

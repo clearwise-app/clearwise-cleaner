@@ -110,7 +110,7 @@ final class OldFilesModel {
     func scan() async {
         let scanMode = mode
         withAnimation(Theme.spring) { phase = .scanning }
-        progress = ScanProgress(phase: "Подготовка", fraction: 0)
+        progress = ScanProgress(phase: String(localized: "Подготовка"), fraction: 0)
         let relay = progressRelay { [weak self] p in
             guard let self, self.phase == .scanning else { return }
             self.progress = p
@@ -163,7 +163,7 @@ final class OldFilesModel {
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = true
-        panel.prompt = "Добавить"
+        panel.prompt = String(localized: "Добавить")
         if panel.runModal() == .OK {
             for url in panel.urls where !roots.contains(url) { roots.append(url) }
         }
@@ -200,7 +200,7 @@ final class OldFilesModel {
 
     /// One stage per kind (largest first); Trash calls go in chunks, so «Остановить» works between chunks.
     static func plan(_ picked: [AnalyzedFile]) -> CleaningPlan {
-        var plan = CleaningPlan(title: "Удаление старых и больших файлов", module: .oldFiles)
+        var plan = CleaningPlan(title: String(localized: "Удаление старых и больших файлов"), module: .oldFiles)
         let sizes = CleaningPrep.sizes(picked.map { ($0.item.url, $0.item.size) })
         let urls = CleaningPrep.dedupe(picked.map(\.item.url))
         let kept = Set(urls.map(\.path))

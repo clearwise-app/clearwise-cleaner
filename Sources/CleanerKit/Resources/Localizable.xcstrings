@@ -1,0 +1,366 @@
+{
+  "sourceLanguage": "ru",
+  "strings": {
+    "HTTP-хранилища": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTTP storage"
+          }
+        }
+      }
+    },
+    "Агенты запуска": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launch agents"
+          }
+        }
+      }
+    },
+    "Безвозвратное удаление разрешено только в Корзине": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permanent deletion is allowed only in the Trash"
+          }
+        }
+      }
+    },
+    "Бережная": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gentle"
+          }
+        }
+      }
+    },
+    "Веб-данные": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Web data"
+          }
+        }
+      }
+    },
+    "Вспомогательные утилиты": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Helper tools"
+          }
+        }
+      }
+    },
+    "Встроенное приложение macOS": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Built-in macOS app"
+          }
+        }
+      }
+    },
+    "Групповые контейнеры": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Group containers"
+          }
+        }
+      }
+    },
+    "Данные встроенных приложений macOS": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data of built-in macOS apps"
+          }
+        }
+      }
+    },
+    "Данные приложения": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App data"
+          }
+        }
+      }
+    },
+    "Защищённая область macOS": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protected area of macOS"
+          }
+        }
+      }
+    },
+    "Квитанции установщика": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installer receipts"
+          }
+        }
+      }
+    },
+    "Контейнеры": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Containers"
+          }
+        }
+      }
+    },
+    "Кэш": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cache"
+          }
+        }
+      }
+    },
+    "Логи": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Logs"
+          }
+        }
+      }
+    },
+    "Максимальная": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maximum"
+          }
+        }
+      }
+    },
+    "Медиатека (Фото, Музыка, TV)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Media library (Photos, Music, TV)"
+          }
+        }
+      }
+    },
+    "Настройки": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preferences"
+          }
+        }
+      }
+    },
+    "Не локальный файл": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not a local file"
+          }
+        }
+      }
+    },
+    "Не удалось переместить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not move"
+          }
+        }
+      }
+    },
+    "Не удалось удалить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not delete"
+          }
+        }
+      }
+    },
+    "Нет прав администратора": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No administrator rights"
+          }
+        }
+      }
+    },
+    "Отменено пользователем": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelled by user"
+          }
+        }
+      }
+    },
+    "Отчёты о сбоях": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crash reports"
+          }
+        }
+      }
+    },
+    "Плюс то, что вряд ли понадобится: неиспользуемые образы Docker, старые установщики, архивы и копии.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus what you are unlikely to need: unused Docker images, old installers, archives and backups."
+          }
+        }
+      }
+    },
+    "Плюс то, что скачается или пересоберётся заново: кэши разработчика, кэш сборки Docker.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus what is downloaded or rebuilt again: developer caches, the Docker build cache."
+          }
+        }
+      }
+    },
+    "Приложение запущено": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App is running"
+          }
+        }
+      }
+    },
+    "Прочее": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other"
+          }
+        }
+      }
+    },
+    "Расширения и плагины": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extensions and plug-ins"
+          }
+        }
+      }
+    },
+    "Системная или пользовательская папка": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System or user folder"
+          }
+        }
+      }
+    },
+    "Системная служба macOS": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS system service"
+          }
+        }
+      }
+    },
+    "Системные службы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System services"
+          }
+        }
+      }
+    },
+    "Слишком общий путь": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Path is too general"
+          }
+        }
+      }
+    },
+    "Сохранённое состояние": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved state"
+          }
+        }
+      }
+    },
+    "Только то, что программы и macOS создадут заново сами.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only what apps and macOS recreate on their own."
+          }
+        }
+      }
+    },
+    "Усиленная": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enhanced"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

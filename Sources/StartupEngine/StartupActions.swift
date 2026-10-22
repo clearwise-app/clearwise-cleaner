@@ -27,26 +27,42 @@ public struct StartupActionReport: Sendable {
 /// not refused by `SafetyGuard`. Agents run in the user's GUI domain and need no password; daemons
 /// (`/Library/LaunchDaemons`) are changed as root after one administrator prompt per batch.
 public enum StartupActions {
+    /// The reasons `refusal` and `changedOnDisk` give; one value each, so the screen and tests can compare.
+    enum Reason {
+        static let apple = String(localized: "Часть macOS — не трогаем", bundle: .module)
+        static let managedInSettings = String(localized: "Управляется в Системных настройках → Объекты входа", bundle: .module)
+        static let malformed = String(localized: "Файл повреждён — macOS его не загружает", bundle: .module)
+        static let unusualLabel = String(localized: "Необычное имя службы", bundle: .module)
+        static let alreadyDisabled = String(localized: "Уже выключено", bundle: .module)
+        static let alreadyEnabled = String(localized: "Уже включено", bundle: .module)
+        static let enableInSettings = String(localized: "Включается в Системных настройках → Объекты входа", bundle: .module)
+        static let notApplied = String(localized: "macOS не применила изменение", bundle: .module)
+        static let stale = String(localized: "Файл изменился после проверки — обновите список", bundle: .module)
+        static let fileGone = String(localized: "Файла уже нет", bundle: .module)
+        static let notAFile = String(localized: "Это ссылка, а не файл", bundle: .module)
+        static let unexpectedOwner = String(localized: "Неожиданный владелец файла", bundle: .module)
+    }
+
     /// Why `action` cannot be applied to `item`, or nil. Pure: the screen uses it to enable buttons.
     public static func refusal(_ action: StartupAction, for item: StartupItem) -> String? {
-        if item.isApple { return "Часть macOS — не трогаем" }
+        if item.isApple { return Reason.apple }
         guard item.source != .backgroundTask, let plist = item.plist else {
-            return "Управляется в Системных настройках → Объекты входа"
+            return Reason.managedInSettings
         }
         if let reason = SafetyGuard.refusalReason(for: plist) { return reason }
         switch action {
         case .disable:
-            if item.isMalformed { return "Файл повреждён — macOS его не загружает" }
-            if !isValidLabel(item.label) { return "Необычное имя службы" }
-            if item.disabledByOverride { return "Уже выключено" }
+            if item.isMalformed { return Reason.malformed }
+            if !isValidLabel(item.label) { return Reason.unusualLabel }
+            if item.disabledByOverride { return Reason.alreadyDisabled }
         case .enable:
-            if item.isMalformed { return "Файл повреждён — macOS его не загружает" }
-            if !isValidLabel(item.label) { return "Необычное имя службы" }
+            if item.isMalformed { return Reason.malformed }
+            if !isValidLabel(item.label) { return Reason.unusualLabel }
             if !item.disabledByOverride && !item.disabledInPlist {
-                return item.disabledInSettings ? "Включается в Системных настройках → Объекты входа" : "Уже включено"
+                return item.disabledInSettings ? Reason.enableInSettings : Reason.alreadyEnabled
             }
         case .remove:
-            if !item.isMalformed && !isValidLabel(item.label) { return "Необычное имя службы" }
+            if !item.isMalformed && !isValidLabel(item.label) { return Reason.unusualLabel }
         }
         return nil
     }
@@ -103,7 +119,7 @@ public enum StartupActions {
             if ok {
                 report.succeeded.append(item.id)
             } else {
-                let reason = item.source == .daemon ? (adminError ?? "macOS не применила изменение") : "macOS не применила изменение"
+                let reason = item.source == .daemon ? (adminError ?? Reason.notApplied) : Reason.notApplied
                 report.failed.append(.init(id: item.id, reason: reason))
             }
         }
@@ -116,15 +132,15 @@ public enum StartupActions {
     /// Re-checks the file right before acting: a regular file (not a link) directly in its folder, owned by
     /// the user (user agents) or root (the others), with the same label. Returns a reason, or nil when unchanged.
     static func changedOnDisk(_ item: StartupItem, _ env: StartupEnvironment) -> String? {
-        let stale = "Файл изменился после проверки — обновите список"
+        let stale = Reason.stale
         guard let plist = item.plist, let folder = env.folder(for: item.source) else { return stale }
         let url = plist.standardizedFileURL
         guard url.deletingLastPathComponent().path == folder.standardizedFileURL.path else { return stale }
         var st = stat()
-        guard lstat(url.path, &st) == 0 else { return "Файла уже нет" }
-        guard (st.st_mode & S_IFMT) == S_IFREG else { return "Это ссылка, а не файл" }
+        guard lstat(url.path, &st) == 0 else { return Reason.fileGone }
+        guard (st.st_mode & S_IFMT) == S_IFREG else { return Reason.notAFile }
         let owner: uid_t = item.source == .userAgent ? env.uid : 0
-        guard st.st_uid == owner else { return "Неожиданный владелец файла" }
+        guard st.st_uid == owner else { return Reason.unexpectedOwner }
         if !item.isMalformed, LaunchdPlist.read(url)?.label != item.label { return stale }
         return nil
     }

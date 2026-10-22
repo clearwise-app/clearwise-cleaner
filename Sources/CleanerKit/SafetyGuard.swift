@@ -70,24 +70,24 @@ public enum SafetyGuard {
 
     /// Returns a human-readable reason if `url` must not be removed, nil if it is allowed.
     public static func refusalReason(for url: URL) -> String? {
-        guard url.isFileURL else { return "Не локальный файл" }
+        guard url.isFileURL else { return String(localized: "Не локальный файл", bundle: .module) }
         let candidates = spellings(of: url)
 
         for c in candidates {
-            if protectedExact.contains(c) { return "Системная или пользовательская папка" }
+            if protectedExact.contains(c) { return String(localized: "Системная или пользовательская папка", bundle: .module) }
             for prefix in protectedPrefixes where c.hasPrefix(prefix) {
-                return "Защищённая область macOS"
+                return String(localized: "Защищённая область macOS", bundle: .module)
             }
             if c.hasPrefix("/system/applications/") || isAppleBundledApp(c) {
-                return "Встроенное приложение macOS"
+                return String(localized: "Встроенное приложение macOS", bundle: .module)
             }
-            if isAppleGroupContainer(c) { return "Данные встроенных приложений macOS" }
-            if isAppleSystemConfig(c) { return "Системная служба macOS" }
-            if isMediaLibrary(c) { return "Медиатека (Фото, Музыка, TV)" }
+            if isAppleGroupContainer(c) { return String(localized: "Данные встроенных приложений macOS", bundle: .module) }
+            if isAppleSystemConfig(c) { return String(localized: "Системная служба macOS", bundle: .module) }
+            if isMediaLibrary(c) { return String(localized: "Медиатека (Фото, Музыка, TV)", bundle: .module) }
         }
         // Very shallow paths (e.g. /Users/name) are never what a cleaner wants.
         if candidates.contains(where: { URL(fileURLWithPath: $0).pathComponents.count < 3 }) {
-            return "Слишком общий путь"
+            return String(localized: "Слишком общий путь", bundle: .module)
         }
         return nil
     }

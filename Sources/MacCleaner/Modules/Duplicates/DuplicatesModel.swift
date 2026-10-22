@@ -195,7 +195,7 @@ final class DuplicatesModel {
 
     func scan() async {
         withAnimation(Theme.spring) { phase = .scanning }
-        progress = ScanProgress(phase: "Подготовка", fraction: 0)
+        progress = ScanProgress(phase: String(localized: "Подготовка"), fraction: 0)
         let started = Date()
         let scanRoots = activeRoots
         let relay = progressRelay { [weak self] p in
@@ -210,14 +210,14 @@ final class DuplicatesModel {
     /// The engine walks first (0 → 0.2, one step per folder), then hashes (0.2 → 1). Give both stages a
     /// readable label; during the walk the ring also creeps towards 18 % so a single big folder never looks frozen.
     private static func display(_ p: ScanProgress, roots: [URL], started: Date, previous: Double) -> ScanProgress {
-        if p.fraction >= 1 { return ScanProgress(phase: "Готово", fraction: 1) }
+        if p.fraction >= 1 { return ScanProgress(phase: String(localized: "Готово"), fraction: 1) }
         if p.fraction < 0.2 {
             let creep = 0.18 * (1 - exp(-Date().timeIntervalSince(started) / 25))
             let root = p.currentPath.flatMap { path in roots.first { path.hasPrefix($0.path + "/") } }
-            let phase = root.map { "Ищем файлы — \(Fmt.folderTitle($0))" } ?? "Ищем файлы"
+            let phase = root.map { String(localized: "Ищем файлы — \(Fmt.folderTitle($0))") } ?? String(localized: "Ищем файлы")
             return ScanProgress(phase: phase, fraction: max(previous, creep, p.fraction), currentPath: p.currentPath)
         }
-        return ScanProgress(phase: "Сравниваем содержимое файлов", fraction: max(previous, p.fraction), currentPath: p.currentPath)
+        return ScanProgress(phase: String(localized: "Сравниваем содержимое файлов"), fraction: max(previous, p.fraction), currentPath: p.currentPath)
     }
 
     func apply(_ found: [[AnalyzedFile]]) {
@@ -247,7 +247,7 @@ final class DuplicatesModel {
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = true
-        panel.prompt = "Добавить"
+        panel.prompt = String(localized: "Добавить")
         if panel.runModal() == .OK {
             for url in panel.urls where !roots.contains(url) { roots.append(url) }
         }
@@ -331,7 +331,7 @@ final class DuplicatesModel {
         let picked = safePicked
         guard let app, !picked.isEmpty else { return }
         app.ask(.make(.trash,
-                      message: "Лишние копии попадут в Корзину, в каждой группе останется хотя бы одна. Их можно вернуть, пока Корзина не очищена.",
+                      message: String(localized: "Лишние копии попадут в Корзину, в каждой группе останется хотя бы одна. Их можно вернуть, пока Корзина не очищена."),
                       count: picked.count, bytes: picked.reduce(0) { $0 + $1.item.size },
                       noun: .copies, tint: .duplicates) { [weak self] in self?.startTrash(picked) })
     }
@@ -357,7 +357,7 @@ final class DuplicatesModel {
                 if keep.contains(where: { FileManager.default.fileExists(atPath: $0.item.url.path) }) {
                     urls += remove.map(\.item.url)
                 } else {
-                    skipped += remove.map { RemovalFailure(url: $0.item.url, reason: "Оставляемая копия не найдена на диске — группа пропущена") }
+                    skipped += remove.map { RemovalFailure(url: $0.item.url, reason: String(localized: "Оставляемая копия не найдена на диске — группа пропущена")) }
                 }
             }
             // Nothing to clean: the confirmed «навсегда» must not carry over to a later cleanup.
@@ -373,7 +373,7 @@ final class DuplicatesModel {
 
     /// One stage per kind of file (largest first); Trash calls go in chunks, so «Остановить» works between chunks.
     static func plan(_ picked: [AnalyzedFile], urls: [URL]) -> CleaningPlan {
-        var plan = CleaningPlan(title: "Удаление дубликатов", module: .duplicates)
+        var plan = CleaningPlan(title: String(localized: "Удаление дубликатов"), module: .duplicates)
         let sizes = CleaningPrep.sizes(picked.map { ($0.item.url, $0.item.size) })
         let kindOf = Dictionary(picked.map { ($0.item.url.standardizedFileURL.path, $0.kind) }, uniquingKeysWith: { a, _ in a })
         let unique = CleaningPrep.dedupe(urls)

@@ -117,7 +117,7 @@ struct ModuleStage<Accessory: View, Options: View>: View {
             Color.clear
         case .progress(let p):
             VStack(spacing: 4) {
-                Text(p.phase.isEmpty ? "Сканирование…" : p.phase)
+                Text(p.phase.isEmpty ? String(localized: "Сканирование…") : p.phase)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Theme.text)
                     .contentTransition(.opacity)
@@ -185,7 +185,7 @@ struct FDABanner: View {
             Spacer(minLength: 8)
             Button("Как дать доступ") { grantAccess(onGrantAccess) }
                 .buttonStyle(PillButtonStyle(kind: .secondary))
-            IconButton(symbol: "xmark", help: "Скрыть", size: 22) {
+            IconButton(symbol: "xmark", help: String(localized: "Скрыть"), size: 22) {
                 withAnimation(Theme.spring) { model.fdaBannerDismissed = true }
             }
         }
@@ -238,7 +238,7 @@ struct LastCleanupChip: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Последняя уборка")
                             .font(.system(size: 13, weight: .semibold))
-                        Text("\(Self.ago(last.date, now: context.date).capitalizedFirst) · \(last.date.formatted(.dateTime.day().month(.wide).hour().minute().locale(Locale(identifier: "ru_RU"))))")
+                        Text("\(Self.ago(last.date, now: context.date).capitalizedFirst) · \(last.date.formatted(.dateTime.day().month(.wide).hour().minute().locale(AppLanguage.locale)))")
                             .font(.system(size: 12))
                             .foregroundStyle(.secondary)
                         Text("Убрано \(Fmt.size(last.bytes))")
@@ -255,9 +255,9 @@ struct LastCleanupChip: View {
 
     /// «только что», «5 минут назад», «вчера», «3 дня назад».
     static func ago(_ date: Date, now: Date) -> String {
-        if now.timeIntervalSince(date) < 60 { return "только что" }
+        if now.timeIntervalSince(date) < 60 { return String(localized: "только что") }
         let f = RelativeDateTimeFormatter()
-        f.locale = Locale(identifier: "ru_RU")
+        f.locale = AppLanguage.locale
         f.dateTimeStyle = .named
         f.unitsStyle = .full
         return f.localizedString(for: date, relativeTo: now)
@@ -379,7 +379,7 @@ extension ActionFooter where Leading == SelectionSummary, Trailing == FooterNote
 struct SelectionSummary: View {
     let bytes: Int64
     let count: Int
-    var label = "Выбрано"
+    var label = String(localized: "Выбрано")
     var noun: (Int) -> String = Fmt.items
 
     var body: some View {
@@ -405,7 +405,7 @@ struct SelectionSummary: View {
 }
 
 extension SelectionSummary {
-    init(bytes: Int64, count: Int, label: String = "Выбрано", noun: Fmt.Noun) {
+    init(bytes: Int64, count: Int, label: String = String(localized: "Выбрано"), noun: Fmt.Noun) {
         self.init(bytes: bytes, count: count, label: label, noun: { Fmt.count($0, noun) })
     }
 }

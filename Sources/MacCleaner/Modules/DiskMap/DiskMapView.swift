@@ -10,7 +10,7 @@ struct DiskMapView: View {
         switch model.phase {
         case .idle, .scanning:
             ModuleStage(module: .diskMap,
-                        state: model.phase == .scanning ? .progress(model.progress) : .idle(button: "Сканировать", enabled: true),
+                        state: model.phase == .scanning ? .progress(model.progress) : .idle(button: String(localized: "Сканировать"), enabled: true),
                         onAction: model.startScan, onStop: model.stop,
                         onGrantAccess: app.presentAccessSheet) {
                 LocationPicker(model: model)
@@ -19,7 +19,7 @@ struct DiskMapView: View {
             // While objects move, the cleaning scene covers this screen; there is no screen of its own.
             DiskMapResults(model: model)
         case .done:
-            CompletionView(tint: .diskMap, result: model.result ?? RemovalResult(), title: "Перемещено в Корзину",
+            CompletionView(tint: .diskMap, result: model.result ?? RemovalResult(), title: String(localized: "Перемещено в Корзину"),
                            noun: .items,
                            onGrantAccess: app.presentAccessSheet,
                            onRetry: model.retryFailed,
@@ -34,7 +34,7 @@ private struct LocationPicker: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Chip(title: "Домашняя папка", symbol: "house.fill", selected: model.location == .home, tint: .diskMap) {
+            Chip(title: String(localized: "Домашняя папка"), symbol: "house.fill", selected: model.location == .home, tint: .diskMap) {
                 model.location = .home
             }
             Chip(title: "Macintosh HD", symbol: "internaldrive.fill", selected: model.location == .startup, tint: .diskMap) {
@@ -43,7 +43,7 @@ private struct LocationPicker: View {
             if case .custom(let url) = model.location {
                 Chip(title: url.lastPathComponent, symbol: "folder.fill", selected: true, tint: .diskMap) { model.chooseFolder() }
             }
-            Chip(title: "Другая папка…", symbol: "folder.badge.plus", selected: false, tint: .diskMap) { model.chooseFolder() }
+            Chip(title: String(localized: "Другая папка…"), symbol: "folder.badge.plus", selected: false, tint: .diskMap) { model.chooseFolder() }
         }
     }
 }
@@ -120,7 +120,7 @@ private struct RefusalBanner: View {
             }
             .accessibilityElement(children: .combine)
             Spacer(minLength: 8)
-            IconButton(symbol: "xmark", help: "Закрыть", size: 22, action: onDismiss)
+            IconButton(symbol: "xmark", help: String(localized: "Закрыть"), size: 22, action: onDismiss)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 11)
@@ -262,7 +262,7 @@ private struct ChildRow: View {
             }
             Spacer(minLength: 4)
             if actionable && active && !collected {
-                IconButton(symbol: "plus", help: "В сборщик (+)", size: 22) { model.collect(node, parent: model.focus) }
+                IconButton(symbol: "plus", help: String(localized: "В сборщик (+)"), size: 22) { model.collect(node, parent: model.focus) }
                     .focusable(false)
             } else if collected {
                 Image(systemName: "tray.full.fill").font(.system(size: 11)).foregroundStyle(ModuleTint.diskMap.accent)
@@ -288,7 +288,7 @@ private struct ChildRow: View {
             hover = h
             model.hoveredID = h && actionable ? node.id : nil
         }
-        .help(actionable ? node.url.path : "Много мелких объектов вместе — их нельзя убрать одним действием")
+        .help(actionable ? node.url.path : String(localized: "Много мелких объектов вместе — их нельзя убрать одним действием"))
 
         if actionable {
             row
@@ -313,7 +313,7 @@ private struct ChildRow: View {
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isButton)
-                .accessibilityValue(collected ? "в сборщике" : "")
+                .accessibilityValue(collected ? String(localized: "в сборщике") : "")
                 .accessibilityAction { if node.isDirectory { open() } else { model.collect(node, parent: model.focus) } }
                 .accessibilityAction(named: "Добавить в сборщик") { model.collect(node, parent: model.focus) }
                 .modifier(OpenOnMapAction(isDirectory: node.isDirectory, open: open))
@@ -353,7 +353,7 @@ private struct CollectorTray: View {
                     .font(.system(size: 13.5, weight: .semibold))
                     .foregroundStyle(Theme.text)
                 Text(model.collector.isEmpty
-                     ? "Перетащите сюда папки и файлы или нажмите «+» в списке — потом всё сразу уйдёт в Корзину."
+                     ? String(localized: "Перетащите сюда папки и файлы или нажмите «+» в списке — потом всё сразу уйдёт в Корзину.")
                      : "\(Fmt.items(model.collector.count).capitalizedFirst) · \(Fmt.size(model.collectorSize))")
                     .font(.caption12)
                     .foregroundStyle(Theme.textSecondary)

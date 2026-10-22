@@ -14,18 +14,19 @@ let swift5: [SwiftSetting] = [.swiftLanguageMode(.v5)]
 
 let package = Package(
     name: "MacCleaner",
+    defaultLocalization: "ru",
     platforms: [.macOS(.v15)],
     products: [
         .executable(name: "MacCleaner", targets: ["MacCleaner"]),
         .executable(name: "clearwise-mcp", targets: ["ClearwiseMCP"]),
     ],
     targets: [
-        .target(name: "CleanerKit", swiftSettings: swift5),
-        .target(name: "JunkEngine", dependencies: ["CleanerKit"], swiftSettings: swift5),
-        .target(name: "UninstallEngine", dependencies: ["CleanerKit"], swiftSettings: swift5),
-        .target(name: "SpaceEngine", dependencies: ["CleanerKit"], swiftSettings: swift5),
+        .target(name: "CleanerKit", resources: [.process("Resources")], swiftSettings: swift5),
+        .target(name: "JunkEngine", dependencies: ["CleanerKit"], resources: [.process("Resources")], swiftSettings: swift5),
+        .target(name: "UninstallEngine", dependencies: ["CleanerKit"], resources: [.process("Resources")], swiftSettings: swift5),
+        .target(name: "SpaceEngine", dependencies: ["CleanerKit"], resources: [.process("Resources")], swiftSettings: swift5),
         .target(name: "HealthEngine", dependencies: ["CleanerKit", "UninstallEngine"], swiftSettings: swift5),
-        .target(name: "StartupEngine", dependencies: ["CleanerKit"], swiftSettings: swift5),
+        .target(name: "StartupEngine", dependencies: ["CleanerKit"], resources: [.process("Resources")], swiftSettings: swift5),
         .target(
             name: "ClearwiseMCPCore",
             dependencies: ["CleanerKit", "JunkEngine", "UninstallEngine", "SpaceEngine", "HealthEngine", "StartupEngine"],
@@ -35,6 +36,7 @@ let package = Package(
         .executableTarget(
             name: "MacCleaner",
             dependencies: ["CleanerKit", "JunkEngine", "UninstallEngine", "SpaceEngine", "HealthEngine", "StartupEngine"],
+            resources: [.process("Resources")],
             swiftSettings: swift5
         ),
         .testTarget(name: "CleanerKitTests", dependencies: ["CleanerKit"], swiftSettings: swift5),

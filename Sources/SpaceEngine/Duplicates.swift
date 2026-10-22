@@ -27,7 +27,7 @@ enum DuplicateFinder {
     static func find(roots rawRoots: [URL], minSize: Int64, monitor outer: WalkMonitor, progress: ProgressHandler?) -> [[AnalyzedFile]] {
         let roots = FileWalker.normalizedRoots(rawRoots)
         let monitor = WalkMonitor(totalUnits: 1, handler: progress, parent: outer)
-        let phase = "Поиск дубликатов"
+        let phase = String(localized: "Поиск дубликатов", bundle: .module)
 
         // 1. Walk (first 20% of progress, one step per root). Packages are not entered: their internals are not the user's files.
         let sink = ResultSink<WalkedFile>()
@@ -87,7 +87,7 @@ enum DuplicateFinder {
                     return AnalyzedFile(item: item, kind: FileKind.classify(c.file.url))
                 }
         }
-        monitor.force(phase: "Готово", fraction: 1)
+        monitor.force(phase: FileWalker.donePhase, fraction: 1)
         return groups.sorted {
             let a = ($0.first?.item.size ?? 0) * Int64($0.count - 1)
             let b = ($1.first?.item.size ?? 0) * Int64($1.count - 1)

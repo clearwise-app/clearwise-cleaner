@@ -9,7 +9,7 @@ public actor AppInventory {
     init(roots: SearchRoots) { self.roots = roots }
 
     public func installedApps(progress: ProgressHandler? = nil) async -> [InstalledApp] {
-        progress?(ScanProgress(phase: "Поиск приложений", fraction: 0))
+        progress?(ScanProgress(phase: String(localized: "Поиск приложений", bundle: .module), fraction: 0))
         let bundles = Self.appBundleURLs(in: roots.applicationDirs)
         let total = max(bundles.count, 1)
 
@@ -24,13 +24,13 @@ public actor AppInventory {
             while let app = await group.next() {
                 done += 1
                 if let app { results.append(app) }
-                progress?(ScanProgress(phase: "Анализ приложений", fraction: Double(done) / Double(total),
+                progress?(ScanProgress(phase: String(localized: "Анализ приложений", bundle: .module), fraction: Double(done) / Double(total),
                                        currentPath: app?.url.path))
                 if let url = iterator.next() { group.addTask { Self.describe(url, sized: true) } }
             }
             return results
         }
-        progress?(ScanProgress(phase: "Готово", fraction: 1))
+        progress?(ScanProgress(phase: String(localized: "Готово", bundle: .module), fraction: 1))
         return Self.sorted(Self.disambiguated(apps))
     }
 

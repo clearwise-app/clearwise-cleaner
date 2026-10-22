@@ -22,19 +22,19 @@ public enum DockerCleanup {
 
         public var title: String {
             switch self {
-            case .stoppedContainers: "Остановленные контейнеры"
-            case .danglingImages: "Образы без имени (<none>)"
-            case .unusedImages: "Неиспользуемые образы"
-            case .buildCache: "Кэш сборки"
+            case .stoppedContainers: String(localized: "Остановленные контейнеры", bundle: .module)
+            case .danglingImages: String(localized: "Образы без имени (<none>)", bundle: .module)
+            case .unusedImages: String(localized: "Неиспользуемые образы", bundle: .module)
+            case .buildCache: String(localized: "Кэш сборки", bundle: .module)
             }
         }
 
         var note: String {
             switch self {
-            case .stoppedContainers: "Docker · удалится и то, что записано внутри контейнеров"
-            case .danglingImages: "Docker · остатки старых сборок"
-            case .unusedImages: "Docker · скачаются заново при следующем запуске"
-            case .buildCache: "Docker · следующая сборка пройдёт дольше"
+            case .stoppedContainers: String(localized: "Docker · удалится и то, что записано внутри контейнеров", bundle: .module)
+            case .danglingImages: String(localized: "Docker · остатки старых сборок", bundle: .module)
+            case .unusedImages: String(localized: "Docker · скачаются заново при следующем запуске", bundle: .module)
+            case .buildCache: String(localized: "Docker · следующая сборка пройдёт дольше", bundle: .module)
             }
         }
 
@@ -148,31 +148,35 @@ public enum DockerCleanup {
         let modes = Dictionary(uniqueKeysWithValues: items.compactMap { item in Kind(url: item.url).map { (item.url, $0.mode) } })
         let category = JunkCategory(
             id: JunkCategoryID.docker, title: "Docker",
-            detail: "Кэш сборки, образы и остановленные контейнеры. Их удаляет сам Docker — сразу, без Корзины; образы скачаются заново при следующем запуске. Тома с данными не трогаются.",
+            detail: String(localized: "Кэш сборки, образы и остановленные контейнеры. Их удаляет сам Docker — сразу, без Корзины; образы скачаются заново при следующем запуске. Тома с данными не трогаются.", bundle: .module),
             symbol: "shippingbox.circle.fill", risk: .review, itemModes: modes, items: items)
         return (category, .ready)
     }
 
     // MARK: Cleaning
 
+    /// Why a kind could not be pruned.
+    static let notFoundReason = String(localized: "Docker не найден", bundle: .module)
+    static let noAnswerReason = String(localized: "Docker не ответил — проверьте, что он запущен", bundle: .module)
+
     /// Runs the prune command of each selected kind. Anything else is refused.
     static func clean(_ urls: [URL], tool: DockerTool?, progress: RemovalProgressHandler? = nil) -> RemovalResult {
         var result = RemovalResult()
         let kinds = Set(urls.compactMap(Kind.init(url:)))
         for url in urls where Kind(url: url) == nil {
-            result.failed.append(RemovalFailure(url: url, reason: "Не входит в категорию «Docker»"))
+            result.failed.append(RemovalFailure(url: url, reason: String(localized: "Не входит в категорию «Docker»", bundle: .module)))
         }
         for kind in order where kinds.contains(kind) {
             progress?(RemovalStep(url: kind.url, bytes: 0, done: false))
             var freed: Int64 = 0
             defer { progress?(RemovalStep(url: kind.url, bytes: freed, done: true)) }
             guard let tool else {
-                result.failed.append(RemovalFailure(url: kind.url, reason: "Docker не найден"))
+                result.failed.append(RemovalFailure(url: kind.url, reason: notFoundReason))
                 continue
             }
             // Pruning a big cache can take minutes.
             guard let out = tool.run(kind.arguments, 600), out.status == 0 else {
-                result.failed.append(RemovalFailure(url: kind.url, reason: "Docker не ответил — проверьте, что он запущен"))
+                result.failed.append(RemovalFailure(url: kind.url, reason: noAnswerReason))
                 continue
             }
             freed = parseReclaimed(out.text) ?? 0

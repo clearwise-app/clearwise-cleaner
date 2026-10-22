@@ -118,10 +118,10 @@ private struct FileRowContent<Badges: View>: View, Equatable {
             Spacer(minLength: 8)
             HStack(spacing: 6) {
                 if let onQuickLook {
-                    IconButton(symbol: "eye.fill", help: "Быстрый просмотр (⌘Y)", size: 24, action: onQuickLook)
+                    IconButton(symbol: "eye.fill", help: String(localized: "Быстрый просмотр (⌘Y)"), size: 24, action: onQuickLook)
                         .keyboardShortcut(focused ? KeyboardShortcut("y", modifiers: .command) : nil)
                 }
-                IconButton(symbol: "magnifyingglass", help: "Показать в Finder", size: 24) { Finder.reveal(url) }
+                IconButton(symbol: "magnifyingglass", help: String(localized: "Показать в Finder"), size: 24) { Finder.reveal(url) }
             }
             .opacity(showsActions ? 1 : 0)
             .allowsHitTesting(showsActions)
@@ -180,7 +180,7 @@ private struct FileRowContent<Badges: View>: View, Equatable {
 
     private var accessibilityValue: String {
         var parts: [String] = []
-        if let isChecked = data.isChecked { parts.append(isChecked ? "отмечено" : "не отмечено") }
+        if let isChecked = data.isChecked { parts.append(isChecked ? String(localized: "отмечено") : String(localized: "не отмечено")) }
         return parts.joined(separator: ", ")
     }
 }

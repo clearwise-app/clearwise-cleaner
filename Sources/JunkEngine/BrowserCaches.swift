@@ -41,18 +41,21 @@ struct BrowserCacheSpec: Sendable {
                          cacheFolders: ["Library/Caches/com.operasoftware.Opera"],
                          userDataFolder: "Library/Application Support/com.operasoftware.Opera",
                          userDataIsProfile: true),
-        BrowserCacheSpec(name: "Яндекс Браузер",
+        BrowserCacheSpec(name: String(localized: "Яндекс Браузер", bundle: .module),
                          cacheFolders: ["Library/Caches/Yandex/YandexBrowser"],
                          userDataFolder: "Library/Application Support/Yandex/YandexBrowser"),
         BrowserCacheSpec(name: "Firefox",
                          cacheFolders: ["Library/Caches/Firefox"]),
     ]
 
+    /// Label of a browser's plain cache folder («Google Chrome · кэш»).
+    static func cacheNote(_ name: String) -> String { String(localized: "\(name) · кэш", bundle: .module) }
+
     func candidates(in env: JunkEnvironment) -> [JunkCandidate] {
         var result: [JunkCandidate] = []
         for folder in cacheFolders {
             let url = env.homePath(folder)
-            if FS.exists(url) { result.append(JunkCandidate(url, note: "\(name) · кэш")) }
+            if FS.exists(url) { result.append(JunkCandidate(url, note: Self.cacheNote(name))) }
         }
         for folder in containerCacheFolders {
             for child in FS.children(of: env.homePath(folder)) {

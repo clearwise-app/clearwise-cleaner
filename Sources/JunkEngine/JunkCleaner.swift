@@ -19,7 +19,7 @@ public enum JunkCleaner {
             if known.contains(FS.key(item.url)) {
                 accepted.append(item)
             } else {
-                result.failed.append(RemovalFailure(url: item.url, reason: "Не входит в категорию «\(category.title)»"))
+                result.failed.append(RemovalFailure(url: item.url, reason: String(localized: "Не входит в категорию «\(category.title)»", bundle: .module)))
             }
         }
         guard !accepted.isEmpty else { return result }
@@ -44,7 +44,7 @@ public enum JunkCleaner {
             var idle: [URL] = []
             for item in accepted {
                 if let root = ChromiumAppCaches.owningUserDataFolder(of: item.url), running.uses(root) {
-                    result.failed.append(RemovalFailure(url: item.url, reason: "Приложение запущено"))
+                    result.failed.append(RemovalFailure(url: item.url, reason: RemovalFailure.appRunning))
                 } else {
                     idle.append(item.url)
                 }

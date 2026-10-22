@@ -1,0 +1,126 @@
+{
+  "sourceLanguage": "ru",
+  "strings": {
+    "macOS не применила изменение": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS did not apply the change"
+          }
+        }
+      }
+    },
+    "Включается в Системных настройках → Объекты входа": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turned on in System Settings → Login Items"
+          }
+        }
+      }
+    },
+    "Необычное имя службы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unusual service name"
+          }
+        }
+      }
+    },
+    "Неожиданный владелец файла": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unexpected file owner"
+          }
+        }
+      }
+    },
+    "Уже включено": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already on"
+          }
+        }
+      }
+    },
+    "Уже выключено": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already off"
+          }
+        }
+      }
+    },
+    "Управляется в Системных настройках → Объекты входа": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Managed in System Settings → Login Items"
+          }
+        }
+      }
+    },
+    "Файл изменился после проверки — обновите список": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File changed since the check — refresh the list"
+          }
+        }
+      }
+    },
+    "Файл повреждён — macOS его не загружает": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File is damaged — macOS does not load it"
+          }
+        }
+      }
+    },
+    "Файла уже нет": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File is gone"
+          }
+        }
+      }
+    },
+    "Часть macOS — не трогаем": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Part of macOS — left alone"
+          }
+        }
+      }
+    },
+    "Это ссылка, а не файл": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is a link, not a file"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

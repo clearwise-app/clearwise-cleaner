@@ -7,15 +7,15 @@ public enum FileKind: String, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .document: "Документы"
-        case .archive: "Архивы"
-        case .diskImage: "Образы дисков"
-        case .installer: "Установщики"
-        case .video: "Видео"
-        case .audio: "Аудио"
-        case .image: "Изображения"
-        case .code: "Код и проекты"
-        case .other: "Другое"
+        case .document: String(localized: "Документы", bundle: .module)
+        case .archive: String(localized: "Архивы", bundle: .module)
+        case .diskImage: String(localized: "Образы дисков", bundle: .module)
+        case .installer: String(localized: "Установщики", bundle: .module)
+        case .video: String(localized: "Видео", bundle: .module)
+        case .audio: String(localized: "Аудио", bundle: .module)
+        case .image: String(localized: "Изображения", bundle: .module)
+        case .code: String(localized: "Код и проекты", bundle: .module)
+        case .other: String(localized: "Другое", bundle: .module)
         }
     }
 

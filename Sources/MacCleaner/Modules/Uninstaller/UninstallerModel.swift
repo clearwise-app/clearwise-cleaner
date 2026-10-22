@@ -292,17 +292,17 @@ final class UninstallerModel {
         guard let app, let target = selectedApp, !target.isSystemApp else { return }
         let picked = selectedRemnants
         var c = Confirmation.make(
-            .delete, title: "Удалить «\(target.name)»?",
-            message: "Приложение и выбранные остатки попадут в Корзину — их можно вернуть, пока Корзина не очищена.",
+            .delete, title: String(localized: "Удалить «\(target.name)»?"),
+            message: String(localized: "Приложение и выбранные остатки попадут в Корзину — их можно вернуть, пока Корзина не очищена."),
             count: 1 + picked.count, bytes: target.size + picked.reduce(0) { $0 + $1.item.size },
             needsAdmin: picked.contains(where: \.requiresAdmin),
-            warning: isRunning(target) ? "«\(target.name)» сейчас запущено — оно будет закрыто." : nil,
+            warning: isRunning(target) ? String(localized: "«\(target.name)» сейчас запущено — оно будет закрыто.") : nil,
             tint: .uninstaller,
             action: { [weak self] in
-                self?.run(RemovalRequest(apps: [.init(app: target, remnants: picked)], title: "Удаление «\(target.name)»",
-                                         doneTitle: "«\(target.name)» удалено"))
+                self?.run(RemovalRequest(apps: [.init(app: target, remnants: picked)], title: String(localized: "Удаление «\(target.name)»"),
+                                         doneTitle: String(localized: "«\(target.name)» удалено")))
             })
-        c.confirmTitle = "Удалить приложение"
+        c.confirmTitle = String(localized: "Удалить приложение")
         app.ask(c)
     }
 
@@ -311,16 +311,16 @@ final class UninstallerModel {
         let picked = selectedRemnants
         guard !picked.isEmpty else { return }
         var c = Confirmation.make(
-            .delete, title: "Сбросить данные «\(target.name)»?",
-            message: "Приложение останется, а его настройки, кэши и данные попадут в Корзину. При следующем запуске оно начнёт с чистого листа.",
+            .delete, title: String(localized: "Сбросить данные «\(target.name)»?"),
+            message: String(localized: "Приложение останется, а его настройки, кэши и данные попадут в Корзину. При следующем запуске оно начнёт с чистого листа."),
             count: picked.count, bytes: picked.reduce(0) { $0 + $1.item.size },
             needsAdmin: picked.contains(where: \.requiresAdmin),
-            warning: isRunning(target) ? "Закройте «\(target.name)» перед сбросом, иначе оно может пересоздать файлы." : nil,
+            warning: isRunning(target) ? String(localized: "Закройте «\(target.name)» перед сбросом, иначе оно может пересоздать файлы.") : nil,
             tint: .uninstaller,
             action: { [weak self] in
-                self?.run(RemovalRequest(loose: picked, title: "Сброс «\(target.name)»", doneTitle: "Данные «\(target.name)» сброшены"))
+                self?.run(RemovalRequest(loose: picked, title: String(localized: "Сброс «\(target.name)»"), doneTitle: String(localized: "Данные «\(target.name)» сброшены")))
             })
-        c.confirmTitle = "Сбросить данные"
+        c.confirmTitle = String(localized: "Сбросить данные")
         app.ask(c)
     }
 
@@ -347,17 +347,17 @@ final class UninstallerModel {
             let running = targets.filter(isRunning)
             let n = targets.count
             var c = Confirmation.make(
-                .delete, title: "Удалить \(Fmt.apps(n))?",
-                message: "Приложения и их остатки (только точные совпадения) попадут в Корзину — их можно вернуть, пока Корзина не очищена.",
+                .delete, title: String(localized: "Удалить \(Fmt.apps(n))?"),
+                message: String(localized: "Приложения и их остатки (только точные совпадения) попадут в Корзину — их можно вернуть, пока Корзина не очищена."),
                 count: count, bytes: bytes,
                 needsAdmin: plan.contains { $0.remnants.contains(where: \.requiresAdmin) },
-                warning: running.isEmpty ? nil : "Будут закрыты: \(running.map(\.name).joined(separator: ", ")).",
+                warning: running.isEmpty ? nil : String(localized: "Будут закрыты: \(running.map(\.name).joined(separator: ", "))."),
                 tint: .uninstaller,
                 action: {
-                    self.run(RemovalRequest(apps: plan, title: "Удаление \(Fmt.apps(n))",
-                                            doneTitle: "Удалено \(Fmt.apps(n))"))
+                    self.run(RemovalRequest(apps: plan, title: String(localized: "Удаление \(Fmt.apps(n))"),
+                                            doneTitle: String(localized: "Удалено \(Fmt.apps(n))")))
                 })
-            c.confirmTitle = "Удалить \(Fmt.apps(n))"
+            c.confirmTitle = String(localized: "Удалить \(Fmt.apps(n))")
             app.ask(c)
         }
     }
@@ -445,11 +445,11 @@ final class UninstallerModel {
     /// Single app: «Завершение приложения» (if running), leftovers by kind, root-owned leftovers, then the app.
     /// Still one engine call — it quits the app first and moves the bundle last.
     static func uninstallPlan(_ target: InstalledApp, remnants picked: [AppRemnant], running: Bool) -> CleaningPlan {
-        var plan = CleaningPlan(title: "Удаление «\(target.name)»", module: .uninstaller)
-        let quit = running ? plan.addStage("Завершение приложения", symbol: "power", items: []) : nil
+        var plan = CleaningPlan(title: String(localized: "Удаление «\(target.name)»"), module: .uninstaller)
+        let quit = running ? plan.addStage(String(localized: "Завершение приложения"), symbol: "power", items: []) : nil
         let ordered = byKind(picked)
         addRemnantStages(&plan, ordered)
-        plan.addStage("Приложение", symbol: "app.fill", iconURL: target.url, items: [(target.url, target.size)],
+        plan.addStage(String(localized: "Приложение"), symbol: "app.fill", iconURL: target.url, items: [(target.url, target.size)],
                       admin: bundleNeedsAdmin(target) ? [target.url] : [])
         plan.addUnit(activating: quit) { progress in
             await AppUninstaller.uninstall(target, remnants: ordered, removeBundle: true, progress: progress)
@@ -459,7 +459,7 @@ final class UninstallerModel {
 
     /// Batch: one stage and one engine call per app.
     static func batchPlan(_ apps: [(InstalledApp, [AppRemnant])]) -> CleaningPlan {
-        var plan = CleaningPlan(title: "Удаление \(Fmt.apps(apps.count))", module: .uninstaller)
+        var plan = CleaningPlan(title: String(localized: "Удаление \(Fmt.apps(apps.count))"), module: .uninstaller)
         for (a, remnants) in apps {
             let ordered = byKind(remnants)
             var admin = Set(ordered.filter(\.requiresAdmin).map(\.item.url))
@@ -534,7 +534,7 @@ final class UninstallerModel {
     private static func addAdminStage(_ plan: inout CleaningPlan, _ ordered: [AppRemnant]) {
         let admin = ordered.filter(\.requiresAdmin)
         guard !admin.isEmpty else { return }
-        plan.addStage("Системные компоненты", symbol: "lock.shield.fill", items: admin.map { ($0.item.url, $0.item.size) },
+        plan.addStage(String(localized: "Системные компоненты"), symbol: "lock.shield.fill", items: admin.map { ($0.item.url, $0.item.size) },
                       admin: Set(admin.map(\.item.url)))
     }
 
@@ -584,7 +584,7 @@ final class UninstallerModel {
     func scanOrphans() async {
         guard let app, orphanState != .scanning else { return }
         orphanState = .scanning
-        orphanProgress = ScanProgress(phase: "Ищем приложения", fraction: 0)
+        orphanProgress = ScanProgress(phase: String(localized: "Ищем приложения"), fraction: 0)
         let installed = await app.loadApps()
         let relay = progressRelay { [weak self] p in self?.orphanProgress = p }
         let found = await finder.orphans(installed: installed, progress: relay)
@@ -644,15 +644,15 @@ final class UninstallerModel {
         let picked = selectedOrphanRemnants
         guard let app, !picked.isEmpty else { return }
         var c = Confirmation.make(
-            .delete, title: "Удалить остатки?",
-            message: "Файлы удалённых приложений попадут в Корзину — их можно вернуть, пока Корзина не очищена.",
+            .delete, title: String(localized: "Удалить остатки?"),
+            message: String(localized: "Файлы удалённых приложений попадут в Корзину — их можно вернуть, пока Корзина не очищена."),
             count: picked.count, bytes: picked.reduce(0) { $0 + $1.item.size },
             needsAdmin: picked.contains(where: \.requiresAdmin), tint: .uninstaller,
             action: { [weak self] in
                 guard let self else { return }
-                self.run(RemovalRequest(loose: picked, groups: self.orphans, title: "Удаление остатков", doneTitle: "Остатки удалены"))
+                self.run(RemovalRequest(loose: picked, groups: self.orphans, title: String(localized: "Удаление остатков"), doneTitle: String(localized: "Остатки удалены")))
             })
-        c.confirmTitle = "Удалить остатки"
+        c.confirmTitle = String(localized: "Удалить остатки")
         app.ask(c)
     }
 }

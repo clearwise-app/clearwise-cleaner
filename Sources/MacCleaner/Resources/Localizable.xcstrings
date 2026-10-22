@@ -1,0 +1,6576 @@
+{
+  "sourceLanguage": "ru",
+  "strings": {
+    " Docker (%@) очистит себя сам — сразу, без Корзины; тома с данными не трогаются.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " Docker (%@) cleans itself — right away, without the Trash; data volumes are not touched."
+          }
+        }
+      }
+    },
+    " Ещё %@ macOS не раскладывает по файлам: локальные снимки Time Machine, служебные данные файловой системы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " Another %@ macOS does not break down into files: local Time Machine snapshots, file system housekeeping data"
+          }
+        }
+      }
+    },
+    " Освободить место здесь можно в основном через «Общую библиотеку», Homebrew и скрытые папки; macOS и подкачку система держит сама.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " Space here is freed mostly in the shared Library, Homebrew and hidden folders; macOS itself and swap are managed by the system."
+          }
+        }
+      }
+    },
+    " Остальное убрано.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " The rest was removed."
+          }
+        }
+      }
+    },
+    " и файлы других пользователей.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " and other users' files."
+          }
+        }
+      }
+    },
+    " из %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " of %@"
+          }
+        }
+      }
+    },
+    "%@ %@ больше %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ %@ for more than %@"
+          }
+        }
+      }
+    },
+    "%@ %@ после себя файлы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ %@ files behind"
+          }
+        }
+      }
+    },
+    "%@ %@ только для Intel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ %@ only for Intel"
+          }
+        }
+      }
+    },
+    "%@ %lld процентов": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ %lld percent"
+          }
+        }
+      }
+    },
+    "%@ + остатки": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ + leftovers"
+          }
+        }
+      }
+    },
+    "%@ · %@ от сторонних разработчиков": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %@ from third-party developers"
+          }
+        }
+      }
+    },
+    "%@ · занято %@ из %@ · свободно %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %@ of %@ used · %@ free"
+          }
+        }
+      }
+    },
+    "%@ · проверено в %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · checked at %@"
+          }
+        }
+      }
+    },
+    "%@ видит все файлы, которые нужны для сканирования.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ sees all the files needed for scanning."
+          }
+        }
+      }
+    },
+    "%@ видит все файлы, которые нужны для сканирования. Отключить доступ можно в Системных настройках.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ sees all the files needed for scanning. You can turn off access in System Settings."
+          }
+        }
+      }
+    },
+    "%@ диска": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ of disk"
+          }
+        }
+      }
+    },
+    "%@ из %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ of %@"
+          }
+        }
+      }
+    },
+    "%@ из %@ мА·ч": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ of %@ mAh"
+          }
+        }
+      }
+    },
+    "%@ из %@ — только для Intel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ of %@ — only for Intel"
+          }
+        }
+      }
+    },
+    "%@ копию": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ copy"
+          }
+        }
+      }
+    },
+    "%@ крупнее %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ larger than %@"
+          }
+        }
+      }
+    },
+    "%@ можно вернуть из Корзины.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ can be put back from the Trash."
+          }
+        }
+      }
+    },
+    "%@ назад": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ago"
+          }
+        }
+      }
+    },
+    "%@ находит кэши, остатки приложений, дубликаты и забытые файлы. Что удалить, решаете вы.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ finds caches, app leftovers, duplicates and forgotten files. You decide what to remove."
+          }
+        }
+      }
+    },
+    "%@ по %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, %@ each"
+          }
+        }
+      }
+    },
+    "%@ работает без интернета и ничего никуда не отправляет.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ works offline and never sends anything anywhere."
+          }
+        }
+      }
+    },
+    "%@, версия %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, version %@"
+          }
+        }
+      }
+    },
+    "%@: входит в очистку": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: part of the cleanup"
+          }
+        }
+      }
+    },
+    "%@: свободно %@ из %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@ free of %@"
+          }
+        }
+      }
+    },
+    "%lld из %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of %lld"
+          }
+        }
+      }
+    },
+    "%lld мес.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld mo."
+          }
+        }
+      }
+    },
+    ", файлы других пользователей и — без полного доступа к диску — данные других приложений.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ", other users' files and, without Full Disk Access, other apps' data."
+          }
+        }
+      }
+    },
+    "Docker удалит выбранное сам — сразу, без Корзины. Образы скачаются заново при следующем запуске; тома с данными не трогаются.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Docker removes the selected items itself — right away, without the Trash. Images are downloaded again on the next run; data volumes are not touched."
+          }
+        }
+      }
+    },
+    "Docker установлен, но не запущен. Запустите его и нажмите «Сканировать заново», чтобы посчитать образы и кэш сборки.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Docker is installed but not running. Start it and click \"Scan again\" to measure images and the build cache."
+          }
+        }
+      }
+    },
+    "Finder и «Об этом Mac» считают свободным и то место, которое macOS может освободить сама: локальные снимки Time Machine, файлы iCloud, которые можно скачать снова, и временные кэши. Это место освобождается автоматически, как только оно понадобится, — удалять его вручную не нужно. Локальные снимки Time Machine хранятся около суток, и macOS удаляет их раньше, если место заканчивается.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finder and About This Mac also count as free the space macOS can reclaim on its own: local Time Machine snapshots, iCloud files that can be downloaded again, and temporary caches. That space is freed automatically as soon as it is needed; there is no need to clear it by hand. Local Time Machine snapshots are kept for about a day, and macOS deletes them sooner when space runs low."
+          }
+        }
+      }
+    },
+    "Finder показывает свободным": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finder shows as free"
+          }
+        }
+      }
+    },
+    "Mac в порядке": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Mac is in good shape"
+          }
+        }
+      }
+    },
+    "Mac стал чище": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Mac is cleaner"
+          }
+        }
+      }
+    },
+    "SSD выработал расчётный ресурс": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the SSD has used up its rated endurance"
+          }
+        }
+      }
+    },
+    "SSD изнашивается от записи. Ресурс — сколько записи осталось из того, что заложил производитель; его сообщает сам диск. Даже когда ресурс кончится, диск обычно продолжает работать — но резервная копия тогда особенно важна. На некоторых Mac диск этих данных не сообщает.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An SSD wears out from writing. Endurance is how much writing is left of what the manufacturer rated; the drive itself reports it. Even after the endurance runs out, the drive usually keeps working, but a backup matters most then. On some Macs the drive does not report this data."
+          }
+        }
+      }
+    },
+    "macOS может попросить пароль администратора или перезапустить %@ — это нормально.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS may ask for an administrator password or to restart %@ — that is normal."
+          }
+        }
+      }
+    },
+    "macOS не дала %@ доступ к этим файлам. Дайте полный доступ к диску и повторите.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS didn't let %@ access these files. Grant Full Disk Access and try again."
+          }
+        }
+      }
+    },
+    "macOS не подтвердила пароль администратора — повторите": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS didn't accept the administrator password — retry"
+          }
+        }
+      }
+    },
+    "macOS не сообщает о неполадках.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS reports no problems."
+          }
+        }
+      }
+    },
+    "macOS рекомендует заменить аккумулятор в сервисе.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS recommends having the battery serviced."
+          }
+        }
+      }
+    },
+    "macOS скрывает от программ часть файлов — почту, кэши Safari, контейнеры приложений, резервные копии. Чтобы найти весь мусор, %@ нужен полный доступ к диску. Его даёте вы в Системных настройках — там же его можно отключить в любой момент.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS hides some files from apps — mail, Safari caches, app containers, backups. To find all the junk, %@ needs Full Disk Access. You grant it in System Settings, and you can turn it off there at any time."
+          }
+        }
+      }
+    },
+    "macOS снова будет запускать это само. Если в настройках задан запуск при загрузке, оно запустится сразу.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS will start this on its own again. If it is set to run at load, it will start right away."
+          }
+        }
+      }
+    },
+    "macOS спрашивает пароль, чтобы удалить системные компоненты": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS is asking for a password to remove system components"
+          }
+        }
+      }
+    },
+    "macOS спросит пароль администратора: без него список объектов входа не читается": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS will ask for an administrator password: the login items list cannot be read without it"
+          }
+        }
+      }
+    },
+    "«%@»": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\"%@\""
+          }
+        }
+      }
+    },
+    "«%@» входит в macOS. Системные приложения защищены: их нельзя удалить или сбросить, а обновление macOS всё равно вернёт их на место.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\"%@\" is part of macOS. System apps are protected: they can't be removed or reset, and a macOS update would bring them back anyway."
+          }
+        }
+      }
+    },
+    "«%@» нельзя переместить в Корзину": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\"%@\" can't be moved to the Trash"
+          }
+        }
+      }
+    },
+    "«%@» сейчас запущено — оно будет закрыто.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\"%@\" is running and will be quit."
+          }
+        }
+      }
+    },
+    "«%@» сейчас открыта на карте": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\"%@\" is currently open on the map"
+          }
+        }
+      }
+    },
+    "«%@» удалено": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\"%@\" removed"
+          }
+        }
+      }
+    },
+    "Ёмкость по контроллеру": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capacity (controller)"
+          }
+        }
+      }
+    },
+    "Ёмкость — тот же процент, что в Системных настройках → Аккумулятор → Состояние аккумулятора. Батарея со временем изнашивается, это нормально: Apple считает её исправной, пока она держит от 80 %. Циклы — сколько раз она в сумме разрядилась на 100 %.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capacity is the same percentage as in System Settings → Battery → Battery Health. A battery wears out over time, and that is normal: Apple considers it healthy while it holds 80% or more. Cycles are how many times it has been fully discharged in total."
+          }
+        }
+      }
+    },
+    "Автовыбор": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-select"
+          }
+        }
+      }
+    },
+    "Автозапуск": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Startup Items"
+          }
+        }
+      }
+    },
+    "Агенты": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agents"
+          }
+        }
+      }
+    },
+    "Аккумулятор": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Battery"
+          }
+        }
+      }
+    },
+    "Аккумулятор, диск, свободное место и программы для Intel. Только проверка — ничего не удаляется.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Battery, disk, free space and Intel-only apps. A check only — nothing is removed."
+          }
+        }
+      }
+    },
+    "Без него macOS скрывает кэши Safari и Mail, контейнеры приложений и резервные копии — %@ найдёт не всё.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Without it, macOS hides Safari and Mail caches, app containers and backups — %@ will not find everything."
+          }
+        }
+      }
+    },
+    "Без перезагрузки": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uptime"
+          }
+        }
+      }
+    },
+    "Без подписи": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unsigned"
+          }
+        }
+      }
+    },
+    "Без подписи разработчика": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No developer signature"
+          }
+        }
+      }
+    },
+    "Без полного доступа macOS не показывает кэши Safari и Mail и контейнеры приложений — найдём не всё.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Without Full Disk Access, macOS hides Safari and Mail caches and app containers — we won't find everything."
+          }
+        }
+      }
+    },
+    "Без полного доступа к диску macOS их не отдаёт — кнопка ниже.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Without Full Disk Access, macOS won't release them — see the button below."
+          }
+        }
+      }
+    },
+    "Без полного доступа к диску macOS не даёт измерить контейнеры других приложений.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Without Full Disk Access, macOS doesn't allow measuring other apps' containers."
+          }
+        }
+      }
+    },
+    "Без полного доступа к диску данные других приложений входят в «Система и прочее».": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Without Full Disk Access, other apps' data is counted under \"System and other\"."
+          }
+        }
+      }
+    },
+    "Безопасно": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Safe"
+          }
+        }
+      }
+    },
+    "Большие": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Large"
+          }
+        }
+      }
+    },
+    "Будет удалено": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Will be removed"
+          }
+        }
+      }
+    },
+    "Будут закрыты: %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These apps will be quit: %@."
+          }
+        }
+      }
+    },
+    "Быстрый просмотр": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick Look"
+          }
+        }
+      }
+    },
+    "Быстрый просмотр (⌘Y)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick Look (⌘Y)"
+          }
+        }
+      }
+    },
+    "В Корзине": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In the Trash"
+          }
+        }
+      }
+    },
+    "В Корзине %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In the Trash: %@"
+          }
+        }
+      }
+    },
+    "В Корзине %@ — это место ещё занято": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ in the Trash — this space is still taken"
+          }
+        }
+      }
+    },
+    "В Корзине: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In the Trash: %@"
+          }
+        }
+      }
+    },
+    "В Корзину": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move to Trash"
+          }
+        }
+      }
+    },
+    "В каждой группе всегда остаётся хотя бы одна копия": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At least one copy always stays in every group"
+          }
+        }
+      }
+    },
+    "В сборщик (+)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add to Collector (+)"
+          }
+        }
+      }
+    },
+    "В файле нет метки (Label): macOS его не загружает. Его можно удалить.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file has no Label: macOS does not load it. It can be removed."
+          }
+        }
+      }
+    },
+    "В этой папке нет файлов, которые занимают место.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There are no files taking up space in this folder."
+          }
+        }
+      }
+    },
+    "Введите пароль администратора": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the administrator password"
+          }
+        }
+      }
+    },
+    "Вернитесь сюда — %@ заметит доступ сам.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Come back here — %@ will notice the access by itself."
+          }
+        }
+      }
+    },
+    "Вернуться к одному приложению": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to a single app"
+          }
+        }
+      }
+    },
+    "Версия %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %@"
+          }
+        }
+      }
+    },
+    "Версия %@ (%@)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %@ (%@)"
+          }
+        }
+      }
+    },
+    "Включено": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On"
+          }
+        }
+      }
+    },
+    "Включено: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turned on: %@"
+          }
+        }
+      }
+    },
+    "Включите переключатель рядом с %@. Если его нет в списке — нажмите «+» или перетащите значок ниже.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on the switch next to %@. If it is not in the list, click \"+\" or drag the icon below."
+          }
+        }
+      }
+    },
+    "Включить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on"
+          }
+        }
+      }
+    },
+    "Включить %@?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on %@?"
+          }
+        }
+      }
+    },
+    "Включить «%@»?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on \"%@\"?"
+          }
+        }
+      }
+    },
+    "Включить доступ можно в любой момент — кнопкой «Дать доступ» внизу боковой панели или в меню %@ → «Полный доступ к диску…».": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can turn on access at any time — with the \"Grant Access\" button at the bottom of the sidebar or in the %@ menu → \"Full Disk Access…\"."
+          }
+        }
+      }
+    },
+    "Включить…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on…"
+          }
+        }
+      }
+    },
+    "Вместе с остатками — только точные совпадения.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Including leftovers — exact matches only."
+          }
+        }
+      }
+    },
+    "Внезапные выключения": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unsafe shutdowns"
+          }
+        }
+      }
+    },
+    "Все": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All"
+          }
+        }
+      }
+    },
+    "Все дубликаты": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All duplicates"
+          }
+        }
+      }
+    },
+    "Все копии остаются на диске": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All copies stay on disk"
+          }
+        }
+      }
+    },
+    "Все приложения в ходу": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All apps are in use"
+          }
+        }
+      }
+    },
+    "Все файлы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All files"
+          }
+        }
+      }
+    },
+    "Всего": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total"
+          }
+        }
+      }
+    },
+    "Всё в порядке": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All good"
+          }
+        }
+      }
+    },
+    "Всё попадёт в Корзину": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything goes to the Trash"
+          }
+        }
+      }
+    },
+    "Всё попадёт в Корзину — это можно вернуть, пока Корзина не очищена.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything goes to the Trash — you can put it back until the Trash is emptied."
+          }
+        }
+      }
+    },
+    "Всё убранное сначала попадает в Корзину — его можно вернуть, пока Корзина не очищена.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything removed goes to the Trash first — you can bring it back until the Trash is emptied."
+          }
+        }
+      }
+    },
+    "Всё удалённое сначала попадает в Корзину — его можно вернуть.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything removed goes to the Trash first — you can bring it back."
+          }
+        }
+      }
+    },
+    "Всё, что не попало в другие категории. Ниже — части, которые можно измерить.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything that did not fit another category. Below are the parts that can be measured."
+          }
+        }
+      }
+    },
+    "Входит в очистку": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Part of the cleanup"
+          }
+        }
+      }
+    },
+    "Входит в очистку — выключите, чтобы не трогать": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Part of the cleanup — turn off to leave it alone"
+          }
+        }
+      }
+    },
+    "Выберите отдельные папки и файлы внутри неё.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose individual folders and files inside it."
+          }
+        }
+      }
+    },
+    "Выберите приложение": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose an app"
+          }
+        }
+      }
+    },
+    "Выбрано": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selected"
+          }
+        }
+      }
+    },
+    "Выбрано во всех приложениях": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selected across all apps"
+          }
+        }
+      }
+    },
+    "Выбрать": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose"
+          }
+        }
+      }
+    },
+    "Выбрать все в списке": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select all in the list"
+          }
+        }
+      }
+    },
+    "Выбрать, какая копия останется": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose which copy stays"
+          }
+        }
+      }
+    },
+    "Выбрать, что очистить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose what to clean"
+          }
+        }
+      }
+    },
+    "Выключено": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off"
+          }
+        }
+      }
+    },
+    "Выключено в Настройках": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off in System Settings"
+          }
+        }
+      }
+    },
+    "Выключено: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turned off: %@"
+          }
+        }
+      }
+    },
+    "Выключить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off"
+          }
+        }
+      }
+    },
+    "Выключить %@?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off %@?"
+          }
+        }
+      }
+    },
+    "Выключить «%@»?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off \"%@\"?"
+          }
+        }
+      }
+    },
+    "Выключить…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off…"
+          }
+        }
+      }
+    },
+    "Выполнено: ещё %lld %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done: %lld more %@"
+          }
+        }
+      }
+    },
+    "Высокое": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High"
+          }
+        }
+      }
+    },
+    "ГБ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GB"
+          }
+        }
+      }
+    },
+    "Где искать:": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where to look:"
+          }
+        }
+      }
+    },
+    "Готово": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      }
+    },
+    "Готово — всё убрано": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done — everything removed"
+          }
+        }
+      }
+    },
+    "Готово. Убрано %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done. Removed %@"
+          }
+        }
+      }
+    },
+    "Готово: %@. Не получилось: %@ — %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done: %@. Failed: %@ — %@"
+          }
+        }
+      }
+    },
+    "Давление памяти показывает, хватает ли оперативной памяти: «нормальное» — хватает; «повышенное» — macOS сжимает данные и пользуется свопом; «высокое» — памяти не хватает, программы могут подтормаживать. Немного свопа — обычное дело. Значения сняты один раз, в момент проверки.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Memory pressure shows whether there is enough RAM: normal means there is; elevated means macOS is compressing data and using swap; high means memory is short and apps may slow down. A little swap is routine. The values were read once, at the moment of the check."
+          }
+        }
+      }
+    },
+    "Давно не открывались": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not opened in a while"
+          }
+        }
+      }
+    },
+    "Данные «%@» сброшены": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\"%@\" data reset"
+          }
+        }
+      }
+    },
+    "Дата": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Date"
+          }
+        }
+      }
+    },
+    "Дата изменения": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Date modified"
+          }
+        }
+      }
+    },
+    "Дать доступ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grant Access"
+          }
+        }
+      }
+    },
+    "Дать доступ и повторить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grant access and retry"
+          }
+        }
+      }
+    },
+    "Деинсталлятор": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uninstaller"
+          }
+        }
+      }
+    },
+    "Диск": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disk"
+          }
+        }
+      }
+    },
+    "Диск сообщает о сбое": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disk reports a failure"
+          }
+        }
+      }
+    },
+    "Для некоторых файлов macOS попросит пароль администратора.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For some files, macOS will ask for an administrator password."
+          }
+        }
+      }
+    },
+    "Добавить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add"
+          }
+        }
+      }
+    },
+    "Добавить в сборщик": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add to Collector"
+          }
+        }
+      }
+    },
+    "Документы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Documents"
+          }
+        }
+      }
+    },
+    "Домашняя папка": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Home folder"
+          }
+        }
+      }
+    },
+    "Доступ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Access"
+          }
+        }
+      }
+    },
+    "Доступ нужен, только чтобы видеть файлы. Удаляет %@ лишь то, что вы выбрали.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Access is needed only to see files. %@ removes only what you selected."
+          }
+        }
+      }
+    },
+    "Доступ открыт": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Access granted"
+          }
+        }
+      }
+    },
+    "Другая папка…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other folder…"
+          }
+        }
+      }
+    },
+    "Других файлов не найдено — приложение хранит всё внутри себя.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No other files found — the app keeps everything inside its bundle."
+          }
+        }
+      }
+    },
+    "Дубликатов не нашлось": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No duplicates found"
+          }
+        }
+      }
+    },
+    "Дубликаты": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duplicates"
+          }
+        }
+      }
+    },
+    "Есть на что взглянуть": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Worth a look"
+          }
+        }
+      }
+    },
+    "Ещё %@ освободил Docker — сразу, без Корзины.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Docker freed another %@ — right away, without the Trash."
+          }
+        }
+      }
+    },
+    "Ждём пароль администратора и читаем список объектов входа…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for the administrator password and reading the login items…"
+          }
+        }
+      }
+    },
+    "Ждём, когда вы включите %@ в настройках…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for you to turn on %@ in Settings…"
+          }
+        }
+      }
+    },
+    "Завершаем": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finishing up"
+          }
+        }
+      }
+    },
+    "Завершение приложения": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quitting the app"
+          }
+        }
+      }
+    },
+    "Загружено и ждёт своего часа: входа, расписания или обращения.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loaded and waiting for its moment: a login, a schedule or a request."
+          }
+        }
+      }
+    },
+    "Загрузки": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloads"
+          }
+        }
+      }
+    },
+    "Закройте «%@» перед сбросом, иначе оно может пересоздать файлы.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quit \"%@\" before resetting, or it may recreate the files."
+          }
+        }
+      }
+    },
+    "Закрыть": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        }
+      }
+    },
+    "Закрыть (Esc)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close (Esc)"
+          }
+        }
+      }
+    },
+    "Закрыть подробности": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide details"
+          }
+        }
+      }
+    },
+    "Заметно изношен": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noticeably worn"
+          }
+        }
+      }
+    },
+    "Заметный износ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noticeable wear"
+          }
+        }
+      }
+    },
+    "Занято": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used"
+          }
+        }
+      }
+    },
+    "Занято %@ диска": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ of the disk used"
+          }
+        }
+      }
+    },
+    "Занято %@ из %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ of %@ used"
+          }
+        }
+      }
+    },
+    "Записано за всё время": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Written in total"
+          }
+        }
+      }
+    },
+    "Запущено": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running"
+          }
+        }
+      }
+    },
+    "Заряд сейчас": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current charge"
+          }
+        }
+      }
+    },
+    "Защищён macOS — удалить нельзя, это нормально": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protected by macOS — can't be deleted, this is normal"
+          }
+        }
+      }
+    },
+    "Защищённая папка — %@ её не трогает": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protected folder — %@ leaves it alone"
+          }
+        }
+      }
+    },
+    "Здесь пока только то, что видно без пароля.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "So far this shows only what is visible without a password."
+          }
+        }
+      }
+    },
+    "Здесь пусто": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing here"
+          }
+        }
+      }
+    },
+    "Здоровье Mac": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac Health"
+          }
+        }
+      }
+    },
+    "Знакомство с %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome to %@"
+          }
+        }
+      }
+    },
+    "Значок %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ icon"
+          }
+        }
+      }
+    },
+    "И ещё %lld %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "And %lld more %@"
+          }
+        }
+      }
+    },
+    "Идёт работа": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Working"
+          }
+        }
+      }
+    },
+    "Идёт работа…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Working…"
+          }
+        }
+      }
+    },
+    "Из них освободит macOS": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Of which macOS will reclaim"
+          }
+        }
+      }
+    },
+    "Изменить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change"
+          }
+        }
+      }
+    },
+    "Изменить параметры": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change options"
+          }
+        }
+      }
+    },
+    "Изменить, какая копия останется": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change which copy stays"
+          }
+        }
+      }
+    },
+    "Измерить, что занимает место": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measure what takes up space"
+          }
+        }
+      }
+    },
+    "Изображения": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pictures"
+          }
+        }
+      }
+    },
+    "Израсходовано ресурса": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Endurance used"
+          }
+        }
+      }
+    },
+    "Или перетащите .app в окно — покажем всё, что оно оставило на диске.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Or drag an .app into the window to see everything it has left on the disk."
+          }
+        }
+      }
+    },
+    "Имя": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        }
+      }
+    },
+    "Иначе всё попадёт в Корзину и его можно будет вернуть": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otherwise everything goes to the Trash and can be put back"
+          }
+        }
+      }
+    },
+    "Их защищает macOS, ничего делать не нужно.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "They're protected by macOS; nothing to do."
+          }
+        }
+      }
+    },
+    "Их можно убрать ещё раз — кнопка ниже.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can try removing them again — see the button below."
+          }
+        }
+      }
+    },
+    "Ищем настройки, кэши и службы приложения…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looking for the app's settings, caches and services…"
+          }
+        }
+      }
+    },
+    "Ищем приложения": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looking for apps"
+          }
+        }
+      }
+    },
+    "Ищем приложения…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looking for apps…"
+          }
+        }
+      }
+    },
+    "Ищем файлы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looking for files"
+          }
+        }
+      }
+    },
+    "Ищем файлы — %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looking for files — %@"
+          }
+        }
+      }
+    },
+    "Как в системе": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Same as macOS"
+          }
+        }
+      }
+    },
+    "Как включить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How to turn it on"
+          }
+        }
+      }
+    },
+    "Как дать %@ полный доступ к диску": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How to give %@ Full Disk Access"
+          }
+        }
+      }
+    },
+    "Как дать доступ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How to grant access"
+          }
+        }
+      }
+    },
+    "Как дать доступ…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How to Grant Access…"
+          }
+        }
+      }
+    },
+    "Как после сканирования": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As after the scan"
+          }
+        }
+      }
+    },
+    "Карта диска": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disk Map"
+          }
+        }
+      }
+    },
+    "Когда приложение удаляют простым перетаскиванием в Корзину, его настройки и кэши остаются. Здесь их можно найти и убрать.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When an app is deleted by simply dragging it to the Trash, its settings and caches stay behind. Here you can find and remove them."
+          }
+        }
+      }
+    },
+    "Копия в %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy in %@"
+          }
+        }
+      }
+    },
+    "Корзина": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trash"
+          }
+        }
+      }
+    },
+    "Корзина будет очищена навсегда": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Trash will be emptied permanently"
+          }
+        }
+      }
+    },
+    "Корзина очищена": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trash emptied"
+          }
+        }
+      }
+    },
+    "Корзина уже пуста": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Trash is already empty"
+          }
+        }
+      }
+    },
+    "Крупных забытых файлов нет": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No large forgotten files"
+          }
+        }
+      }
+    },
+    "Кэши Safari и Mail, часть контейнеров приложений и резервные копии останутся невидимы — найдём меньше мусора.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Safari and Mail caches, some app containers and backups will stay invisible — less junk will be found."
+          }
+        }
+      }
+    },
+    "Кэши и журналы в порядке": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caches and logs are in order"
+          }
+        }
+      }
+    },
+    "Кэши и журналы уже в порядке. Загляните позже — приложения со временем накопят новые.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caches and logs are already in order. Check back later — apps build up new ones over time."
+          }
+        }
+      }
+    },
+    "Кэши, журналы и временные файлы, которые macOS и приложения создают заново.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caches, logs and temporary files that macOS and apps create again."
+          }
+        }
+      }
+    },
+    "Листайте, чтобы выбрать: оставить или в Корзину": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe to choose: keep or move to Trash"
+          }
+        }
+      }
+    },
+    "Личные файлы никогда не отмечаются сами.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personal files are never selected automatically."
+          }
+        }
+      }
+    },
+    "Лишние копии попадут в Корзину, в каждой группе останется хотя бы одна. Их можно вернуть, пока Корзина не очищена.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extra copies go to the Trash; at least one copy stays in every group. You can put them back until the Trash is emptied."
+          }
+        }
+      }
+    },
+    "Место на диске освобождено · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disk space freed · %@"
+          }
+        }
+      }
+    },
+    "Много мелких объектов вместе — их нельзя убрать одним действием": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Many small items grouped together — they can't be removed in one action"
+          }
+        }
+      }
+    },
+    "Модель": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model"
+          }
+        }
+      }
+    },
+    "Можно просто перетащить приложение в это окно": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can simply drag an app into this window"
+          }
+        }
+      }
+    },
+    "Музыка": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Music"
+          }
+        }
+      }
+    },
+    "Мусор убран": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Junk removed"
+          }
+        }
+      }
+    },
+    "Мусор, остатки удалённых приложений и забытые файлы — одним сканированием.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Junk, leftovers of removed apps and forgotten files — in one scan."
+          }
+        }
+      }
+    },
+    "Мусора не найдено": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No junk found"
+          }
+        }
+      }
+    },
+    "Мусора, следов удалённых приложений и забытых файлов не нашли. Загляните позже — со временем они накопятся снова.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No junk, leftovers of removed apps or forgotten files were found. Check back later — they build up again over time."
+          }
+        }
+      }
+    },
+    "На ваш выбор": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your call"
+          }
+        }
+      }
+    },
+    "Нажмите «Открыть настройки» — откроется раздел «Полный доступ к диску».": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click \"Open Settings\" — the Full Disk Access section opens."
+          }
+        }
+      }
+    },
+    "Нажмите на категорию или на диск, чтобы посмотреть файлы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click a category or the disk to see the files"
+          }
+        }
+      }
+    },
+    "Назад": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back"
+          }
+        }
+      }
+    },
+    "Найдите крупные файлы и то, что вы давно не открывали.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Find large files and what you have not opened in a long time."
+          }
+        }
+      }
+    },
+    "Найдите одинаковые файлы и оставьте по одной копии.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Find identical files and keep one copy of each."
+          }
+        }
+      }
+    },
+    "Найдём настройки, кэши и службы приложений, которых уже нет на Mac.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We'll find settings, caches and services of apps that are no longer on this Mac."
+          }
+        }
+      }
+    },
+    "Найти": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Find"
+          }
+        }
+      }
+    },
+    "Найти остатки": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Find leftovers"
+          }
+        }
+      }
+    },
+    "Наработка": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Power-on time"
+          }
+        }
+      }
+    },
+    "Начать": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get Started"
+          }
+        }
+      }
+    },
+    "Начать умную очистку": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start Smart Care"
+          }
+        }
+      }
+    },
+    "Не входит в очистку — включите, чтобы очистить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not part of the cleanup — turn on to clean it"
+          }
+        }
+      }
+    },
+    "Не загружено": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not loaded"
+          }
+        }
+      }
+    },
+    "Не открывались": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not opened for"
+          }
+        }
+      }
+    },
+    "Не получилось: %@ — %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed: %@ — %@"
+          }
+        }
+      }
+    },
+    "Не сейчас": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not Now"
+          }
+        }
+      }
+    },
+    "Не удалось прочитать список объектов входа (пароль не введён или macOS не ответила). Его можно посмотреть в Системных настройках.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not read the login items list (no password entered, or macOS did not respond). You can view it in System Settings."
+          }
+        }
+      }
+    },
+    "Не удалось убрать выбранное": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't remove the selected items"
+          }
+        }
+      }
+    },
+    "Не удалять «%@»": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Don't remove \"%@\""
+          }
+        }
+      }
+    },
+    "Неиспользуемые приложения": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unused apps"
+          }
+        }
+      }
+    },
+    "Неполадок нет": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No problems"
+          }
+        }
+      }
+    },
+    "Нет в списке? Перетащите этот значок в окно настроек.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not in the list? Drag this icon into the Settings window."
+          }
+        }
+      }
+    },
+    "Нет данных": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No data"
+          }
+        }
+      }
+    },
+    "Нет данных о здоровье": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No health data"
+          }
+        }
+      }
+    },
+    "Нет доступа к Корзине — macOS показывает её только с полным доступом к диску": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No access to the Trash — macOS shows it only with Full Disk Access"
+          }
+        }
+      }
+    },
+    "Нет доступа — дайте %@ полный доступ к диску": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No access — grant %@ Full Disk Access"
+          }
+        }
+      }
+    },
+    "Нет полного доступа": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No full access"
+          }
+        }
+      }
+    },
+    "Нет полного доступа к диску": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Full Disk Access"
+          }
+        }
+      }
+    },
+    "Нет приложений с этим фильтром": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No apps match this filter"
+          }
+        }
+      }
+    },
+    "Нет файлов крупнее %@ в выбранных папках. Уменьшите размер или добавьте папку.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No files larger than %@ in the selected folders. Lower the size or add a folder."
+          }
+        }
+      }
+    },
+    "Нет файлов от %@, которые не открывались больше %@. Уменьшите размер или срок — или добавьте папку.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No files of %@ or more that haven't been opened for over %@. Lower the size or the period, or add a folder."
+          }
+        }
+      }
+    },
+    "Ничего не выбрано заранее — это ваши файлы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing is preselected — these are your files"
+          }
+        }
+      }
+    },
+    "Ничего не найдено": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing found"
+          }
+        }
+      }
+    },
+    "Ничего не найдено по «%@»": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing found for \"%@\""
+          }
+        }
+      }
+    },
+    "Ничего не нашлось": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing found"
+          }
+        }
+      }
+    },
+    "Ничего тревожного": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing alarming"
+          }
+        }
+      }
+    },
+    "Норма": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normal"
+          }
+        }
+      }
+    },
+    "Нормальное": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normal"
+          }
+        }
+      }
+    },
+    "О программе": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About"
+          }
+        }
+      }
+    },
+    "Обновить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh"
+          }
+        }
+      }
+    },
+    "Объектов входа нет: при входе в систему ничего не открывается само. Добавить приложение можно в Системных настройках.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No login items: nothing opens on its own when you log in. You can add an app in System Settings."
+          }
+        }
+      }
+    },
+    "Объекты macOS": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS items"
+          }
+        }
+      }
+    },
+    "Объекты входа": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Login Items"
+          }
+        }
+      }
+    },
+    "Объекты входа приложений включаются и выключаются только в Системных настройках — сторонним программам macOS этого не разрешает.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App login items can be turned on and off only in System Settings; macOS does not allow third-party apps to do that."
+          }
+        }
+      }
+    },
+    "Одна копия всегда остаётся": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One copy always stays"
+          }
+        }
+      }
+    },
+    "Они запускаются через Rosetta 2. Apple сохраняет Rosetta для любых программ до macOS 27 включительно, а в следующих версиях — только для части старых игр. Проверьте, нет ли у разработчика версии для Apple silicon.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "They run through Rosetta 2. Apple keeps Rosetta for any app up to and including macOS 27, and in later versions only for some older games. Check whether the developer offers an Apple silicon version."
+          }
+        }
+      }
+    },
+    "Оперативная память": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RAM"
+          }
+        }
+      }
+    },
+    "Освободим место — бережно": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free up space — gently"
+          }
+        }
+      }
+    },
+    "Осмотреться самому": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Look Around First"
+          }
+        }
+      }
+    },
+    "Оставить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep"
+          }
+        }
+      }
+    },
+    "Оставить копию в «%@»": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep the copy in \"%@\""
+          }
+        }
+      }
+    },
+    "Оставить только эту": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep only this one"
+          }
+        }
+      }
+    },
+    "Оставить эту копию": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep this copy"
+          }
+        }
+      }
+    },
+    "Оставляем копию в «%@», остальные — в Корзину": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keeping the copy in \"%@\", the rest go to the Trash"
+          }
+        }
+      }
+    },
+    "Оставляемая копия не найдена на диске — группа пропущена": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The copy to keep was not found on disk — group skipped"
+          }
+        }
+      }
+    },
+    "Осталось %@ ресурса, который производитель закладывает на запись.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ of the write endurance rated by the manufacturer is left."
+          }
+        }
+      }
+    },
+    "Остальное попадёт в Корзину — это можно вернуть. Содержимое самой Корзины (%@) будет удалено навсегда.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The rest goes to the Trash and can be put back. The contents of the Trash itself (%@) will be deleted forever."
+          }
+        }
+      }
+    },
+    "Остановим после текущей группы файлов…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopping after the current group of files…"
+          }
+        }
+      }
+    },
+    "Остановить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop"
+          }
+        }
+      }
+    },
+    "Остановить (Esc)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop (Esc)"
+          }
+        }
+      }
+    },
+    "Остановить сканирование": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop scanning"
+          }
+        }
+      }
+    },
+    "Остановлено": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopped"
+          }
+        }
+      }
+    },
+    "Остановлено. Убрано %@ из %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopped. Removed %@ of %@"
+          }
+        }
+      }
+    },
+    "Остатки": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leftovers"
+          }
+        }
+      }
+    },
+    "Остатки приложений": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App leftovers"
+          }
+        }
+      }
+    },
+    "Остатки удалены": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leftovers removed"
+          }
+        }
+      }
+    },
+    "Остатки удалённых приложений": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leftovers of removed apps"
+          }
+        }
+      }
+    },
+    "Остаётся %@, остальные — в Корзину": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ stay, the rest go to the Trash"
+          }
+        }
+      }
+    },
+    "Остаётся на диске": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stays on disk"
+          }
+        }
+      }
+    },
+    "Осторожно": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caution"
+          }
+        }
+      }
+    },
+    "Откроется в разделе «%@»": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens in the \"%@\" section"
+          }
+        }
+      }
+    },
+    "Открываем приложение…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opening the app…"
+          }
+        }
+      }
+    },
+    "Открывалось %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opened %@"
+          }
+        }
+      }
+    },
+    "Открыть": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open"
+          }
+        }
+      }
+    },
+    "Открыть «Объекты входа»": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Login Items"
+          }
+        }
+      }
+    },
+    "Открыть «Объекты входа» в Системных настройках": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Login Items in System Settings"
+          }
+        }
+      }
+    },
+    "Открыть Карту диска": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Disk Map"
+          }
+        }
+      }
+    },
+    "Открыть Корзину": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Trash"
+          }
+        }
+      }
+    },
+    "Открыть Системные настройки": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open System Settings"
+          }
+        }
+      }
+    },
+    "Открыть на карте": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open on map"
+          }
+        }
+      }
+    },
+    "Открыть настройки": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open System Settings"
+          }
+        }
+      }
+    },
+    "Открыть настройки ещё раз": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings Again"
+          }
+        }
+      }
+    },
+    "Открыть настройки полного доступа к диску": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Full Disk Access settings"
+          }
+        }
+      }
+    },
+    "Открыть папку": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open folder"
+          }
+        }
+      }
+    },
+    "Открыть раздел «%@»": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the \"%@\" section"
+          }
+        }
+      }
+    },
+    "Отличное состояние": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Excellent condition"
+          }
+        }
+      }
+    },
+    "Отмена": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "Отметить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check"
+          }
+        }
+      }
+    },
+    "Отметить все дубликаты": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select all duplicates"
+          }
+        }
+      }
+    },
+    "Отметить все копии, кроме одной в каждой группе, или снять отметки": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select every copy but one in each group, or deselect all"
+          }
+        }
+      }
+    },
+    "Отметить для удаления": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark for removal"
+          }
+        }
+      }
+    },
+    "Отмечается само в режиме «%@» и выше": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checked automatically in %@ mode and above"
+          }
+        }
+      }
+    },
+    "Отмеченное попадёт в Корзину, остальное останется на месте": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checked items go to the Trash, the rest stay where they are"
+          }
+        }
+      }
+    },
+    "Отмечено %@, %@ плюс остатки": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ checked, %@ plus leftovers"
+          }
+        }
+      }
+    },
+    "Отпустите, чтобы удалить приложение": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drop to remove the app"
+          }
+        }
+      }
+    },
+    "Очистить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clean"
+          }
+        }
+      }
+    },
+    "Очистить %@?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clean %@?"
+          }
+        }
+      }
+    },
+    "Очистить Docker?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clean Docker?"
+          }
+        }
+      }
+    },
+    "Очистить Корзину?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empty the Trash?"
+          }
+        }
+      }
+    },
+    "Очистить Корзину…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empty Trash…"
+          }
+        }
+      }
+    },
+    "Очистить поиск": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear search"
+          }
+        }
+      }
+    },
+    "Очистить…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clean Up…"
+          }
+        }
+      }
+    },
+    "Очистка": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cleanup"
+          }
+        }
+      }
+    },
+    "Очистка Корзины": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Emptying the Trash"
+          }
+        }
+      }
+    },
+    "Очистка Корзины удаляет файлы навсегда — их нельзя вернуть.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Emptying the Trash deletes files for good — they cannot be brought back."
+          }
+        }
+      }
+    },
+    "Очистка переносит файлы в Корзину, чтобы их можно было вернуть. Место освободится, когда вы её очистите.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cleanup moves files to the Trash so they can be put back. The space is freed when you empty it."
+          }
+        }
+      }
+    },
+    "Очистка системного мусора": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cleaning system junk"
+          }
+        }
+      }
+    },
+    "Ошибки носителя": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Media errors"
+          }
+        }
+      }
+    },
+    "Память": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Memory"
+          }
+        }
+      }
+    },
+    "Папка…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folder…"
+          }
+        }
+      }
+    },
+    "Параметры": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Options"
+          }
+        }
+      }
+    },
+    "Пароль администратора не введён — повторите и введите его": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Administrator password not entered — retry and enter it"
+          }
+        }
+      }
+    },
+    "Перезапустить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restart"
+          }
+        }
+      }
+    },
+    "Перезапустить %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restart %@"
+          }
+        }
+      }
+    },
+    "Переместить %@ в Корзину?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move %@ to the Trash?"
+          }
+        }
+      }
+    },
+    "Переместить в Корзину…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move to Trash…"
+          }
+        }
+      }
+    },
+    "Переместить эту копию в Корзину": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move this copy to the Trash"
+          }
+        }
+      }
+    },
+    "Перемещено в Корзину": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moved to Trash"
+          }
+        }
+      }
+    },
+    "Перетащите в список «Полный доступ к диску»": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag into the Full Disk Access list"
+          }
+        }
+      }
+    },
+    "Перетащите в список «Полный доступ к диску» в Системных настройках": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag into the Full Disk Access list in System Settings"
+          }
+        }
+      }
+    },
+    "Перетащите сюда папки и файлы или нажмите «+» в списке — потом всё сразу уйдёт в Корзину.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag folders and files here or press \"+\" in the list — then everything goes to the Trash at once."
+          }
+        }
+      }
+    },
+    "По имени": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "By name"
+          }
+        }
+      }
+    },
+    "По размеру": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "By size"
+          }
+        }
+      }
+    },
+    "Повторить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry"
+          }
+        }
+      }
+    },
+    "Повышенное": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elevated"
+          }
+        }
+      }
+    },
+    "Подготовка": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing"
+          }
+        }
+      }
+    },
+    "Подготовка…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing…"
+          }
+        }
+      }
+    },
+    "Подпись Apple": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signed by Apple"
+          }
+        }
+      }
+    },
+    "Подпись повреждена": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Damaged signature"
+          }
+        }
+      }
+    },
+    "Подпись разработчика": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Developer signature"
+          }
+        }
+      }
+    },
+    "Подпись: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signed by %@"
+          }
+        }
+      }
+    },
+    "Подробнее": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Details"
+          }
+        }
+      }
+    },
+    "Поиск приложений": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search apps"
+          }
+        }
+      }
+    },
+    "Пока файлы лежат в Корзине, они занимают место. Чтобы освободить его, очистите Корзину.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files in the Trash still take up space. Empty the Trash to free it."
+          }
+        }
+      }
+    },
+    "Покажем само приложение и все его следы — ничего не удалится без подтверждения.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We will show the app and all its traces — nothing is removed without confirmation."
+          }
+        }
+      }
+    },
+    "Показать %@ в Finder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show %@ in Finder"
+          }
+        }
+      }
+    },
+    "Показать в Finder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show in Finder"
+          }
+        }
+      }
+    },
+    "Показать ещё %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show %@ more"
+          }
+        }
+      }
+    },
+    "Показать или скрыть файлы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show or hide files"
+          }
+        }
+      }
+    },
+    "Показать или скрыть файлы категории": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show or hide the category's files"
+          }
+        }
+      }
+    },
+    "Показать подробности": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show details"
+          }
+        }
+      }
+    },
+    "Показать приложения": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show apps"
+          }
+        }
+      }
+    },
+    "Показать, как дать доступ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show how to grant access"
+          }
+        }
+      }
+    },
+    "Показать, чем занят диск": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show what is on the disk"
+          }
+        }
+      }
+    },
+    "Показать, что занимает место на диске": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show what takes up space on the disk"
+          }
+        }
+      }
+    },
+    "Показывает, что не удалось убрать и почему": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows what couldn't be removed and why"
+          }
+        }
+      }
+    },
+    "Показывать предупреждение перед очисткой Корзины": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warn before emptying the Trash"
+          }
+        }
+      }
+    },
+    "Показывать системные приложения": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show system apps"
+          }
+        }
+      }
+    },
+    "Полностью заряженный, он держит %@ от того, что держал новым.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fully charged, it holds %@ of what it held when new."
+          }
+        }
+      }
+    },
+    "Полный доступ включён — пересканируйте, чтобы увидеть всё": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full Disk Access is on — scan again to see everything"
+          }
+        }
+      }
+    },
+    "Полный доступ к диску": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full Disk Access"
+          }
+        }
+      }
+    },
+    "Полный доступ к диску включён": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full Disk Access is on"
+          }
+        }
+      }
+    },
+    "Полный доступ к диску уже включён": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full Disk Access is already on"
+          }
+        }
+      }
+    },
+    "Полный доступ к диску…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full Disk Access…"
+          }
+        }
+      }
+    },
+    "Попробовать снова": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        }
+      }
+    },
+    "Пора менять": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time to replace"
+          }
+        }
+      }
+    },
+    "Порядок категорий и файлов по размеру": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Order of categories and files by size"
+          }
+        }
+      }
+    },
+    "Последняя уборка": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last cleanup"
+          }
+        }
+      }
+    },
+    "Последняя уборка: %@, %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last cleanup: %@, %@"
+          }
+        }
+      }
+    },
+    "Посмотреть, что лежит в Корзине": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See what's in the Trash"
+          }
+        }
+      }
+    },
+    "Посмотрите, что занимает место, и уберите лишнее.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See what takes up space and remove what you do not need."
+          }
+        }
+      }
+    },
+    "При первом сканировании macOS отдельно спросит доступ к Рабочему столу, Документам и Загрузкам.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On the first scan macOS will ask separately for access to Desktop, Documents and Downloads."
+          }
+        }
+      }
+    },
+    "При удалении приложение будет закрыто": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app will be quit when it's removed"
+          }
+        }
+      }
+    },
+    "Приложение": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App"
+          }
+        }
+      }
+    },
+    "Приложение всё ещё запущено и не закрылось. Закройте его и попробуйте снова.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app is still running and didn't quit. Quit it and try again."
+          }
+        }
+      }
+    },
+    "Приложение запущено — закройте его и повторите": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app is running — quit it and retry"
+          }
+        }
+      }
+    },
+    "Приложение и выбранные остатки попадут в Корзину — их можно вернуть, пока Корзина не очищена.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app and the selected leftovers will go to the Trash. You can get them back until the Trash is emptied."
+          }
+        }
+      }
+    },
+    "Приложение может вернуть свою службу при следующем запуске или обновлении. Надёжнее — удалить само приложение в «Деинсталляторе».": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app may put its service back the next time it launches or updates. It is more reliable to remove the app itself in Uninstaller."
+          }
+        }
+      }
+    },
+    "Приложение останется, а его настройки, кэши и данные попадут в Корзину. При следующем запуске оно начнёт с чистого листа.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app stays, but its settings, caches and data go to the Trash. It will start fresh the next time you open it."
+          }
+        }
+      }
+    },
+    "Приложение сейчас запущено — при удалении оно будет закрыто. Сохраните открытые документы.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app is running and will be quit when it's removed. Save any open documents."
+          }
+        }
+      }
+    },
+    "Приложение удалено, но его файлы остались на диске.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app has been deleted, but its files are still on the disk."
+          }
+        }
+      }
+    },
+    "Приложения": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apps"
+          }
+        }
+      }
+    },
+    "Приложения и их остатки (только точные совпадения) попадут в Корзину — их можно вернуть, пока Корзина не очищена.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The apps and their leftovers (exact matches only) will go to the Trash. You can get them back until the Trash is emptied."
+          }
+        }
+      }
+    },
+    "Приложения и помощники, которые открываются при входе в систему.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apps and helpers that open when you log in."
+          }
+        }
+      }
+    },
+    "Приложения из «Открывать при входе» знает только macOS — чтобы прочитать их список, она попросит пароль администратора.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only macOS knows the apps in \"Open at Login\"; to read their list, it will ask for an administrator password."
+          }
+        }
+      }
+    },
+    "Причина у каждого файла — в списке.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The reason for each file is in the list."
+          }
+        }
+      }
+    },
+    "Проверить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check"
+          }
+        }
+      }
+    },
+    "Проверить снова": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check again"
+          }
+        }
+      }
+    },
+    "Проверьте": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review"
+          }
+        }
+      }
+    },
+    "Проверяем аккумулятор, диск и программы…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking the battery, disk and apps…"
+          }
+        }
+      }
+    },
+    "Проверяем: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking: %@"
+          }
+        }
+      }
+    },
+    "Программа удалена, а запись автозапуска осталась.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app was removed, but its startup entry remains."
+          }
+        }
+      }
+    },
+    "Программы нет": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App missing"
+          }
+        }
+      }
+    },
+    "Программы только для Intel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intel-only apps"
+          }
+        }
+      }
+    },
+    "Продолжить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        }
+      }
+    },
+    "Продолжить без доступа": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue Without Access"
+          }
+        }
+      }
+    },
+    "Продолжить без полного доступа?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue without Full Disk Access?"
+          }
+        }
+      }
+    },
+    "Пропущено: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skipped: %@"
+          }
+        }
+      }
+    },
+    "Прочитано за всё время": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read in total"
+          }
+        }
+      }
+    },
+    "Прочитать список": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read the list"
+          }
+        }
+      }
+    },
+    "Работает": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running"
+          }
+        }
+      }
+    },
+    "Работает без интернета и ничего никуда не отправляет.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Works offline and never sends anything anywhere."
+          }
+        }
+      }
+    },
+    "Работает нормально": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Working normally"
+          }
+        }
+      }
+    },
+    "Работают от имени системы для всех пользователей. Изменения — с паролем администратора.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run as the system for all users. Changes require an administrator password."
+          }
+        }
+      }
+    },
+    "Работающее сейчас остановится и больше не будет запускаться само — ни при входе, ни по расписанию. Файлы остаются на месте: включить обратно можно здесь же, кнопкой «Включить».": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anything running now will stop and will no longer start on its own, at login or on a schedule. The files stay in place: you can turn it back on right here with \"Turn on\"."
+          }
+        }
+      }
+    },
+    "Рабочий стол": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desktop"
+          }
+        }
+      }
+    },
+    "Разделы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sections"
+          }
+        }
+      }
+    },
+    "Размер": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Size"
+          }
+        }
+      }
+    },
+    "Размер от": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Size from"
+          }
+        }
+      }
+    },
+    "Разрешите доступ ко всему диску": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow access to the whole disk"
+          }
+        }
+      }
+    },
+    "Режим очистки": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cleanup mode"
+          }
+        }
+      }
+    },
+    "Режим только расставляет галочки — перед очисткой всё видно и можно поправить. Корзина, последняя копия каждого iPhone и тома Docker не отмечаются никогда.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The mode only sets the checkmarks — everything is visible before cleanup and can be adjusted. The Trash, the latest backup of each iPhone and Docker volumes are never selected."
+          }
+        }
+      }
+    },
+    "Резерв на исходе": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spare running out"
+          }
+        }
+      }
+    },
+    "Резервные блоки": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spare blocks"
+          }
+        }
+      }
+    },
+    "Результаты неполные — нет полного доступа к диску": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Results are incomplete — no Full Disk Access"
+          }
+        }
+      }
+    },
+    "Ресурс выработан": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Endurance used up"
+          }
+        }
+      }
+    },
+    "Самопроверка (SMART)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Self-check (SMART)"
+          }
+        }
+      }
+    },
+    "Самопроверка диска не нашла неполадок.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The disk's self-check found no problems."
+          }
+        }
+      }
+    },
+    "Сборка для разработки": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Development build"
+          }
+        }
+      }
+    },
+    "Сборщик": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collector"
+          }
+        }
+      }
+    },
+    "Сброс «%@»": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resetting \"%@\""
+          }
+        }
+      }
+    },
+    "Сбросить данные": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset data"
+          }
+        }
+      }
+    },
+    "Сбросить данные «%@»?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset \"%@\" data?"
+          }
+        }
+      }
+    },
+    "Свернуть": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collapse"
+          }
+        }
+      }
+    },
+    "Свободно": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free"
+          }
+        }
+      }
+    },
+    "Свободно — %@, %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free — %@, %@"
+          }
+        }
+      }
+    },
+    "Свободное место": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free space"
+          }
+        }
+      }
+    },
+    "Своп на диске": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swap used"
+          }
+        }
+      }
+    },
+    "Сейчас": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Now"
+          }
+        }
+      }
+    },
+    "Сейчас не загружено — запустится при следующем входе или перезагрузке.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not loaded right now; it will start at the next login or restart."
+          }
+        }
+      }
+    },
+    "Симуляторы %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ simulators"
+          }
+        }
+      }
+    },
+    "Система": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System"
+          }
+        }
+      }
+    },
+    "Системное": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System"
+          }
+        }
+      }
+    },
+    "Системное — не удаляется": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System app — can't be removed"
+          }
+        }
+      }
+    },
+    "Системные компоненты": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System components"
+          }
+        }
+      }
+    },
+    "Системные настройки → Конфиденциальность и безопасность → Полный доступ к диску": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System Settings → Privacy & Security → Full Disk Access"
+          }
+        }
+      }
+    },
+    "Системные настройки → Основные → Объекты входа и расширения": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System Settings → General → Login Items & Extensions"
+          }
+        }
+      }
+    },
+    "Системные службы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System services"
+          }
+        }
+      }
+    },
+    "Системный мусор": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System Junk"
+          }
+        }
+      }
+    },
+    "Сканирование": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scanning"
+          }
+        }
+      }
+    },
+    "Сканирование…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scanning…"
+          }
+        }
+      }
+    },
+    "Сканировать": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan"
+          }
+        }
+      }
+    },
+    "Сканировать заново": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan Again"
+          }
+        }
+      }
+    },
+    "Скопировать метку": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy label"
+          }
+        }
+      }
+    },
+    "Скопировать путь": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy path"
+          }
+        }
+      }
+    },
+    "Скрыть": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide"
+          }
+        }
+      }
+    },
+    "Следов не осталось": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No traces left"
+          }
+        }
+      }
+    },
+    "Следов удалённых приложений не найдено": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No traces of removed apps found"
+          }
+        }
+      }
+    },
+    "Следы приложений, которых уже нет. Сразу отмечены только точные совпадения": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Traces of apps that are gone. Only exact matches are checked up front"
+          }
+        }
+      }
+    },
+    "Следы удалённых приложений": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Traces of deleted apps"
+          }
+        }
+      }
+    },
+    "Службы Apple только показываются: изменить или удалить их здесь нельзя.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple's services are shown only: they cannot be changed or removed here."
+          }
+        }
+      }
+    },
+    "Сначала большие": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Largest first"
+          }
+        }
+      }
+    },
+    "Сначала маленькие": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smallest first"
+          }
+        }
+      }
+    },
+    "Снимки Time Machine на диске": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time Machine snapshots on disk"
+          }
+        }
+      }
+    },
+    "Снимок": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snapshot"
+          }
+        }
+      }
+    },
+    "Снять всё": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deselect all"
+          }
+        }
+      }
+    },
+    "Снять отметки": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deselect all"
+          }
+        }
+      }
+    },
+    "Снять отметку": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uncheck"
+          }
+        }
+      }
+    },
+    "Собранные объекты": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collected items"
+          }
+        }
+      }
+    },
+    "Совпадение только по имени. Проверьте, что файл действительно относится к этому приложению.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matched by name only. Check that the file really belongs to this app."
+          }
+        }
+      }
+    },
+    "Содержимое Корзины будет удалено навсегда. Это действие нельзя отменить.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The contents of the Trash will be deleted permanently. This cannot be undone."
+          }
+        }
+      }
+    },
+    "Сортировка": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sort"
+          }
+        }
+      }
+    },
+    "Сортировка: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sort: %@"
+          }
+        }
+      }
+    },
+    "Сохраните важные файлы на другой диск и обратитесь в сервис.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save important files to another disk and contact a service provider."
+          }
+        }
+      }
+    },
+    "Сравниваем содержимое файлов": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comparing file contents"
+          }
+        }
+      }
+    },
+    "Сравниваем содержимое, а не имена: в каждой группе файлы совпадают байт в байт.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contents are compared, not names: the files in each group match byte for byte."
+          }
+        }
+      }
+    },
+    "Сразу удалять навсегда, минуя Корзину": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete permanently right away, bypassing the Trash"
+          }
+        }
+      }
+    },
+    "Среди файлов от %@ в выбранных папках одинаковых нет. Уменьшите порог или добавьте папку.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No identical files from %@ in the selected folders. Lower the threshold or add a folder."
+          }
+        }
+      }
+    },
+    "Старые и большие файлы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Old and Large Files"
+          }
+        }
+      }
+    },
+    "Старые файлы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Old Files"
+          }
+        }
+      }
+    },
+    "Считаем размеры…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measuring sizes…"
+          }
+        }
+      }
+    },
+    "Считаем, что занимает место": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measuring what takes up space"
+          }
+        }
+      }
+    },
+    "Считаем, что занимает место…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measuring what takes up space…"
+          }
+        }
+      }
+    },
+    "Температура": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temperature"
+          }
+        }
+      }
+    },
+    "Теперь %@ видит весь диск, и macOS не будет спрашивать разрешение на каждую папку.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ now sees the whole disk, and macOS will not ask permission for every folder."
+          }
+        }
+      }
+    },
+    "Только чтение: эта проверка ничего не удаляет и не меняет. Данные не покидают Mac.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read-only: this check deletes and changes nothing. Data never leaves your Mac."
+          }
+        }
+      }
+    },
+    "УМНАЯ ОЧИСТКА": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SMART CARE"
+          }
+        }
+      }
+    },
+    "Убранное удаляется сразу и освобождает место. Вернуть его будет нельзя. Остальное содержимое Корзины не трогается.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Removed items are deleted right away and free up space. They cannot be brought back. The rest of the Trash is left untouched."
+          }
+        }
+      }
+    },
+    "Убрано %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Removed %@"
+          }
+        }
+      }
+    },
+    "Убрано %@%@  ·  %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Removed %@%@  ·  %@"
+          }
+        }
+      }
+    },
+    "Убрать из сборщика": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove from Collector"
+          }
+        }
+      }
+    },
+    "Удаление %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Removing %@"
+          }
+        }
+      }
+    },
+    "Удаление «%@»": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Removing \"%@\""
+          }
+        }
+      }
+    },
+    "Удаление дубликатов": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Removing duplicates"
+          }
+        }
+      }
+    },
+    "Удаление остатков": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Removing leftovers"
+          }
+        }
+      }
+    },
+    "Удаление собранных объектов": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Removing collected items"
+          }
+        }
+      }
+    },
+    "Удаление старых и больших файлов": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Removing old and large files"
+          }
+        }
+      }
+    },
+    "Удалено %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ removed"
+          }
+        }
+      }
+    },
+    "Удалено навсегда": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleted permanently"
+          }
+        }
+      }
+    },
+    "Удалено навсегда %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleted permanently: %@"
+          }
+        }
+      }
+    },
+    "Удалить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        }
+      }
+    },
+    "Удалить %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove %@"
+          }
+        }
+      }
+    },
+    "Удалить %@?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove %@?"
+          }
+        }
+      }
+    },
+    "Удалить %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove %lld"
+          }
+        }
+      }
+    },
+    "Удалить «%@» из автозапуска?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove \"%@\" from startup?"
+          }
+        }
+      }
+    },
+    "Удалить «%@»?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove \"%@\"?"
+          }
+        }
+      }
+    },
+    "Удалить из автозапуска %@?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove %@ from startup?"
+          }
+        }
+      }
+    },
+    "Удалить из автозапуска…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove from startup…"
+          }
+        }
+      }
+    },
+    "Удалить навсегда": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete permanently"
+          }
+        }
+      }
+    },
+    "Удалить навсегда %@?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permanently delete %@?"
+          }
+        }
+      }
+    },
+    "Удалить навсегда, минуя Корзину": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete permanently, bypassing the Trash"
+          }
+        }
+      }
+    },
+    "Удалить остатки": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove leftovers"
+          }
+        }
+      }
+    },
+    "Удалить остатки?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove leftovers?"
+          }
+        }
+      }
+    },
+    "Удалить приложение": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove app"
+          }
+        }
+      }
+    },
+    "Удалить содержимое Корзины навсегда и освободить место": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permanently delete the contents of the Trash and free the space"
+          }
+        }
+      }
+    },
+    "Удалить только настройки и данные, оставив само приложение": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove only the settings and data, keeping the app itself"
+          }
+        }
+      }
+    },
+    "Удалить…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove…"
+          }
+        }
+      }
+    },
+    "Удаляем": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Removing"
+          }
+        }
+      }
+    },
+    "Удаляйте приложения целиком — вместе с настройками, кэшами и службами.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove apps completely — with their settings, caches and services."
+          }
+        }
+      }
+    },
+    "Удалённые приложения не оставили на этом Mac настроек, кэшей и служб. Если удалите что-то перетаскиванием в Корзину — загляните сюда снова.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleted apps left no settings, caches or services on this Mac. If you delete something by dragging it to the Trash, check back here."
+          }
+        }
+      }
+    },
+    "Уже включили? macOS иногда применяет доступ только после перезапуска.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already turned on? macOS sometimes applies access only after a restart."
+          }
+        }
+      }
+    },
+    "Умная очистка": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smart Care"
+          }
+        }
+      }
+    },
+    "Универсальных: %@ · только для Apple silicon: %@ · программы macOS не учитываются": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Universal: %@ · Apple silicon only: %@ · macOS apps not counted"
+          }
+        }
+      }
+    },
+    "Файл вне вашей папки — macOS попросит пароль администратора.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file is outside your home folder — macOS will ask for an administrator password."
+          }
+        }
+      }
+    },
+    "Файл защищён в Finder (Свойства → Защита)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file is locked in Finder (Get Info → Locked)"
+          }
+        }
+      }
+    },
+    "Файл настройки (.plist) попадёт в Корзину, служба остановится. Сама программа не удаляется. Вернуть можно из Корзины («Вернуть») — служба снова запустится при следующем входе в систему.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The settings file (.plist) goes to the Trash and the service stops. The app itself is not removed. You can restore it from the Trash (\"Put Back\"); the service will start again at the next login."
+          }
+        }
+      }
+    },
+    "Файл настройки (.plist) попадёт в Корзину, служба остановится. Сама программа не удаляется. Чтобы вернуть, перетащите файл из Корзины обратно в его папку (macOS спросит пароль).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The settings file (.plist) goes to the Trash and the service stops. The app itself is not removed. To restore it, drag the file from the Trash back into its folder (macOS will ask for a password)."
+          }
+        }
+      }
+    },
+    "Файл настройки — в Корзину, сама программа остаётся": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moves the settings file to the Trash; the app itself stays"
+          }
+        }
+      }
+    },
+    "Файл повреждён": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Damaged file"
+          }
+        }
+      }
+    },
+    "Файл уже удалён": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file is already deleted"
+          }
+        }
+      }
+    },
+    "Файлы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files"
+          }
+        }
+      }
+    },
+    "Файлы будут удалены навсегда, минуя Корзину. Вернуть их будет нельзя.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The files will be deleted permanently, bypassing the Trash. They cannot be recovered."
+          }
+        }
+      }
+    },
+    "Файлы остались на месте. Что помешало и что можно сделать — ниже.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The files are still in place. What got in the way and what you can do is below."
+          }
+        }
+      }
+    },
+    "Файлы от": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files from"
+          }
+        }
+      }
+    },
+    "Файлы удалённых приложений попадут в Корзину — их можно вернуть, пока Корзина не очищена.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files of deleted apps will go to the Trash. You can get them back until the Trash is emptied."
+          }
+        }
+      }
+    },
+    "Фильмы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Movies"
+          }
+        }
+      }
+    },
+    "Фоновые программы вашей учётной записи: обновления, синхронизация, помощники.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Background programs of your account: updates, syncing, helpers."
+          }
+        }
+      }
+    },
+    "Хорошее состояние": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Good condition"
+          }
+        }
+      }
+    },
+    "Хранилище": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storage"
+          }
+        }
+      }
+    },
+    "Циклы зарядки": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Charge cycles"
+          }
+        }
+      }
+    },
+    "Часть файлов при очистке может быть пропущена.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some files may be skipped during cleanup."
+          }
+        }
+      }
+    },
+    "Часть файлов скрыта от %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some files are hidden from %@"
+          }
+        }
+      }
+    },
+    "Читаем агенты и службы…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading agents and services…"
+          }
+        }
+      }
+    },
+    "Что запускается вместе с Mac: объекты входа, фоновые агенты и системные службы.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What starts with your Mac: login items, background agents and system services."
+          }
+        }
+      }
+    },
+    "Что отмечать после сканирования": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What to select after a scan"
+          }
+        }
+      }
+    },
+    "Шаг %lld из 2": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Step %lld of 2"
+          }
+        }
+      }
+    },
+    "Шаг %lld. %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Step %lld. %@"
+          }
+        }
+      }
+    },
+    "ЭТАПЫ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "STAGES"
+          }
+        }
+      }
+    },
+    "Это ваши файлы — отметьте то, что больше не нужно": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These are your files — check what you no longer need"
+          }
+        }
+      }
+    },
+    "Это расчёт производителя, а не дата отказа. Держите резервную копию.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is the manufacturer's estimate, not a failure date. Keep a backup."
+          }
+        }
+      }
+    },
+    "Этот Mac не сообщает данные о здоровье диска.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Mac does not report disk health data."
+          }
+        }
+      }
+    },
+    "Язык / Language": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language"
+          }
+        }
+      }
+    },
+    "Язык изменится после перезапуска приложения.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The language changes after the app restarts."
+          }
+        }
+      }
+    },
+    "Язык интерфейса": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interface language"
+          }
+        }
+      }
+    },
+    "аккумулятору нужно обслуживание": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the battery needs service"
+          }
+        }
+      }
+    },
+    "в Корзину": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To Trash"
+          }
+        }
+      }
+    },
+    "в порядке": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "в сборщике": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in the Collector"
+          }
+        }
+      }
+    },
+    "включено": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "on"
+          }
+        }
+      }
+    },
+    "включено %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ enabled"
+          }
+        }
+      }
+    },
+    "возможно связано": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "possibly related"
+          }
+        }
+      }
+    },
+    "все %@ работают на Apple silicon без Rosetta": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "all %@ run on Apple silicon without Rosetta"
+          }
+        }
+      }
+    },
+    "вчера": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "yesterday"
+          }
+        }
+      }
+    },
+    "выбрано %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ selected"
+          }
+        }
+      }
+    },
+    "выбрано для очистки · ещё %@ не выбрано": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "selected for cleaning · %@ more not selected"
+          }
+        }
+      }
+    },
+    "выключено": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "off"
+          }
+        }
+      }
+    },
+    "выполнено": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "done"
+          }
+        }
+      }
+    },
+    "выполняется": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in progress"
+          }
+        }
+      }
+    },
+    "давление памяти — как в Мониторе системы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "memory pressure, as in Activity Monitor"
+          }
+        }
+      }
+    },
+    "дата неизвестна": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "date unknown"
+          }
+        }
+      }
+    },
+    "диск сообщает о сбое": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the disk reports a failure"
+          }
+        }
+      }
+    },
+    "занято": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "used"
+          }
+        }
+      }
+    },
+    "запускает программу macOS «%@»": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "runs the macOS tool \"%@\""
+          }
+        }
+      }
+    },
+    "запускается само": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "starts on its own"
+          }
+        }
+      }
+    },
+    "запускаются сами": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "start on their own"
+          }
+        }
+      }
+    },
+    "запущено": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "running"
+          }
+        }
+      }
+    },
+    "заряжается": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "charging"
+          }
+        }
+      }
+    },
+    "изменён %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "modified %@"
+          }
+        }
+      }
+    },
+    "ищем…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "searching…"
+          }
+        }
+      }
+    },
+    "каждые %lld мин": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "every %lld min"
+          }
+        }
+      }
+    },
+    "каждые %lld с": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "every %lld s"
+          }
+        }
+      }
+    },
+    "каждые %lld ч": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "every %lld h"
+          }
+        }
+      }
+    },
+    "меньше часа": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "less than an hour"
+          }
+        }
+      }
+    },
+    "найдено %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ found"
+          }
+        }
+      }
+    },
+    "найдено · %@ · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "found · %@ · %@"
+          }
+        }
+      }
+    },
+    "не входит в очистку": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "not part of the cleanup"
+          }
+        }
+      }
+    },
+    "не используется": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "not in use"
+          }
+        }
+      }
+    },
+    "не найдены": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "none found"
+          }
+        }
+      }
+    },
+    "не открывалось": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "not opened"
+          }
+        }
+      }
+    },
+    "не открывалось %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "not opened for %@"
+          }
+        }
+      }
+    },
+    "не открывался": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "not opened"
+          }
+        }
+      }
+    },
+    "не отмечено": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "not checked"
+          }
+        }
+      }
+    },
+    "не поддерживается": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "not supported"
+          }
+        }
+      }
+    },
+    "не хватает памяти": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "memory is running short"
+          }
+        }
+      }
+    },
+    "нет": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "none"
+          }
+        }
+      }
+    },
+    "нет данных": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "no data"
+          }
+        }
+      }
+    },
+    "нет метки (Label) — macOS этот файл не загружает": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "no Label — macOS does not load this file"
+          }
+        }
+      }
+    },
+    "ничего": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "nothing"
+          }
+        }
+      }
+    },
+    "ничего не выбрано — включите то, что хотите очистить": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "nothing selected — turn on what you want to clean"
+          }
+        }
+      }
+    },
+    "обратить внимание: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "needs attention: %@"
+          }
+        }
+      }
+    },
+    "объект": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "item"
+          }
+        }
+      }
+    },
+    "объекты macOS скрыты": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS items hidden"
+          }
+        }
+      }
+    },
+    "ожидает": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "waiting"
+          }
+        }
+      }
+    },
+    "остатки %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "leftovers %@"
+          }
+        }
+      }
+    },
+    "от батареи": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "on battery"
+          }
+        }
+      }
+    },
+    "от сети": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "on power adapter"
+          }
+        }
+      }
+    },
+    "открывалось %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "opened %@"
+          }
+        }
+      }
+    },
+    "открывался %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "opened %@"
+          }
+        }
+      }
+    },
+    "отмечено": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "checked"
+          }
+        }
+      }
+    },
+    "пароль": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "password"
+          }
+        }
+      }
+    },
+    "перезапускается": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "restarts itself"
+          }
+        }
+      }
+    },
+    "при входе": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "at login"
+          }
+        }
+      }
+    },
+    "при загрузке": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "at boot"
+          }
+        }
+      }
+    },
+    "приложение %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "app %@"
+          }
+        }
+      }
+    },
+    "приложение %@ · ищем остатки…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "app %@ · looking for leftovers…"
+          }
+        }
+      }
+    },
+    "приложение %@ · остатки %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "app %@ · leftovers %@"
+          }
+        }
+      }
+    },
+    "приложения %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "apps %@"
+          }
+        }
+      }
+    },
+    "проверка": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "checking"
+          }
+        }
+      }
+    },
+    "раз в час": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hourly"
+          }
+        }
+      }
+    },
+    "развёрнуто": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "expanded"
+          }
+        }
+      }
+    },
+    "размер — нужен полный доступ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "size — needs Full Disk Access"
+          }
+        }
+      }
+    },
+    "ресурс": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "endurance"
+          }
+        }
+      }
+    },
+    "самая старая": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "oldest"
+          }
+        }
+      }
+    },
+    "сбой": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "failing"
+          }
+        }
+      }
+    },
+    "свободно %@ из %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ free of %@"
+          }
+        }
+      }
+    },
+    "свободно прямо сейчас": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "free right now"
+          }
+        }
+      }
+    },
+    "свёрнуто": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "collapsed"
+          }
+        }
+      }
+    },
+    "сегодня": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "today"
+          }
+        }
+      }
+    },
+    "системное, не удаляется": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "system app, can't be removed"
+          }
+        }
+      }
+    },
+    "сканирование": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "scanning"
+          }
+        }
+      }
+    },
+    "сканирование %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "scanning %@"
+          }
+        }
+      }
+    },
+    "сторонних программ не найдено": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "no third-party apps found"
+          }
+        }
+      }
+    },
+    "только просмотр": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "view only"
+          }
+        }
+      }
+    },
+    "только что": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "just now"
+          }
+        }
+      }
+    },
+    "у SSD кончается резерв": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the SSD is running out of spare blocks"
+          }
+        }
+      }
+    },
+    "ч": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "h"
+          }
+        }
+      }
+    },
+    "частично": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "partially"
+          }
+        }
+      }
+    },
+    "частично отмечено": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "partially checked"
+          }
+        }
+      }
+    },
+    "ёмкость": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "capacity"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

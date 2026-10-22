@@ -12,7 +12,7 @@ struct UninstallerView: View {
             case .idle, .scanning:
                 ModuleStage(module: .uninstaller,
                             state: model.phase == .scanning ? .progress(app.appsProgress)
-                                                            : .idle(button: "Показать приложения", enabled: true),
+                                                            : .idle(button: String(localized: "Показать приложения"), enabled: true),
                             onAction: model.startScan, onGrantAccess: { app.presentAccessSheet() }) {
                     DropHint()
                 }
@@ -67,7 +67,7 @@ private struct UninstallerBrowser: View {
         let batch = model.tab == .apps ? model.checkedAppList : []
         HStack(spacing: 0) {
             VStack(spacing: 0) {
-                Segmented(options: [(UninstallerModel.Tab.apps, "Приложения"), (.leftovers, "Остатки")],
+                Segmented(options: [(UninstallerModel.Tab.apps, String(localized: "Приложения")), (.leftovers, String(localized: "Остатки"))],
                           selection: $model.tab, tint: .uninstaller)
                     .padding(.top, 22)
                     .padding(.bottom, 14)
@@ -110,12 +110,12 @@ private struct AppListPanel: View {
         let batchMode = !checked.isEmpty
         VStack(spacing: 0) {
             // ⌘F (`AppModel.requestSearchFocus`) bumps the request; the field focuses itself on change.
-            SearchField(text: $model.search, prompt: "Поиск приложений", focusRequest: app.searchFocusRequest)
+            SearchField(text: $model.search, prompt: String(localized: "Поиск приложений"), focusRequest: app.searchFocusRequest)
                 .padding(.horizontal, 16)
 
             HStack(spacing: 6) {
-                Chip(title: "Все", selected: model.filter == .all, tint: .uninstaller) { model.filter = .all }
-                Chip(title: "Давно не открывались", selected: model.filter == .unused, tint: .uninstaller) { model.filter = .unused }
+                Chip(title: String(localized: "Все"), selected: model.filter == .all, tint: .uninstaller) { model.filter = .all }
+                Chip(title: String(localized: "Давно не открывались"), selected: model.filter == .unused, tint: .uninstaller) { model.filter = .unused }
                 Chip(title: "App Store", selected: model.filter == .appStore, tint: .uninstaller) { model.filter = .appStore }
                 Spacer(minLength: 0)
             }
@@ -140,7 +140,7 @@ private struct AppListPanel: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if apps.isEmpty {
-                Text(model.search.isEmpty ? "Нет приложений с этим фильтром" : "Ничего не найдено по «\(model.search)»")
+                Text(model.search.isEmpty ? String(localized: "Нет приложений с этим фильтром") : String(localized: "Ничего не найдено по «\(model.search)»"))
                     .font(.caption12)
                     .foregroundStyle(Theme.textSecondary)
                     .multilineTextAlignment(.center)
@@ -245,9 +245,9 @@ private struct SortMenu: View {
 
     private var title: String {
         switch sort {
-        case .size: "По размеру"
-        case .name: "По имени"
-        case .lastUsed: "Давно не открывались"
+        case .size: String(localized: "По размеру")
+        case .name: String(localized: "По имени")
+        case .lastUsed: String(localized: "Давно не открывались")
         }
     }
 
@@ -294,13 +294,13 @@ private struct LastUsedLabel: View {
     }
 
     private func text(_ idle: String?) -> String {
-        if app.isSystemApp { return "Системное — не удаляется" }
+        if app.isSystemApp { return String(localized: "Системное — не удаляется") }
         return idle ?? Fmt.ago(app.lastUsed)
     }
 
     static func spoken(_ app: InstalledApp) -> String {
-        if app.isSystemApp { return "системное, не удаляется" }
-        return Fmt.idleHint(app.lastUsed) ?? "открывалось \(Fmt.ago(app.lastUsed))"
+        if app.isSystemApp { return String(localized: "системное, не удаляется") }
+        return Fmt.idleHint(app.lastUsed) ?? String(localized: "открывалось \(Fmt.ago(app.lastUsed))")
     }
 }
 
@@ -367,16 +367,16 @@ private struct AppRow: View {
         .contextMenu {
             Button("Показать в Finder") { Finder.reveal(app.url) }
             if !app.isSystemApp {
-                Button(checked ? "Снять отметку" : "Отметить для удаления", action: onCheck)
+                Button(checked ? String(localized: "Снять отметку") : String(localized: "Отметить для удаления"), action: onCheck)
             }
         }
         // VoiceOver: one element per app; activating it opens the detail, the action checks it.
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(app.name), \(app.isSystemApp ? "" : Fmt.size(app.size) + ", ")\(LastUsedLabel.spoken(app))\(running ? ", запущено" : "")")
-        .accessibilityValue(checked ? "отмечено" : "")
+        .accessibilityLabel("\(app.name), \(app.isSystemApp ? "" : Fmt.size(app.size) + ", ")\(LastUsedLabel.spoken(app))\(running ? ", " + String(localized: "запущено") : "")")
+        .accessibilityValue(checked ? String(localized: "отмечено") : "")
         .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
         .accessibilityAction { onSelect() }
-        .accessibilityAction(named: checked ? "Снять отметку" : "Отметить для удаления") { if !app.isSystemApp { onCheck() } }
+        .accessibilityAction(named: checked ? String(localized: "Снять отметку") : String(localized: "Отметить для удаления")) { if !app.isSystemApp { onCheck() } }
         .accessibilityAction(named: "Показать в Finder") { Finder.reveal(app.url) }
     }
 }
@@ -464,7 +464,7 @@ private struct BatchSummaryView: View {
                 VStack(alignment: .trailing, spacing: 2) {
                     BigSize(bytes: totals.total, size: 36, weight: .light)
                     Text("приложения \(Fmt.size(totals.appsSize))")
-                    Text("остатки \(totals.loading ? "ищем…" : Fmt.size(totals.remnantsSize))")
+                    Text("остатки \(totals.loading ? String(localized: "ищем…") : Fmt.size(totals.remnantsSize))")
                 }
                 .font(.caption12)
                 .foregroundStyle(Theme.textTertiary)
@@ -490,8 +490,8 @@ private struct BatchSummaryView: View {
                 .padding(.bottom, 12)
             }
 
-            ActionFooter(title: "Удалить \(n)", tint: .uninstaller, action: model.requestBatchUninstall) {
-                SelectionSummary(bytes: totals.total, count: totals.count, label: "Будет удалено", noun: .items)
+            ActionFooter(title: String(localized: "Удалить \(n)"), tint: .uninstaller, action: model.requestBatchUninstall) {
+                SelectionSummary(bytes: totals.total, count: totals.count, label: String(localized: "Будет удалено"), noun: .items)
             } trailing: {
                 Button("Снять отметки", action: model.clearChecked)
                     .buttonStyle(PillButtonStyle(kind: .secondary))
@@ -522,13 +522,13 @@ private struct BatchAppRow: View {
                         .foregroundStyle(Theme.text)
                         .lineLimit(1)
                     if running {
-                        Badge(text: "Запущено", color: Theme.success, symbol: "play.fill")
+                        Badge(text: String(localized: "Запущено"), color: Theme.success, symbol: "play.fill")
                             .help("При удалении приложение будет закрыто")
                     }
                 }
                 Group {
                     if let remnants, let leftovers {
-                        Text("приложение \(Fmt.size(app.size)) · остатки \(remnants.isEmpty ? "не найдены" : "\(Fmt.size(leftovers)), \(Fmt.items(remnants.count))")")
+                        Text("приложение \(Fmt.size(app.size)) · остатки \(remnants.isEmpty ? String(localized: "не найдены") : "\(Fmt.size(leftovers)), \(Fmt.items(remnants.count))")")
                     } else {
                         Text("приложение \(Fmt.size(app.size)) · ищем остатки…")
                     }
@@ -579,14 +579,14 @@ private struct AppDetailView: View {
                 ScrollView {
                     VStack(spacing: 12) {
                         // The bundle itself — always part of «Удалить».
-                        RemnantSection(title: "Приложение", symbol: "macwindow", total: a.size) {
+                        RemnantSection(title: String(localized: "Приложение"), symbol: "macwindow", total: a.size) {
                             FileRow(url: a.url, size: a.size, tint: .uninstaller) {
                                 if a.isAppStore { Badge(text: "App Store", color: ModuleTint.uninstaller.accent) }
                             }
                         }
                         if a.isSystemApp {
                             InfoCard(symbol: "lock.shield.fill", color: .white.opacity(0.75),
-                                     text: "«\(a.name)» входит в macOS. Системные приложения защищены: их нельзя удалить или сбросить, а обновление macOS всё равно вернёт их на место.")
+                                     text: String(localized: "«\(a.name)» входит в macOS. Системные приложения защищены: их нельзя удалить или сбросить, а обновление macOS всё равно вернёт их на место."))
                         } else if model.remnantsLoading {
                             HStack(spacing: 10) {
                                 ProgressView().controlSize(.small)
@@ -598,7 +598,7 @@ private struct AppDetailView: View {
                             .glass(radius: 16, shadow: false)
                         } else if model.remnants.isEmpty {
                             InfoCard(symbol: "checkmark.seal.fill", color: Theme.success,
-                                     text: "Других файлов не найдено — приложение хранит всё внутри себя.")
+                                     text: String(localized: "Других файлов не найдено — приложение хранит всё внутри себя."))
                         } else {
                             RemnantGroups(remnants: model.remnants, selection: model.remnantSelection,
                                           toggle: model.toggle, toggleGroup: model.toggleGroup)
@@ -610,9 +610,9 @@ private struct AppDetailView: View {
                 }
 
                 if !a.isSystemApp {
-                    ActionFooter(title: "Удалить", tint: .uninstaller, action: model.requestUninstall) {
+                    ActionFooter(title: String(localized: "Удалить"), tint: .uninstaller, action: model.requestUninstall) {
                         SelectionSummary(bytes: a.size + model.selectedRemnantsSize,
-                                         count: 1 + model.selectedRemnants.count, label: "Будет удалено", noun: .items)
+                                         count: 1 + model.selectedRemnants.count, label: String(localized: "Будет удалено"), noun: .items)
                     } trailing: {
                         Button(action: model.requestReset) {
                             Label("Сбросить данные", systemImage: "arrow.counterclockwise")
@@ -624,8 +624,8 @@ private struct AppDetailView: View {
                 }
             }
         } else {
-            EmptyState(symbol: "arrow.down.app.fill", title: "Выберите приложение",
-                       message: "Или перетащите .app в окно — покажем всё, что оно оставило на диске.", tint: .uninstaller)
+            EmptyState(symbol: "arrow.down.app.fill", title: String(localized: "Выберите приложение"),
+                       message: String(localized: "Или перетащите .app в окно — покажем всё, что оно оставило на диске."), tint: .uninstaller)
         }
     }
 }
@@ -708,13 +708,13 @@ private struct AppHeader: View {
         let idle = Fmt.idleHint(app.lastUsed)
         return HStack(spacing: 6) {
             if app.isSystemApp {
-                Badge(text: "Системное", color: .white.opacity(0.7), symbol: "lock.fill")
+                Badge(text: String(localized: "Системное"), color: .white.opacity(0.7), symbol: "lock.fill")
             } else {
-                Badge(text: idle?.capitalizedFirst ?? "Открывалось \(Fmt.ago(app.lastUsed))",
+                Badge(text: idle?.capitalizedFirst ?? String(localized: "Открывалось \(Fmt.ago(app.lastUsed))"),
                       color: idle == nil ? .white.opacity(0.75) : Theme.warning, symbol: "clock.fill")
             }
             if app.isAppStore && all { Badge(text: "App Store", color: ModuleTint.uninstaller.accent, symbol: "bag.fill") }
-            if running { Badge(text: "Запущено", color: Theme.success, symbol: "play.fill") }
+            if running { Badge(text: String(localized: "Запущено"), color: Theme.success, symbol: "play.fill") }
         }
     }
 
@@ -805,15 +805,15 @@ struct RemnantGroups: View {
                                 isChecked: selection.contains(r.id), tint: .uninstaller,
                                 onToggle: { toggle(r) }) {
                             if unmeasured(r) {
-                                Badge(text: "размер — нужен полный доступ", color: .white.opacity(0.6), symbol: "lock.shield")
+                                Badge(text: String(localized: "размер — нужен полный доступ"), color: .white.opacity(0.6), symbol: "lock.shield")
                                     .help("Без полного доступа к диску macOS не даёт измерить контейнеры других приложений.")
                             }
                             if r.confidence == .low {
-                                Badge(text: "возможно связано", color: Theme.warning)
+                                Badge(text: String(localized: "возможно связано"), color: Theme.warning)
                                     .help("Совпадение только по имени. Проверьте, что файл действительно относится к этому приложению.")
                             }
                             if r.requiresAdmin {
-                                Badge(text: "пароль", color: .white.opacity(0.7), symbol: "lock.fill")
+                                Badge(text: String(localized: "пароль"), color: .white.opacity(0.7), symbol: "lock.fill")
                                     .help("Файл вне вашей папки — macOS попросит пароль администратора.")
                             }
                         }

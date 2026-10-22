@@ -41,9 +41,9 @@ public enum RiskLevel: Int, Comparable, Sendable {
 public struct JunkCategory: Identifiable, Sendable {
     /// Stable id, e.g. "user-caches", "xcode-derived-data".
     public let id: String
-    /// User-facing title in Russian, e.g. "Кэш приложений".
+    /// User-facing title (localized), e.g. "Кэш приложений".
     public let title: String
-    /// One-sentence explanation in Russian of what it is and why it is safe/unsafe to remove.
+    /// One-sentence explanation (localized) of what it is and why it is safe/unsafe to remove.
     public let detail: String
     /// SF Symbol name.
     public let symbol: String
@@ -104,17 +104,17 @@ public enum CleanupMode: Int, CaseIterable, Comparable, Sendable, Codable {
 
     public var title: String {
         switch self {
-        case .gentle: "Бережная"
-        case .enhanced: "Усиленная"
-        case .maximum: "Максимальная"
+        case .gentle: String(localized: "Бережная", bundle: .module)
+        case .enhanced: String(localized: "Усиленная", bundle: .module)
+        case .maximum: String(localized: "Максимальная", bundle: .module)
         }
     }
 
     public var summary: String {
         switch self {
-        case .gentle: "Только то, что программы и macOS создадут заново сами."
-        case .enhanced: "Плюс то, что скачается или пересоберётся заново: кэши разработчика, кэш сборки Docker."
-        case .maximum: "Плюс то, что вряд ли понадобится: неиспользуемые образы Docker, старые установщики, архивы и копии."
+        case .gentle: String(localized: "Только то, что программы и macOS создадут заново сами.", bundle: .module)
+        case .enhanced: String(localized: "Плюс то, что скачается или пересоберётся заново: кэши разработчика, кэш сборки Docker.", bundle: .module)
+        case .maximum: String(localized: "Плюс то, что вряд ли понадобится: неиспользуемые образы Docker, старые установщики, архивы и копии.", bundle: .module)
         }
     }
 }
@@ -122,7 +122,7 @@ public enum CleanupMode: Int, CaseIterable, Comparable, Sendable, Codable {
 // MARK: - Progress
 
 public struct ScanProgress: Sendable {
-    /// Short Russian label of what is happening, e.g. "Кэш браузеров".
+    /// Short localized label of what is happening, e.g. "Кэш браузеров".
     public var phase: String
     /// 0…1
     public var fraction: Double
@@ -176,23 +176,23 @@ public enum RemnantKind: String, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .applicationSupport: "Данные приложения"
-        case .caches: "Кэш"
-        case .preferences: "Настройки"
-        case .containers: "Контейнеры"
-        case .groupContainers: "Групповые контейнеры"
-        case .savedState: "Сохранённое состояние"
-        case .logs: "Логи"
-        case .launchAgents: "Агенты запуска"
-        case .launchDaemons: "Системные службы"
-        case .privilegedHelpers: "Вспомогательные утилиты"
+        case .applicationSupport: String(localized: "Данные приложения", bundle: .module)
+        case .caches: String(localized: "Кэш", bundle: .module)
+        case .preferences: String(localized: "Настройки", bundle: .module)
+        case .containers: String(localized: "Контейнеры", bundle: .module)
+        case .groupContainers: String(localized: "Групповые контейнеры", bundle: .module)
+        case .savedState: String(localized: "Сохранённое состояние", bundle: .module)
+        case .logs: String(localized: "Логи", bundle: .module)
+        case .launchAgents: String(localized: "Агенты запуска", bundle: .module)
+        case .launchDaemons: String(localized: "Системные службы", bundle: .module)
+        case .privilegedHelpers: String(localized: "Вспомогательные утилиты", bundle: .module)
         case .cookies: "Cookies"
-        case .webData: "Веб-данные"
-        case .httpStorages: "HTTP-хранилища"
-        case .crashReports: "Отчёты о сбоях"
-        case .receipts: "Квитанции установщика"
-        case .extensions: "Расширения и плагины"
-        case .other: "Прочее"
+        case .webData: String(localized: "Веб-данные", bundle: .module)
+        case .httpStorages: String(localized: "HTTP-хранилища", bundle: .module)
+        case .crashReports: String(localized: "Отчёты о сбоях", bundle: .module)
+        case .receipts: String(localized: "Квитанции установщика", bundle: .module)
+        case .extensions: String(localized: "Расширения и плагины", bundle: .module)
+        case .other: String(localized: "Прочее", bundle: .module)
         }
     }
 
@@ -279,9 +279,12 @@ public final class DirectoryNode: Identifiable, @unchecked Sendable {
         self.isAggregate = isAggregate
     }
 
-    public var name: String { isAggregate ? "Прочее" : url.lastPathComponent }
+    public var name: String { isAggregate ? Self.aggregateName : url.lastPathComponent }
     /// True when the node is a real file/folder the user may act on (reveal, trash).
     public var isActionable: Bool { !isAggregate }
+
+    /// Name of the synthetic bucket («Прочее»); the one place it is spelled, so labels and comparisons agree.
+    public static let aggregateName = String(localized: "Прочее", bundle: .module)
 }
 
 // MARK: - Removal
@@ -293,6 +296,10 @@ public struct RemovalFailure: Hashable, Sendable {
         self.url = url
         self.reason = reason
     }
+
+    /// The app that owns the item is running, so nothing of it was touched. One value for every engine:
+    /// the UI recognises it by equality and offers to quit the app.
+    public static let appRunning = String(localized: "Приложение запущено", bundle: .module)
 }
 
 public struct RemovalResult: Sendable {

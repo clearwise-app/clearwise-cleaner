@@ -8,7 +8,7 @@ struct StartupView: View {
         switch model.phase {
         case .idle, .scanning:
             ModuleStage(module: .startup,
-                        state: model.phase == .scanning ? .busy("Читаем агенты и службы…") : .idle(button: "Проверить", enabled: true),
+                        state: model.phase == .scanning ? .busy(String(localized: "Читаем агенты и службы…")) : .idle(button: String(localized: "Проверить"), enabled: true),
                         onAction: model.startScan)
         case .results, .cleaning, .done:
             StartupResultsView(model: model)
@@ -81,8 +81,9 @@ private struct StartupResultsView: View {
 
     private var caption: String {
         let n = model.enabledThirdPartyCount
-        var text = "\(n % 10 == 1 && n % 100 != 11 ? "запускается само" : "запускаются сами") · \(Fmt.items(model.items.count { !$0.isApple })) от сторонних разработчиков"
-        if model.hiddenAppleCount > 0 { text += " · объекты macOS скрыты" }
+        let verb = n % 10 == 1 && n % 100 != 11 ? String(localized: "запускается само") : String(localized: "запускаются сами")
+        var text = String(localized: "\(verb) · \(Fmt.items(model.items.count { !$0.isApple })) от сторонних разработчиков")
+        if model.hiddenAppleCount > 0 { text += " · " + String(localized: "объекты macOS скрыты") }
         return text
     }
 
@@ -91,14 +92,14 @@ private struct StartupResultsView: View {
         let on = model.enablable
         let remove = model.removable
         let primaryIsEnable = off.isEmpty && !on.isEmpty
-        ActionFooter(title: primaryIsEnable ? "Включить" : "Выключить", tint: .startup,
+        ActionFooter(title: primaryIsEnable ? String(localized: "Включить") : String(localized: "Выключить"), tint: .startup,
                      enabled: !model.isBusy && !(primaryIsEnable ? on : off).isEmpty,
                      action: { primaryIsEnable ? model.requestEnable(on) : model.requestDisable(off) }) {
             VStack(alignment: .leading, spacing: 1) {
                 Text("Выбрано")
                     .font(.system(size: 11.5, weight: .medium))
                     .foregroundStyle(Theme.textTertiary)
-                Text(model.selectedItems.isEmpty ? "ничего" : Fmt.items(model.selectedItems.count))
+                Text(model.selectedItems.isEmpty ? String(localized: "ничего") : Fmt.items(model.selectedItems.count))
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(model.selectedItems.isEmpty ? Theme.textSecondary : Theme.text)
             }
@@ -143,7 +144,7 @@ private struct StartupGroupCard: View {
                 Spacer(minLength: 12)
                 // «0 объектов» would be a claim: without the password, login items are simply unknown.
                 if !items.isEmpty || group != .loginItems || model.loginItemsState == .read {
-                    Text(items.isEmpty ? "нет" : Fmt.items(items.count))
+                    Text(items.isEmpty ? String(localized: "нет") : Fmt.items(items.count))
                         .font(.caption11)
                         .foregroundStyle(Theme.textTertiary)
                 }
@@ -209,16 +210,16 @@ private struct LoginItemsNote: View {
     private var text: String {
         switch model.loginItemsState {
         case .notRead:
-            (isEmpty ? "Здесь пока только то, что видно без пароля. " : "")
-                + "Приложения из «Открывать при входе» знает только macOS — чтобы прочитать их список, она попросит пароль администратора."
+            (isEmpty ? String(localized: "Здесь пока только то, что видно без пароля.") + " " : "")
+                + String(localized: "Приложения из «Открывать при входе» знает только macOS — чтобы прочитать их список, она попросит пароль администратора.")
         case .reading:
-            "Ждём пароль администратора и читаем список объектов входа…"
+            String(localized: "Ждём пароль администратора и читаем список объектов входа…")
         case .read:
             isEmpty
-                ? "Объектов входа нет: при входе в систему ничего не открывается само. Добавить приложение можно в Системных настройках."
-                : "Объекты входа приложений включаются и выключаются только в Системных настройках — сторонним программам macOS этого не разрешает."
+                ? String(localized: "Объектов входа нет: при входе в систему ничего не открывается само. Добавить приложение можно в Системных настройках.")
+                : String(localized: "Объекты входа приложений включаются и выключаются только в Системных настройках — сторонним программам macOS этого не разрешает.")
         case .failed:
-            "Не удалось прочитать список объектов входа (пароль не введён или macOS не ответила). Его можно посмотреть в Системных настройках."
+            String(localized: "Не удалось прочитать список объектов входа (пароль не введён или macOS не ответила). Его можно посмотреть в Системных настройках.")
         }
     }
 }
@@ -274,16 +275,16 @@ private struct StartupRow: View {
             Spacer(minLength: 8)
             HStack(spacing: 6) {
                 if item.source == .backgroundTask {
-                    IconButton(symbol: "gearshape.fill", help: "Открыть «Объекты входа» в Системных настройках", size: 24) {
+                    IconButton(symbol: "gearshape.fill", help: String(localized: "Открыть «Объекты входа» в Системных настройках"), size: 24) {
                         model.openLoginItemsSettings()
                     }
                 }
                 if let plist = item.plist {
-                    IconButton(symbol: "eye.fill", help: "Быстрый просмотр (⌘Y)", size: 24) { model.quickLookURL = plist }
+                    IconButton(symbol: "eye.fill", help: String(localized: "Быстрый просмотр (⌘Y)"), size: 24) { model.quickLookURL = plist }
                         .keyboardShortcut(focused ? KeyboardShortcut("y", modifiers: .command) : nil)
                 }
                 if let location {
-                    IconButton(symbol: "magnifyingglass", help: "Показать в Finder", size: 24) { Finder.reveal(location) }
+                    IconButton(symbol: "magnifyingglass", help: String(localized: "Показать в Finder"), size: 24) { Finder.reveal(location) }
                 }
             }
             .opacity(hover || focused ? 1 : 0)
@@ -341,10 +342,10 @@ private struct StartupRow: View {
     private var details: String {
         var parts: [String] = []
         if item.label != item.displayName { parts.append(item.label) }
-        if item.isMalformed { parts.append("нет метки (Label) — macOS этот файл не загружает") }
+        if item.isMalformed { parts.append(String(localized: "нет метки (Label) — macOS этот файл не загружает")) }
         // A third-party job that runs a macOS tool (`/bin/sh`, `launchctl`…): the tool is Apple's, the job is not.
         if item.signer == .apple, !item.isApple, let program = item.program {
-            parts.append("запускает программу macOS «\((program as NSString).lastPathComponent)»")
+            parts.append(String(localized: "запускает программу macOS «\((program as NSString).lastPathComponent)»"))
         } else if let signer = item.signer.title {
             parts.append(signer)
         }
@@ -384,27 +385,27 @@ private struct StartupStateBadge: View {
         if item.isApple {
             Badge(text: "macOS", color: Self.neutral, symbol: "apple.logo")
         } else if item.isMalformed {
-            Badge(text: "Файл повреждён", color: RiskBadge.cautionFill, symbol: "exclamationmark.triangle.fill")
+            Badge(text: String(localized: "Файл повреждён"), color: RiskBadge.cautionFill, symbol: "exclamationmark.triangle.fill")
                 .help("В файле нет метки (Label): macOS его не загружает. Его можно удалить.")
         } else if item.programMissing {
-            Badge(text: "Программы нет", color: RiskBadge.cautionFill, symbol: "exclamationmark.triangle.fill")
+            Badge(text: String(localized: "Программы нет"), color: RiskBadge.cautionFill, symbol: "exclamationmark.triangle.fill")
                 .help("Программа удалена, а запись автозапуска осталась.")
         } else if item.disabledByOverride || item.disabledInPlist {
-            Badge(text: "Выключено", color: Self.neutral, symbol: "power")
+            Badge(text: String(localized: "Выключено"), color: Self.neutral, symbol: "power")
         } else if item.disabledInSettings {
-            Badge(text: "Выключено в Настройках", color: Self.neutral, symbol: "power")
+            Badge(text: String(localized: "Выключено в Настройках"), color: Self.neutral, symbol: "power")
         } else {
             switch item.state {
             case .running:
-                Badge(text: "Работает", color: RiskBadge.safeFill, symbol: "play.fill")
+                Badge(text: String(localized: "Работает"), color: RiskBadge.safeFill, symbol: "play.fill")
             case .loaded:
-                Badge(text: "Включено", color: RiskBadge.safeFill, symbol: "checkmark")
+                Badge(text: String(localized: "Включено"), color: RiskBadge.safeFill, symbol: "checkmark")
                     .help("Загружено и ждёт своего часа: входа, расписания или обращения.")
             case .notLoaded:
-                Badge(text: "Не загружено", color: RiskBadge.reviewFill, symbol: "pause.fill")
+                Badge(text: String(localized: "Не загружено"), color: RiskBadge.reviewFill, symbol: "pause.fill")
                     .help("Сейчас не загружено — запустится при следующем входе или перезагрузке.")
             case .unknown:
-                Badge(text: "Включено", color: RiskBadge.safeFill, symbol: "checkmark")
+                Badge(text: String(localized: "Включено"), color: RiskBadge.safeFill, symbol: "checkmark")
             }
         }
     }
@@ -415,17 +416,17 @@ private struct StartupStateBadge: View {
 extension StartupItem.Group {
     var title: String {
         switch self {
-        case .loginItems: "Объекты входа"
-        case .agents: "Агенты"
-        case .daemons: "Системные службы"
+        case .loginItems: String(localized: "Объекты входа")
+        case .agents: String(localized: "Агенты")
+        case .daemons: String(localized: "Системные службы")
         }
     }
 
     var detail: String {
         switch self {
-        case .loginItems: "Приложения и помощники, которые открываются при входе в систему."
-        case .agents: "Фоновые программы вашей учётной записи: обновления, синхронизация, помощники."
-        case .daemons: "Работают от имени системы для всех пользователей. Изменения — с паролем администратора."
+        case .loginItems: String(localized: "Приложения и помощники, которые открываются при входе в систему.")
+        case .agents: String(localized: "Фоновые программы вашей учётной записи: обновления, синхронизация, помощники.")
+        case .daemons: String(localized: "Работают от имени системы для всех пользователей. Изменения — с паролем администратора.")
         }
     }
 
@@ -442,12 +443,12 @@ extension StartupItem {
     /// «при входе», «раз в час», «держится запущенным».
     var schedule: String? {
         var parts: [String] = []
-        if runAtLoad { parts.append(source == .daemon ? "при загрузке" : "при входе") }
+        if runAtLoad { parts.append(source == .daemon ? String(localized: "при загрузке") : String(localized: "при входе")) }
         if let interval {
-            parts.append(interval % 3600 == 0 ? (interval == 3600 ? "раз в час" : "каждые \(interval / 3600) ч")
-                         : interval % 60 == 0 ? "каждые \(interval / 60) мин" : "каждые \(interval) с")
+            parts.append(interval % 3600 == 0 ? (interval == 3600 ? String(localized: "раз в час") : String(localized: "каждые \(interval / 3600) ч"))
+                         : interval % 60 == 0 ? String(localized: "каждые \(interval / 60) мин") : String(localized: "каждые \(interval) с"))
         }
-        if keepAlive { parts.append("перезапускается") }
+        if keepAlive { parts.append(String(localized: "перезапускается")) }
         return parts.isEmpty ? nil : parts.joined(separator: ", ")
     }
 }
@@ -455,13 +456,13 @@ extension StartupItem {
 extension Signer {
     var title: String? {
         switch self {
-        case .apple: "Подпись Apple"
+        case .apple: String(localized: "Подпись Apple")
         case .appStore: "App Store"
         case .developerID(let name, _): name.map { "Developer ID: \($0)" } ?? "Developer ID"
-        case .other(let name, _): name.map { "Подпись: \($0)" } ?? "Подпись разработчика"
-        case .adHoc: "Без подписи разработчика"
-        case .unsigned: "Без подписи"
-        case .invalid: "Подпись повреждена"
+        case .other(let name, _): name.map { String(localized: "Подпись: \($0)") } ?? String(localized: "Подпись разработчика")
+        case .adHoc: String(localized: "Без подписи разработчика")
+        case .unsigned: String(localized: "Без подписи")
+        case .invalid: String(localized: "Подпись повреждена")
         case .unknown: nil
         }
     }

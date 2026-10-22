@@ -1,12 +1,15 @@
 import Foundation
 
-/// Russian formatting for sizes, counts and dates. Independent of the system locale,
-/// so the UI always reads consistently ("12,4 ГБ", "342 объекта").
+/// Sizes, counts and dates in the app's language (Russian or English), independent of the system locale,
+/// so the UI always reads consistently ("12,4 ГБ", "342 объекта" / "12.4 GB", "342 items").
 enum Fmt {
-    static let ru = Locale(identifier: "ru_RU")
+    /// Follows the app language (Settings → Язык): numbers, dates and units.
+    static var ru: Locale { AppLanguage.locale }
     /// U+00A0, keeps "14 %" and "12,4 ГБ" from wrapping apart.
     static let nbsp = "\u{00A0}"
-    private static let units = ["Б", "КБ", "МБ", "ГБ", "ТБ", "ПБ"]
+    private static var units: [String] {
+        AppLanguage.isEnglish ? ["B", "KB", "MB", "GB", "TB", "PB"] : ["Б", "КБ", "МБ", "ГБ", "ТБ", "ПБ"]
+    }
 
     static func size(_ bytes: Int64) -> String {
         let p = sizeParts(bytes)
@@ -58,8 +61,23 @@ enum Fmt {
 
     static func integer(_ n: Int) -> String { number(Double(n), digits: 0) }
 
-    /// Russian plural: plural(5, "объект", "объекта", "объектов") → "объектов".
+    /// English forms by the Russian base form, so every `plural`/`verb` call site stays as it is.
+    private static let english: [String: (one: String, other: String)] = [
+        "год": ("year", "years"), "группа": ("group", "groups"), "день": ("day", "days"),
+        "категория": ("category", "categories"), "копия": ("copy", "copies"),
+        "лишняя копия": ("extra copy", "extra copies"), "месяц": ("month", "months"),
+        "объект": ("item", "items"), "приложение": ("app", "apps"), "программа": ("app", "apps"),
+        "файл": ("file", "files"), "этап": ("step", "steps"),
+    ]
+    private static let englishVerbs: [String: (one: String, other: String)] = [
+        "не открывалось": ("has not been opened", "have not been opened"),
+        "не открывался": ("has not been opened", "have not been opened"),
+        "оставило": ("left", "left"),
+    ]
+
+    /// Plural by count: plural(5, "объект", "объекта", "объектов") → "объектов"; in English, "items".
     static func plural(_ n: Int, _ one: String, _ few: String, _ many: String) -> String {
+        if AppLanguage.isEnglish, let en = english[one] { return n == 1 ? en.one : en.other }
         let n10 = n % 10, n100 = n % 100
         if n10 == 1 && n100 != 11 { return one }
         if (2...4).contains(n10) && !(12...14).contains(n100) { return few }
@@ -68,7 +86,8 @@ enum Fmt {
 
     /// Verb agreement with a count: 1, 21, 101 → singular («оставило»), otherwise plural («оставили»).
     static func verb(_ n: Int, one: String, other: String) -> String {
-        n % 10 == 1 && n % 100 != 11 ? one : other
+        if AppLanguage.isEnglish, let en = englishVerbs[one] { return n == 1 ? en.one : en.other }
+        return n % 10 == 1 && n % 100 != 11 ? one : other
     }
 
     /// Noun for a counted thing, chosen per module («объект», «файл», «копия», «приложение»).
@@ -101,21 +120,21 @@ enum Fmt {
 
     /// "сегодня", "вчера", "2 дня назад", "21 день назад", "8 месяцев назад", "2 года назад".
     static func ago(_ date: Date?, now: Date = Date()) -> String {
-        guard let date else { return "нет данных" }
+        guard let date else { return String(localized: "нет данных") }
         let comps = Calendar.current.dateComponents([.year, .month, .day], from: date, to: now)
-        if let y = comps.year, y >= 1 { return "\(years(y)) назад" }
-        if let m = comps.month, m >= 1 { return "\(months(m)) назад" }
-        if let d = comps.day, d >= 2 { return "\(days(d)) назад" }
-        if let d = comps.day, d == 1 { return "вчера" }
-        return "сегодня"
+        if let y = comps.year, y >= 1 { return String(localized: "\(years(y)) назад") }
+        if let m = comps.month, m >= 1 { return String(localized: "\(months(m)) назад") }
+        if let d = comps.day, d >= 2 { return String(localized: "\(days(d)) назад") }
+        if let d = comps.day, d == 1 { return String(localized: "вчера") }
+        return String(localized: "сегодня")
     }
 
     /// For the app list: "не открывалось 8 месяцев" when idle for 3+ months.
     static func idleHint(_ date: Date?, now: Date = Date()) -> String? {
-        guard let date else { return "не открывалось" }
+        guard let date else { return String(localized: "не открывалось") }
         let comps = Calendar.current.dateComponents([.year, .month], from: date, to: now)
-        if let y = comps.year, y >= 1 { return "не открывалось \(years(y))" }
-        if let m = comps.month, m >= 3 { return "не открывалось \(months(m))" }
+        if let y = comps.year, y >= 1 { return String(localized: "не открывалось \(years(y))") }
+        if let m = comps.month, m >= 3 { return String(localized: "не открывалось \(months(m))") }
         return nil
     }
 
@@ -130,15 +149,15 @@ enum Fmt {
         return date.formatted(dateStyle)
     }
 
-    /// Russian name of a standard home folder ("Загрузки"), else the folder name.
+    /// The name of a standard home folder in the app's language ("Загрузки" / "Downloads"), else the folder name.
     static func folderTitle(_ url: URL) -> String {
         switch url.lastPathComponent {
-        case "Desktop": "Рабочий стол"
-        case "Documents": "Документы"
-        case "Downloads": "Загрузки"
-        case "Movies": "Фильмы"
-        case "Music": "Музыка"
-        case "Pictures": "Изображения"
+        case "Desktop": String(localized: "Рабочий стол")
+        case "Documents": String(localized: "Документы")
+        case "Downloads": String(localized: "Загрузки")
+        case "Movies": String(localized: "Фильмы")
+        case "Music": String(localized: "Музыка")
+        case "Pictures": String(localized: "Изображения")
         default: url.lastPathComponent
         }
     }

@@ -97,7 +97,7 @@ public enum FileRemover {
                 result.freedBytes += size
                 progress?(RemovalStep(url: url, bytes: size, done: true))
             } else {
-                result.failed.append(RemovalFailure(url: url, reason: ok.1 ?? "Не удалось переместить"))
+                result.failed.append(RemovalFailure(url: url, reason: ok.1 ?? String(localized: "Не удалось переместить", bundle: .module)))
                 progress?(RemovalStep(url: url, bytes: 0, done: true))
             }
         }
@@ -135,7 +135,7 @@ public enum FileRemover {
                 var freed: Int64 = 0
                 defer { progress?(RemovalStep(url: url, bytes: freed, done: true)) }
                 guard SafetyGuard.isInsideTrash(url), !SafetyGuard.isProtected(url) else {
-                    result.failed.append(RemovalFailure(url: url, reason: "Безвозвратное удаление разрешено только в Корзине"))
+                    result.failed.append(RemovalFailure(url: url, reason: onlyInTrashReason))
                     continue
                 }
                 let size = knownSizes[url] ?? FileSizer.allocatedSize(of: url)
@@ -173,7 +173,7 @@ public enum FileRemover {
             if isInUserTrash(url), !SafetyGuard.isProtected(url) {
                 allowed.append(url)
             } else {
-                result.failed.append(RemovalFailure(url: url, reason: "Безвозвратное удаление разрешено только в Корзине"))
+                result.failed.append(RemovalFailure(url: url, reason: onlyInTrashReason))
                 progress?(RemovalStep(url: url, bytes: 0, done: true))
             }
         }
@@ -196,7 +196,7 @@ public enum FileRemover {
                 result.freedBytes += size
                 progress?(RemovalStep(url: url, bytes: size, done: true))
             } else {
-                result.failed.append(RemovalFailure(url: url, reason: ok.1 ?? "Не удалось удалить"))
+                result.failed.append(RemovalFailure(url: url, reason: ok.1 ?? String(localized: "Не удалось удалить", bundle: .module)))
                 progress?(RemovalStep(url: url, bytes: 0, done: true))
             }
         }
@@ -214,6 +214,8 @@ public enum FileRemover {
 
     /// ~/.Trash itself (a real folder owned by the user); the only place `deletePermanentlyFromTrashAsAdmin` acts.
     private static var userTrash: URL { SafetyGuard.home.appendingPathComponent(".Trash").standardizedFileURL }
+
+    private static let onlyInTrashReason = String(localized: "Безвозвратное удаление разрешено только в Корзине", bundle: .module)
 
     private static func isInUserTrash(_ url: URL) -> Bool {
         let name = url.lastPathComponent

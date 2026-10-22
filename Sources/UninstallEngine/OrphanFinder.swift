@@ -233,20 +233,20 @@ extension RemnantFinder {
     static let orphanQuietPeriod: TimeInterval = 7 * 24 * 3600
 
     public func orphans(installed: [InstalledApp], progress: ProgressHandler? = nil) async -> [OrphanGroup] {
-        progress?(ScanProgress(phase: "Сбор сведений о приложениях", fraction: 0))
+        progress?(ScanProgress(phase: String(localized: "Сбор сведений о приложениях", bundle: .module), fraction: 0))
         if !installed.isEmpty { setInstalledApps(installed) }
         let apps = ownershipApps(installed.isEmpty ? nil : installed)
         prefetchSignatures(apps)
         let ownership = InstalledOwnership(apps.map { signature(for: $0) },
                                            bundles: InstalledBundles.scan(roots.installedBundleDirs))
 
-        progress?(ScanProgress(phase: "Поиск остатков удалённых приложений", fraction: 0.2))
+        progress?(ScanProgress(phase: String(localized: "Поиск остатков удалённых приложений", bundle: .module), fraction: 0.2))
         let index = currentIndex()
         let candidates = Self.orphanCandidates(index: index, ownership: ownership, appLocator: appLocator,
                                                now: Date(), roots: roots, quietPeriod: orphanQuietPeriodValue,
                                                volumeMounted: volumeMounted)
 
-        progress?(ScanProgress(phase: "Подсчёт размера", fraction: 0.6))
+        progress?(ScanProgress(phase: String(localized: "Подсчёт размера", bundle: .module), fraction: 0.6))
         let flat = candidates.flatMap { group in group.entries.map { (group.key, $0.0, $0.1) } }
         let avoid = avoidPrivacyPrompts
         let remnants = concurrentMap(flat) { triple -> (String, AppRemnant) in
@@ -260,7 +260,7 @@ extension RemnantFinder {
             guard let list = byKey[c.key], !list.isEmpty else { return nil }
             return OrphanGroup(id: c.id, displayName: c.displayName, remnants: Self.sortRemnants(list))
         }
-        progress?(ScanProgress(phase: "Готово", fraction: 1))
+        progress?(ScanProgress(phase: String(localized: "Готово", bundle: .module), fraction: 1))
         return groups.sorted { $0.totalSize != $1.totalSize ? $0.totalSize > $1.totalSize : $0.displayName < $1.displayName }
     }
 

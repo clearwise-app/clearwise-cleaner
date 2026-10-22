@@ -9,7 +9,7 @@ final class StorageExplorerModel {
     enum Sort: String, CaseIterable, Identifiable {
         case largestFirst, smallestFirst
         var id: Self { self }
-        var title: String { self == .largestFirst ? "Сначала большие" : "Сначала маленькие" }
+        var title: String { self == .largestFirst ? String(localized: "Сначала большие") : String(localized: "Сначала маленькие") }
     }
 
     private(set) var kind: StorageCategory.Kind

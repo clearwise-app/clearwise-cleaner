@@ -111,9 +111,9 @@ final class StartupModel {
         guard !targets.isEmpty else { return }
         let n = targets.count
         let daemons = targets.contains { $0.source == .daemon }
-        confirm(title: n == 1 ? "Выключить «\(targets[0].displayName)»?" : "Выключить \(Fmt.items(n))?",
-                message: "Работающее сейчас остановится и больше не будет запускаться само — ни при входе, ни по расписанию. Файлы остаются на месте: включить обратно можно здесь же, кнопкой «Включить».",
-                button: "Выключить", symbol: "power", count: n, needsAdmin: daemons,
+        confirm(title: n == 1 ? String(localized: "Выключить «\(targets[0].displayName)»?") : String(localized: "Выключить \(Fmt.items(n))?"),
+                message: String(localized: "Работающее сейчас остановится и больше не будет запускаться само — ни при входе, ни по расписанию. Файлы остаются на месте: включить обратно можно здесь же, кнопкой «Включить»."),
+                button: String(localized: "Выключить"), symbol: "power", count: n, needsAdmin: daemons,
                 warning: Self.selfHealingWarning(targets)) { [weak self] in
             self?.perform(.disable, on: targets)
         }
@@ -122,9 +122,9 @@ final class StartupModel {
     func requestEnable(_ targets: [StartupItem]) {
         guard !targets.isEmpty else { return }
         let n = targets.count
-        confirm(title: n == 1 ? "Включить «\(targets[0].displayName)»?" : "Включить \(Fmt.items(n))?",
-                message: "macOS снова будет запускать это само. Если в настройках задан запуск при загрузке, оно запустится сразу.",
-                button: "Включить", symbol: "power", count: n,
+        confirm(title: n == 1 ? String(localized: "Включить «\(targets[0].displayName)»?") : String(localized: "Включить \(Fmt.items(n))?"),
+                message: String(localized: "macOS снова будет запускать это само. Если в настройках задан запуск при загрузке, оно запустится сразу."),
+                button: String(localized: "Включить"), symbol: "power", count: n,
                 needsAdmin: targets.contains { $0.source == .daemon }) { [weak self] in
             self?.perform(.enable, on: targets)
         }
@@ -135,10 +135,10 @@ final class StartupModel {
         let n = targets.count
         let rootOwned = targets.contains { $0.source != .userAgent }
         let undo = rootOwned
-            ? "Файл настройки (.plist) попадёт в Корзину, служба остановится. Сама программа не удаляется. Чтобы вернуть, перетащите файл из Корзины обратно в его папку (macOS спросит пароль)."
-            : "Файл настройки (.plist) попадёт в Корзину, служба остановится. Сама программа не удаляется. Вернуть можно из Корзины («Вернуть») — служба снова запустится при следующем входе в систему."
-        confirm(title: n == 1 ? "Удалить «\(targets[0].displayName)» из автозапуска?" : "Удалить из автозапуска \(Fmt.items(n))?",
-                message: undo, button: "Удалить", symbol: "trash.fill", count: n, needsAdmin: rootOwned,
+            ? String(localized: "Файл настройки (.plist) попадёт в Корзину, служба остановится. Сама программа не удаляется. Чтобы вернуть, перетащите файл из Корзины обратно в его папку (macOS спросит пароль).")
+            : String(localized: "Файл настройки (.plist) попадёт в Корзину, служба остановится. Сама программа не удаляется. Вернуть можно из Корзины («Вернуть») — служба снова запустится при следующем входе в систему.")
+        confirm(title: n == 1 ? String(localized: "Удалить «\(targets[0].displayName)» из автозапуска?") : String(localized: "Удалить из автозапуска \(Fmt.items(n))?"),
+                message: undo, button: String(localized: "Удалить"), symbol: "trash.fill", count: n, needsAdmin: rootOwned,
                 warning: Self.selfHealingWarning(targets)) { [weak self] in
             self?.perform(.remove, on: targets)
         }
@@ -147,7 +147,7 @@ final class StartupModel {
     /// Updaters and security tools often put their agent back: say so instead of promising it stays off.
     private static func selfHealingWarning(_ targets: [StartupItem]) -> String? {
         guard targets.contains(where: { $0.ownerAppURL != nil }) else { return nil }
-        return "Приложение может вернуть свою службу при следующем запуске или обновлении. Надёжнее — удалить само приложение в «Деинсталляторе»."
+        return String(localized: "Приложение может вернуть свою службу при следующем запуске или обновлении. Надёжнее — удалить само приложение в «Деинсталляторе».")
     }
 
     private func confirm(title: String, message: String, button: String, symbol: String, count: Int,
@@ -175,24 +175,24 @@ final class StartupModel {
     private func announce(_ action: StartupAction, report: StartupActionReport, targets: [StartupItem]) {
         let done = targets.filter { report.succeeded.contains($0.id) }
         if let failure = report.failed.first {
-            let name = targets.first { $0.id == failure.id }?.displayName ?? "объект"
-            let text = done.isEmpty ? "Не получилось: \(name) — \(failure.reason)"
-                                    : "Готово: \(Fmt.items(done.count)). Не получилось: \(name) — \(failure.reason)"
+            let name = targets.first { $0.id == failure.id }?.displayName ?? String(localized: "объект")
+            let text = done.isEmpty ? String(localized: "Не получилось: \(name) — \(failure.reason)")
+                                    : String(localized: "Готово: \(Fmt.items(done.count)). Не получилось: \(name) — \(failure.reason)")
             app?.showToast(Toast(text: text, symbol: "exclamationmark.triangle.fill", kind: .warning))
             return
         }
         guard !done.isEmpty else { return }
-        let what = done.count == 1 ? "«\(done[0].displayName)»" : Fmt.items(done.count)
+        let what = done.count == 1 ? String(localized: "«\(done[0].displayName)»") : Fmt.items(done.count)
         switch action {
         case .disable:
             // The undo is one click away: the same items, enabled back (they are still on disk).
-            app?.showToast(Toast(text: "Выключено: \(what)", symbol: "power", kind: .success,
-                                 actionTitle: "Включить", action: { [weak self] in self?.undoDisable(done) }))
+            app?.showToast(Toast(text: String(localized: "Выключено: \(what)"), symbol: "power", kind: .success,
+                                 actionTitle: String(localized: "Включить"), action: { [weak self] in self?.undoDisable(done) }))
         case .enable:
-            app?.showToast(Toast(text: "Включено: \(what)", symbol: "power", kind: .success))
+            app?.showToast(Toast(text: String(localized: "Включено: \(what)"), symbol: "power", kind: .success))
         case .remove:
-            app?.showToast(Toast(text: "В Корзине: \(what)", symbol: "trash.fill", kind: .success,
-                                 actionTitle: "Открыть Корзину", action: { Finder.openTrash() }))
+            app?.showToast(Toast(text: String(localized: "В Корзине: \(what)"), symbol: "trash.fill", kind: .success,
+                                 actionTitle: String(localized: "Открыть Корзину"), action: { Finder.openTrash() }))
         }
     }
 

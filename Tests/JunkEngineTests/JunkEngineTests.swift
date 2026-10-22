@@ -132,7 +132,7 @@ final class JunkEngineTests: XCTestCase {
 
         let chromeItem = try XCTUnwrap(browsers.items.first { rel($0.url) == "Library/Caches/Google/Chrome" })
         let note = await scanner.note(for: chromeItem.url)
-        XCTAssertEqual(note, "Google Chrome · кэш")
+        XCTAssertEqual(note, BrowserCacheSpec.cacheNote("Google Chrome"))
     }
 
     func testDeveloperJunk() async throws {
@@ -201,7 +201,7 @@ final class JunkEngineTests: XCTestCase {
         XCTAssertEqual(agents.risk, .review)
         let gone = try XCTUnwrap(agents.items.first { $0.name == "com.gone.agent.plist" })
         let note = await scanner.note(for: gone.url)
-        XCTAssertEqual(note, "Программа не найдена: \(missing)")
+        XCTAssertTrue(note?.hasSuffix(": \(missing)") == true, "the note names the missing program: \(note ?? "nil")")
     }
 
     // MARK: User files
@@ -246,9 +246,9 @@ final class JunkEngineTests: XCTestCase {
         let newest = try XCTUnwrap(backups.items.first { $0.name == "00008120-BBBB" })
         let oldest = try XCTUnwrap(backups.items.first { $0.name == "00008110-AAAA" })
         XCTAssertTrue(notes[newest.url]?.hasPrefix("iPad Новый") == true)
-        XCTAssertTrue(notes[newest.url]?.hasSuffix("самая свежая") == true)
+        XCTAssertTrue(notes[newest.url]?.hasSuffix(SpecialCollectors.newestBackupLabel) == true)
         XCTAssertTrue(notes[oldest.url]?.hasPrefix("iPhone Старый") == true)
-        XCTAssertFalse(notes[oldest.url]?.contains("самая свежая") == true)
+        XCTAssertFalse(notes[oldest.url]?.contains(SpecialCollectors.newestBackupLabel) == true)
     }
 
     func testTemporaryFilesNeedThreeDaysOfInactivity() async throws {
@@ -312,8 +312,8 @@ final class JunkEngineTests: XCTestCase {
         let fractions = box.values.map(\.fraction)
         XCTAssertEqual(fractions, fractions.sorted())
         XCTAssertEqual(box.values.last?.fraction, 1)
-        XCTAssertEqual(box.values.last?.phase, "Готово")
-        XCTAssertTrue(box.values.contains { $0.phase == "Кэш приложений" })
+        XCTAssertEqual(box.values.last?.phase, JunkScanner.donePhase)
+        XCTAssertTrue(box.values.contains { $0.phase == JunkCatalog.userCaches.title })
     }
 
     // MARK: Cleaning (temp fixtures only)
@@ -466,7 +466,7 @@ final class JunkEngineTests: XCTestCase {
         XCTAssertEqual(Set(trash.items.map(\.name)), ["old file.txt", ".hidden-folder"])
         XCTAssertEqual(trash.risk, .review)
         XCTAssertFalse(trash.isSelectedByDefault, "emptying the Trash is permanent, so it must not be pre-selected")
-        XCTAssertTrue(trash.detail.contains("безвозвратно"))
+        XCTAssertEqual(trash.detail, JunkCatalog.trash.detail, "the category carries the rule's warning about permanent deletion")
 
         // The fake ~/.Trash is not the real Trash, so FileRemover must refuse permanent deletion.
         let removal = await JunkCleaner.clean(trash.items, in: trash)

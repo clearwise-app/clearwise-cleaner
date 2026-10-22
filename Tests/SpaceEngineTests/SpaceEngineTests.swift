@@ -24,10 +24,7 @@ final class FileKindTests: XCTestCase {
 
     func testTitlesAndSymbols() {
         XCTAssertEqual(FileKind.allCases.count, 9)
-        XCTAssertEqual(FileKind.document.title, "Документы")
-        XCTAssertEqual(FileKind.diskImage.title, "Образы дисков")
-        XCTAssertEqual(FileKind.code.title, "Код и проекты")
-        XCTAssertEqual(FileKind.other.title, "Другое")
+        XCTAssertTrue(FileKind.allCases.allSatisfy { !$0.title.isEmpty })
         XCTAssertEqual(Set(FileKind.allCases.map(\.title)).count, 9)
         XCTAssertTrue(FileKind.allCases.allSatisfy { !$0.symbol.isEmpty })
     }
@@ -245,7 +242,8 @@ final class SpaceMapperTests: FixtureTestCase {
         XCTAssertEqual(node.children[0].name, "big.bin")
         let other = node.children[1]
         XCTAssertTrue(SpaceMapper.isOtherBucket(other, in: node))
-        XCTAssertEqual(SpaceMapper.displayName(of: other, in: node), "Прочее")
+        XCTAssertEqual(SpaceMapper.displayName(of: other, in: node), SpaceMapper.otherName)
+        XCTAssertEqual(other.name, SpaceMapper.otherName)
         XCTAssertEqual(SpaceMapper.displayName(of: node.children[0], in: node), "big.bin")
         XCTAssertEqual(other.url, node.url)
         XCTAssertFalse(other.isDirectory)

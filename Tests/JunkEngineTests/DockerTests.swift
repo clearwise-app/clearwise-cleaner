@@ -91,7 +91,7 @@ final class DockerTests: XCTestCase {
 
     func testCleanWithoutDockerOrWithAFailingEngineFailsSoftly() {
         let none = DockerCleanup.clean([DockerCleanup.Kind.buildCache.url], tool: nil)
-        XCTAssertEqual(none.failed.map(\.reason), ["Docker не найден"])
+        XCTAssertEqual(none.failed.map(\.reason), [DockerCleanup.notFoundReason])
         let fake = Fake()
         fake.answers["builder prune --force"] = DockerTool.Output(status: 1, text: "")
         let failed = DockerCleanup.clean([DockerCleanup.Kind.buildCache.url], tool: fake.tool)

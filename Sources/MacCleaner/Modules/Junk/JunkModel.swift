@@ -99,7 +99,7 @@ final class JunkModel {
 
     func scan() async {
         withAnimation(Theme.spring) { phase = .scanning }
-        progress = ScanProgress(phase: "Подготовка", fraction: 0)
+        progress = ScanProgress(phase: String(localized: "Подготовка"), fraction: 0)
         let relay = progressRelay { [weak self] p in
             guard let self, self.phase == .scanning else { return }
             self.progress = p
@@ -204,18 +204,18 @@ final class JunkModel {
                                   tint: ModuleTint, action: @escaping @MainActor () -> Void) -> Confirmation {
         let includesTrash = trashBytes > 0
         let onlyTrash = includesTrash && trashBytes == bytes
-        let docker = dockerBytes > 0 ? " Docker (\(Fmt.size(dockerBytes))) очистит себя сам — сразу, без Корзины; тома с данными не трогаются." : ""
+        let docker = dockerBytes > 0 ? String(localized: " Docker (\(Fmt.size(dockerBytes))) очистит себя сам — сразу, без Корзины; тома с данными не трогаются.") : ""
         var title: String?
         var message: String?
         if includesTrash && !onlyTrash {
-            title = "Очистить \(ConfirmCopy.accusative(count, .items))?"
-            message = "Остальное попадёт в Корзину — это можно вернуть. Содержимое самой Корзины (\(Fmt.size(trashBytes))) будет удалено навсегда." + docker
+            title = String(localized: "Очистить \(ConfirmCopy.accusative(count, .items))?")
+            message = String(localized: "Остальное попадёт в Корзину — это можно вернуть. Содержимое самой Корзины (\(Fmt.size(trashBytes))) будет удалено навсегда.") + docker
         } else if !includesTrash && dockerBytes == bytes {
-            title = "Очистить Docker?"
-            message = "Docker удалит выбранное сам — сразу, без Корзины. Образы скачаются заново при следующем запуске; тома с данными не трогаются."
+            title = String(localized: "Очистить Docker?")
+            message = String(localized: "Docker удалит выбранное сам — сразу, без Корзины. Образы скачаются заново при следующем запуске; тома с данными не трогаются.")
         } else if !includesTrash {
-            title = "Очистить \(ConfirmCopy.accusative(count, .items))?"
-            message = "Всё попадёт в Корзину — это можно вернуть, пока Корзина не очищена." + docker
+            title = String(localized: "Очистить \(ConfirmCopy.accusative(count, .items))?")
+            message = String(localized: "Всё попадёт в Корзину — это можно вернуть, пока Корзина не очищена.") + docker
         }
         return .make(includesTrash ? .deleteForever : .clean, title: title, message: message, count: count, bytes: bytes,
                      needsAdmin: needsAdmin, tint: tint, action: action)
@@ -240,7 +240,7 @@ final class JunkModel {
 
     /// Runs the selected categories through the full-screen cleaning scene (Smart Care reuses it with its own look).
     /// `onDone` runs after `.done` is set and before the results are dropped elsewhere (Smart Care sets its own `.done` there).
-    func clean(title: String = "Очистка системного мусора", module: AppModule = .junk,
+    func clean(title: String = String(localized: "Очистка системного мусора"), module: AppModule = .junk,
                onDone: (() -> Void)? = nil) async {
         let pairs = selectedPairs
         resultWasPermanent = pairs.count == 1 && pairs[0].0.id == JunkCategoryID.trash
