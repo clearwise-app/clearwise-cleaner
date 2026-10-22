@@ -1,6 +1,7 @@
 import SwiftUI
 import CleanerKit
 import SpaceEngine
+import HealthEngine
 
 struct Sidebar: View {
     @Environment(AppModel.self) private var model
@@ -20,6 +21,8 @@ struct Sidebar: View {
             item(.oldFiles)
             item(.duplicates)
             item(.diskMap)
+            section("Система")
+            item(.health)
 
             Spacer(minLength: 12)
 
@@ -135,6 +138,7 @@ private struct ModuleBadge: View {
         case .oldFiles: OldFilesBadge(model: model.oldFiles)
         case .duplicates: DuplicatesBadge(model: model.duplicates)
         case .diskMap: EmptyView()
+        case .health: HealthBadge(model: model.health)
         }
     }
 }
@@ -185,6 +189,17 @@ private struct DuplicatesBadge: View {
             PercentBadge(percent: Int(model.progress.fraction * 100))
         } else if model.phase == .results, model.reclaimable > 0 {
             SizeBadge(bytes: model.reclaimable)
+        }
+    }
+}
+
+private struct HealthBadge: View {
+    let model: HealthModel
+    var body: some View {
+        if model.phase == .checking {
+            BadgeText(text: "…", spoken: "проверка")
+        } else if let n = model.report?.concerns.count, n > 0 {
+            BadgeText(text: Fmt.integer(n), spoken: "обратить внимание: \(Fmt.integer(n))")
         }
     }
 }

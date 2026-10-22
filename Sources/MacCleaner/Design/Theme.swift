@@ -149,6 +149,12 @@ struct ModuleTint: Equatable {
                0x31103F, 0x7A1E6C, 0x56196C,
                0x110518, 0x48134F, 0x7C1F58] as [UInt32]).map { Color(hex: $0) }
     )
+    static let health = ModuleTint(
+        accent: Color(hex: 0x9BE15D), accent2: Color(hex: 0x2FB872),
+        mesh: ([0x0D1405, 0x22350B, 0x163416,
+               0x1C330C, 0x3A5A14, 0x1E4E25,
+               0x090F04, 0x283F0F, 0x2B5A1E] as [UInt32]).map { Color(hex: $0) }
+    )
 }
 
 extension ModuleTint {

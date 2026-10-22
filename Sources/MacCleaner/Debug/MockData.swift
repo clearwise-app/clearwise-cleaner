@@ -3,6 +3,7 @@
 import Foundation
 import CleanerKit
 import SpaceEngine
+import HealthEngine
 
 /// Realistic sample data for `--snapshot` renders. Never used by the real app flow.
 enum MockData {
@@ -328,6 +329,47 @@ enum MockData {
          ("IMG_4021.MOV", 3_410 * MB), ("node_modules", 640 * MB), ("Отчёт 2024.pdf", 12 * MB)]
             .map { TrashItem(url: h(".Trash/\($0.0)"), size: $0.1) }
             .sorted { $0.size > $1.size }
+    }
+
+    // MARK: Mac health
+
+    /// A three-year-old MacBook: worn but healthy battery, a few local snapshots, three Intel-only apps.
+    static var health: MacHealthReport {
+        func app(_ name: String, _ version: String, _ archs: Set<CPUArchitecture>) -> AppArchitecture {
+            AppArchitecture(url: URL(fileURLWithPath: "/Applications/\(name).app"), name: name, version: version, architectures: archs)
+        }
+        let universal: [AppArchitecture] = ["Google Chrome", "Telegram", "Zoom", "Figma", "Spotify", "Slack", "Docker",
+                                            "Visual Studio Code", "Notion", "1Password", "Raycast", "VLC"]
+            .map { app($0, "1.0", [.arm64, .x86_64]) }
+        let native: [AppArchitecture] = ["Xcode", "Pixelmator Pro", "Final Cut Pro", "Things", "Bear", "Keynote", "Pages",
+                                         "Numbers", "Logic Pro", "Affinity Photo 2", "Tot", "Rectangle", "Ice", "IINA"]
+            .map { app($0, "2.0", [.arm64]) }
+        let intel = [app("ScanSnap Manager", "6.3", [.x86_64]), app("Legacy MIDI Patchbay", "2.4.1", [.x86_64]),
+                     app("Tax Helper 2019", "19.0.3", [.x86_64, .i386])]
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: now)
+        let snapshots = [9, 10, 11].reversed().map { hour in
+            let date = calendar.date(byAdding: .minute, value: hour * 60 + 14, to: today) ?? now
+            let stamp = date.formatted(Date.VerbatimFormatStyle(
+                format: "\(year: .defaultDigits)-\(month: .twoDigits)-\(day: .twoDigits)-\(hour: .twoDigits(clock: .twentyFourHour, hourCycle: .zeroBased))\(minute: .twoDigits)\(second: .twoDigits)",
+                timeZone: .current, calendar: Calendar(identifier: .gregorian)))
+            return LocalSnapshot(name: "com.apple.TimeMachine.\(stamp).local", date: date)
+        }
+        return MacHealthReport(
+            battery: BatteryHealth(cycleCount: 412, designCycleCount: 1000, maximumCapacityPercent: 87, condition: .normal,
+                                   fullChargeCapacity: 4_311, designCapacity: 4_966, chargePercent: 64,
+                                   isCharging: false, isPluggedIn: false, temperatureCelsius: 29.4),
+            drive: DriveHealth(model: "APPLE SSD AP0512Q", smart: .verified, containerTotal: 494_380_000_000,
+                               containerFree: 160_900_000_000,
+                               nvme: NVMeHealth(percentageUsed: 3, bytesWritten: 41_870 * GB, bytesRead: 63_200 * GB,
+                                                availableSpare: 100, availableSpareThreshold: 99, powerOnHours: 3_874,
+                                                mediaErrors: 0, unsafeShutdowns: 11, temperatureCelsius: 38)),
+            space: SpaceReport(total: 494_380_000_000, freeNow: 160_900_000_000, availableWithPurgeable: 182_600_000_000,
+                               snapshots: snapshots),
+            architectures: ArchitectureReport(apps: (universal + native + intel).sorted { $0.name < $1.name }),
+            vitals: SystemVitals(physicalMemory: 16 * 1_073_741_824, memoryPressure: .normal, swapUsed: 1_240 * MB,
+                                 bootTime: now.addingTimeInterval(-6 * 86_400 - 5 * 3600)),
+            measuredAt: now)
     }
 }
 #endif
