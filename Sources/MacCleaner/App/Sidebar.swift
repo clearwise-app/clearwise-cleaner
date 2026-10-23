@@ -27,10 +27,13 @@ struct Sidebar: View {
 
             Spacer(minLength: 12)
 
-            // One column: the storage card and the access pill share the same width.
+            // One column: the storage card and the access pill share the same width; the gear sits by the pill.
             VStack(spacing: 8) {
                 SidebarStorage()
-                FDAPill()
+                HStack(spacing: 8) {
+                    FDAPill()
+                    SettingsGear()
+                }
             }
             .padding(.horizontal, 12)
             .padding(.bottom, 12)
@@ -585,6 +588,28 @@ private struct FDAPill: View {
         .accessibilityLabel(granted ? "Полный доступ к диску включён" : "Нет полного доступа к диску")
         .accessibilityHint(granted ? "Показать подробности" : "Показать, как дать доступ")
         .animation(Theme.quick, value: granted)
+    }
+}
+
+/// ⚙︎ next to the access pill: opens Settings — language, disk access, cleanup mode, the Trash.
+private struct SettingsGear: View {
+    @State private var hover = false
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: 15, style: .circular)
+        SettingsLink {
+            Image(systemName: "gearshape.fill")
+                .font(.system(size: 12.5, weight: .semibold))
+                .foregroundStyle(hover ? Theme.text : Theme.textSecondary)
+                .frame(width: 30, height: 30)
+                .background(shape.fill(.white.opacity(hover ? 0.09 : 0.06)))
+                .contentShape(shape)
+        }
+        .buttonStyle(.plain)
+        .onHover { hover = $0 }
+        .help("Настройки")
+        .accessibilityLabel("Настройки")
+        .animation(Theme.quick, value: hover)
     }
 }
 

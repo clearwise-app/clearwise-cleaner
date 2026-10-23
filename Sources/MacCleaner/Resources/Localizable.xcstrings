@@ -2471,6 +2471,16 @@
         }
       }
     },
+    "Настройки": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        }
+      }
+    },
     "Начать": {
       "localizations": {
         "en": {
