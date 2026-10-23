@@ -15,8 +15,6 @@ permissions:
 jobs:
   build-and-test:
     name: Build and test (macOS 26)
-    # Xcode 26 / Swift 6.2. build_app.sh relies on its SwiftPM resource
-    # bundle layout (Contents/Info.plist); Xcode 16's SwiftPM writes flat bundles and the script stops there.
     runs-on: macos-26
     timeout-minutes: 30
     env:
@@ -42,12 +40,9 @@ jobs:
       - name: Test (without real-disk tests)
         run: swift test --skip-build --parallel --skip 'RealDiskSmokeTests|RealMacSmokeTests|RealDiskTests|testRealDisk'
 
-      # What ships: the release binaries assembled, localized and signed (ad-hoc) into the .app.
+      # What ships, built the way package_release.sh builds it: universal binaries assembled, localized and signed
+      # (ad-hoc) into the .app. Two --arch flags send SwiftPM through the Xcode build system, whose resource bundles
+      # (Contents/Info.plist, compiled string catalogs) build_app.sh expects.
       - name: Build app bundle
-        run: scripts/build_app.sh
+        run: UNIVERSAL=1 scripts/build_app.sh
 
-      - name: Show resource bundles (on failure)
-        if: failure()
-        run: |
-          find .build/*/release -maxdepth 4 -path '*MacCleaner_*.bundle*' | sort | head -100
-          find build -maxdepth 6 -path '*MacCleaner_*.bundle*' | sort | head -100
