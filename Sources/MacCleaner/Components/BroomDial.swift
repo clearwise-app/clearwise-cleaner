@@ -275,8 +275,9 @@ struct BroomRenderer {
         let L = S * 0.66
         let pivot = CGPoint(x: size.width * 0.6, y: size.height * 0.17)
         let p = pose()
-        let theta = p.angle * .pi / 180
-        let tip = CGPoint(x: pivot.x - L * p.scale * sin(theta), y: pivot.y + L * p.scale * cos(theta))
+        let theta = CGFloat(p.angle * .pi / 180)
+        let reach = L * CGFloat(p.scale)
+        let tip = CGPoint(x: pivot.x - reach * sin(theta), y: pivot.y + reach * cos(theta))
 
         drawFloor(&ctx, size: size, tip: tip, S: S)
         if !still && finishTime == nil { drawPuffs(&ctx, S: S, pivot: pivot, L: L) }
@@ -300,7 +301,7 @@ struct BroomRenderer {
     private func drawPuffs(_ ctx: inout GraphicsContext, S: CGFloat, pivot: CGPoint, L: CGFloat) {
         let half = Self.period / 2
         let current = Int(floor(time / half))
-        let theta = Self.rest * .pi / 180
+        let theta = CGFloat(Self.rest * .pi / 180)
         let tip = CGPoint(x: pivot.x - L * sin(theta), y: pivot.y + L * cos(theta))
         var layer = ctx
         layer.addFilter(.blur(radius: S * 0.025))
@@ -435,7 +436,7 @@ struct BroomRenderer {
         for k in max(0, current - 2)...current {
             // At t = k·half the swing passes the rest pose at full speed.
             let born = Double(k) * half
-            let theta = Self.rest * .pi / 180
+            let theta = CGFloat(Self.rest * .pi / 180)
             let tip = CGPoint(x: pivot.x - L * sin(theta), y: pivot.y + L * cos(theta))
             // Tip x-velocity sign: angle grows when cos(wt) > 0, and a growing angle moves the tip left.
             let dir: CGFloat = k.isMultiple(of: 2) ? -1 : 1
