@@ -15,3 +15,4 @@ xcuserdata/
 # Internal notes (competitor research, assistant guidance) — kept locally, never published
 notes/
 .claude/
+*.p8
