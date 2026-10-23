@@ -45,3 +45,9 @@ jobs:
       # What ships: the release binaries assembled, localized and signed (ad-hoc) into the .app.
       - name: Build app bundle
         run: scripts/build_app.sh
+
+      - name: Show resource bundles (on failure)
+        if: failure()
+        run: |
+          find .build/*/release -maxdepth 4 -path '*MacCleaner_*.bundle*' | sort | head -100
+          find build -maxdepth 6 -path '*MacCleaner_*.bundle*' | sort | head -100
