@@ -276,7 +276,8 @@ struct BroomRenderer {
         let pivot = CGPoint(x: size.width * 0.6, y: size.height * 0.17)
         let p = pose()
         let theta = CGFloat(p.angle * .pi / 180)
-        let tip = CGPoint(x: pivot.x - L * p.scale * sin(theta), y: pivot.y + L * p.scale * cos(theta))
+        let reach = L * CGFloat(p.scale)
+        let tip = CGPoint(x: pivot.x - reach * sin(theta), y: pivot.y + reach * cos(theta))
 
         drawFloor(&ctx, size: size, tip: tip, S: S)
         if !still && finishTime == nil { drawPuffs(&ctx, S: S, pivot: pivot, L: L) }
