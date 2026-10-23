@@ -101,8 +101,8 @@ plutil -lint "$APP/Contents/Info.plist" >/dev/null
 echo "==> Signing (hardened runtime)"
 # Hardened Runtime blocks dylib injection into an app that holds Full Disk Access.
 # Apple Events entitlement: NSRunningApplication.terminate() asks apps to quit before uninstalling.
-# SIGN_IDENTITY="Developer ID Application: …" scripts/build_app.sh for a distributable, notarizable build
-# (then: xcrun notarytool submit "build/Clearwise Cleaner.zip" --wait && xcrun stapler staple "build/Clearwise Cleaner.app").
+# SIGN_IDENTITY="Developer ID Application: …" scripts/build_app.sh for a distributable, notarizable build;
+# scripts/package_release.sh with the same SIGN_IDENTITY also notarizes and staples the DMG (docs/SIGNING.md).
 ENTITLEMENTS="build/MacCleaner.entitlements"
 cat > "$ENTITLEMENTS" <<ENT
 <?xml version="1.0" encoding="UTF-8"?>

@@ -73,7 +73,7 @@ VERSION=1.0.0 scripts/package_release.sh     # build/Clearwise-Cleaner-1.0.0.dmg
 
 Оформленное окно DMG (фон со стрелкой к «Программам») собирает [dmgbuild](https://pypi.org/project/dmgbuild/): `python3 -m venv build/.venv && build/.venv/bin/pip install dmgbuild`. Без него получится обычное окно. Обложку и фон рисует `scripts/make_art.swift`.
 
-`build_app.sh` подписывает приложение первым сертификатом «Apple Development» из связки ключей (тогда Полный доступ к диску не слетает после пересборки), иначе — ad-hoc. Релизный DMG всегда подписывается ad-hoc: в сертификате разработчика записан его Apple ID.
+`build_app.sh` подписывает приложение первым сертификатом «Apple Development» из связки ключей (тогда Полный доступ к диску не слетает после пересборки), иначе — ad-hoc. Релизный DMG по умолчанию подписывается ad-hoc: в сертификате разработчика записан его Apple ID. С сертификатом Developer ID тот же скрипт подписывает, нотаризует и «степлит» DMG: `SIGN_IDENTITY="Developer ID Application: …" VERSION=… scripts/package_release.sh`. Что для этого нужно и куда положить учётные данные Apple — в [docs/SIGNING.md](docs/SIGNING.md).
 
 ## Для ИИ-агентов: MCP-сервер
 
