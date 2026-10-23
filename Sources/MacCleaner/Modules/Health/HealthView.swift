@@ -403,10 +403,7 @@ private struct IntelAppRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(nsImage: IconCache.icon(for: app.url))
-                .resizable()
-                .frame(width: 28, height: 28)
-                .accessibilityHidden(true)
+            FileIcon(url: app.url, size: 28)
             VStack(alignment: .leading, spacing: 1) {
                 Text(app.name)
                     .font(.rowTitle)

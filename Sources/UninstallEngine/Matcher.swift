@@ -65,7 +65,9 @@ struct AppSignature: Sendable {
         }
         strongNames = strong
         weakNames = weak.subtracting(strong)
-        processNames = Set(rawNames.map { $0.lowercased() }.filter { $0.count >= 3 })
+        // Not a generic executable name («Electron», «Helper»…): every other Electron app's crash reports would match.
+        processNames = Set(rawNames.map { $0.lowercased() }
+            .filter { $0.count >= 3 && !NameRules.genericNames.contains(NameRules.normalize($0)) })
 
         var vendors: Set<String> = []
         if let bid {

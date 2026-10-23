@@ -102,10 +102,13 @@ public enum DockerCleanup {
 
     /// «1.234GB (45%)», «512MB», «0B», «12.5kB» → bytes. Docker prints decimal units.
     static func parseSize(_ text: String) -> Int64? {
-        let head = text.split(separator: " ").first.map(String.init) ?? text
+        let tokens = text.split(separator: " ").map(String.init)
+        guard let head = tokens.first else { return nil }
         let number = head.prefix { $0.isNumber || $0 == "." }
-        guard let value = Double(number) else { return nil }
-        let unit = head.dropFirst(number.count).uppercased()
+        guard let value = Double(number), value.isFinite, value >= 0 else { return nil }
+        var unit = head.dropFirst(number.count).uppercased()
+        // «1.2 GB (50%)»: the unit as a token of its own, never the percentage.
+        if unit.isEmpty, tokens.count > 1, !tokens[1].hasPrefix("(") { unit = tokens[1].uppercased() }
         let factor: Double = switch unit {
         case "B", "": 1
         case "KB": 1e3
@@ -114,7 +117,8 @@ public enum DockerCleanup {
         case "TB": 1e12
         default: -1
         }
-        return factor < 0 ? nil : Int64(value * factor)
+        guard factor > 0, value * factor < Double(Int64.max) else { return nil }
+        return Int64(value * factor)
     }
 
     /// `docker … prune` ends with «Total reclaimed space: 1.2GB».

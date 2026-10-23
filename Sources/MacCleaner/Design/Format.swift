@@ -73,6 +73,7 @@ enum Fmt {
         "не открывалось": ("has not been opened", "have not been opened"),
         "не открывался": ("has not been opened", "have not been opened"),
         "оставило": ("left", "left"),
+        "запускается само": ("starts on its own", "start on their own"),
     ]
 
     /// Plural by count: plural(5, "объект", "объекта", "объектов") → "объектов"; in English, "items".

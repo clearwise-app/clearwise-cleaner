@@ -238,7 +238,7 @@ private struct ChildRow: View {
             RoundedRectangle(cornerRadius: 3).fill(actionable ? color : .white.opacity(0.2)).frame(width: 4, height: 26)
             Group {
                 if actionable {
-                    Image(nsImage: IconCache.icon(for: node.url)).resizable()
+                    FileIcon(url: node.url, size: 20)
                 } else {
                     Image(systemName: "square.grid.3x3.fill").resizable().scaledToFit().padding(2)
                         .foregroundStyle(Theme.textTertiary)
@@ -402,7 +402,7 @@ private struct CollectedChip: View {
 
     var body: some View {
         HStack(spacing: 7) {
-            Image(nsImage: IconCache.icon(for: item.url)).resizable().frame(width: 18, height: 18)
+            FileIcon(url: item.url, size: 18)
             VStack(alignment: .leading, spacing: 0) {
                 Text(item.name).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Theme.text).lineLimit(1)
                 SizeText(bytes: item.size, font: .system(size: 10.5, design: .rounded), color: Theme.textTertiary)

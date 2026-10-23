@@ -314,6 +314,9 @@ public struct RemovalResult: Sendable {
     public var deletedForGood: [URL] = []
     /// Bytes of `deletedForGood`; part of `freedBytes`.
     public var freedForGood: Int64 = 0
+    /// Of `freedForGood`, what was emptied out of the Trash itself (its content, or a «навсегда» purge) — as
+    /// opposed to what Docker freed. The completion screen tells the two apart.
+    public var trashEmptiedBytes: Int64 = 0
 
     public init(removed: [URL] = [], failed: [RemovalFailure] = [], freedBytes: Int64 = 0) {
         self.removed = removed
@@ -328,6 +331,7 @@ public struct RemovalResult: Sendable {
         inTrash += other.inTrash
         deletedForGood += other.deletedForGood
         freedForGood += other.freedForGood
+        trashEmptiedBytes += other.trashEmptiedBytes
     }
 }
 

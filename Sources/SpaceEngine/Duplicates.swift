@@ -71,8 +71,8 @@ enum DuplicateFinder {
             }
             if monitor.isCancelled { return }
             let group = sizeGroups[i]
-            for sameHead in regroup(group, by: { hash($0.file.url, limit: headBytes) }) {
-                for same in regroup(sameHead, by: { hash($0.file.url, limit: nil) }) {
+            for sameHead in regroup(group, by: { hash($0.file.url, limit: headBytes, cancelled: { monitor.isCancelled }) }) {
+                for same in regroup(sameHead, by: { hash($0.file.url, limit: nil, cancelled: { monitor.isCancelled }) }) {
                     resultSink.append(same)
                 }
             }
@@ -105,13 +105,15 @@ enum DuplicateFinder {
         return buckets.values.filter { $0.count > 1 }
     }
 
-    /// SHA-256 of the file (or of its first `limit` bytes). Nil when unreadable.
-    static func hash(_ url: URL, limit: Int?) -> Data? {
+    /// SHA-256 of the file (or of its first `limit` bytes). Nil when unreadable — or cancelled: «Остановить»
+    /// must not wait for a 40 GB disk image to be read to the end.
+    static func hash(_ url: URL, limit: Int?, cancelled: () -> Bool = { false }) -> Data? {
         guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
         defer { try? handle.close() }
         var hasher = SHA256()
         var remaining = limit ?? Int.max
         while remaining > 0 {
+            if cancelled() { return nil }
             let data: Data? = autoreleasepool {
                 try? handle.read(upToCount: min(chunk, remaining))
             }

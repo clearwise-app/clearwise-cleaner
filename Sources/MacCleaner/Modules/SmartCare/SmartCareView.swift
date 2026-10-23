@@ -469,8 +469,7 @@ private struct UnusedAppsTile: View {
                   showsChoiceBadge: true, opens: .uninstaller, onOpen: onOpen) {
             HStack(spacing: 6) {
                 ForEach(digest.unusedTop) { a in
-                    Image(nsImage: IconCache.icon(for: a.url)).resizable().interpolation(.high)
-                        .frame(width: 30, height: 30)
+                    FileIcon(url: a.url, size: 30)
                         .shadow(color: .black.opacity(0.3), radius: 3, y: 2)
                 }
             }

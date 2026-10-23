@@ -12,7 +12,7 @@ struct ConfirmDialog: View {
     /// `deleteForever`: «Удалить навсегда, минуя Корзину» was on.
     let onConfirm: (_ deleteForever: Bool) -> Void
 
-    private enum Field: Hashable { case cancel, confirm }
+    private enum Field: Hashable { case cancel, confirm, forever }
     @FocusState private var focus: Field?
     /// Starts from Settings → «Сразу удалять навсегда»; this cleanup only.
     @State private var forever = UserDefaults.standard.bool(forKey: SettingsKeys.deletePermanently)
@@ -77,6 +77,8 @@ struct ConfirmDialog: View {
                             .foregroundStyle(Theme.textSecondary)
                     }
                     .toggleStyle(.checkbox)
+                    // Part of the focus loop, or Tab would skip it back to Cancel (`onChange` below).
+                    .focused($focus, equals: .forever)
                     .padding(.top, 14)
                     .accessibilityHint("Иначе всё попадёт в Корзину и его можно будет вернуть")
                 }

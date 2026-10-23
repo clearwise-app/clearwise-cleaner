@@ -8,7 +8,11 @@ struct BroomClock {
     /// Seconds between the start and the finish; nil while working.
     var finishElapsed: Double?
 
-    var paused: Bool { frozenTime != nil }
+    /// The window is in the background: the clocks stop ticking (the wall clock keeps running, so a
+    /// return to the front resumes where the broom would have been, not where it stopped).
+    var inactive = false
+
+    var paused: Bool { frozenTime != nil || inactive }
     var finished: Bool { finishElapsed != nil }
 
     func time(at date: Date) -> Double { frozenTime ?? date.timeIntervalSince(startedAt) }
@@ -52,10 +56,7 @@ struct BroomDial: View {
             discView
         }
         .frame(width: diameter * 1.18, height: diameter * 1.18)
-        .onAppear { startBreathing() }
-        .onChange(of: clock.finished) { _, finished in
-            if finished && breathe { withAnimation(.easeOut(duration: 0.4)) { breathe = false } }
-        }
+        .onChange(of: breathing, initial: true) { _, run in breathe = run }
     }
 
     // MARK: Orbit
@@ -84,6 +85,9 @@ struct BroomDial: View {
                 .fill(RadialGradient(colors: [tint.accent.opacity(0.35), .clear],
                                      center: .init(x: 0.5, y: 0.78), startRadius: 0, endRadius: disc * 0.55))
                 .opacity(breathe ? 0.4 : 1)
+                // A value-scoped loop (see HeroIllustration); the finish and a pause ease it out.
+                .animation(breathing ? .easeInOut(duration: 1.6).repeatForever(autoreverses: true) : .easeOut(duration: 0.4),
+                           value: breathe)
 
             if reduceMotion {
                 broom(time: clock.frozenTime ?? 0, finishTime: nil)
@@ -131,10 +135,7 @@ struct BroomDial: View {
         }
     }
 
-    private func startBreathing() {
-        guard reduceMotion, !clock.paused, !clock.finished else { return }
-        withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) { breathe = true }
-    }
+    private var breathing: Bool { reduceMotion && !clock.paused && !clock.finished }
 
     /// Overshooting pop-in, 0 before the start.
     static func pop(_ t: Double) -> Double {
@@ -187,6 +188,8 @@ private struct DialRing: View {
             }
         }
         .frame(width: diameter, height: diameter)
+        // One offscreen pass for the arc's glow and the cap's blur per change, instead of a filter layer each.
+        .drawingGroup()
         .animation(.easeOut(duration: 0.35), value: value)
     }
 }
@@ -288,7 +291,8 @@ struct BroomRenderer {
             drawBroom(&layer, flex: p.flex * 0.07)
         }
 
-        if !still { drawDust(&ctx, S: S, pivot: pivot, L: L) }
+        // Dust born before the finish still settles; the resting broom kicks up no new dust.
+        if !still { drawDust(&ctx, S: S, pivot: pivot, L: L, until: finishTime.map { time - $0 }) }
         drawTwinkles(&ctx, size: size, S: S)
     }
 
@@ -423,7 +427,7 @@ struct BroomRenderer {
     }
 
     /// Dust kicked off at the fastest point of every stroke, flying the way the broom moves.
-    private func drawDust(_ ctx: inout GraphicsContext, S: CGFloat, pivot: CGPoint, L: CGFloat) {
+    private func drawDust(_ ctx: inout GraphicsContext, S: CGFloat, pivot: CGPoint, L: CGFloat, until: Double?) {
         let half = Self.period / 2
         let life = 1.1
         let current = Int(floor(time / half))
@@ -439,7 +443,7 @@ struct BroomRenderer {
                 let r1 = Self.hash(k, j, 1), r2 = Self.hash(k, j, 2), r3 = Self.hash(k, j, 3)
                 let t0 = born + r3 * 0.12
                 let age = time - t0
-                guard age > 0, age < life else { continue }
+                guard age > 0, age < life, t0 < (until ?? .infinity) else { continue }
                 let vx = dir * S * (0.45 + 0.75 * r1)
                 let vy = -S * (0.25 + 0.55 * r2)
                 // Kicked off the leading edge of the bristles.

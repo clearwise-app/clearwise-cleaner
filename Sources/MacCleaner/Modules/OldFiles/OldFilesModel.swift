@@ -217,7 +217,8 @@ final class OldFilesModel {
 
     func forget(_ removed: Set<URL>) {
         files.removeAll { removed.contains($0.id.standardizedFileURL) }
-        selection.subtract(removed)
+        // `removed` is standardized; the selection holds the files' own spelling (`/private/…` under a custom root).
+        selection = selection.filter { !removed.contains($0.standardizedFileURL) }
     }
 
     func finish() {

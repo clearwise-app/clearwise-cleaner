@@ -81,7 +81,7 @@ private struct StartupResultsView: View {
 
     private var caption: String {
         let n = model.enabledThirdPartyCount
-        let verb = n % 10 == 1 && n % 100 != 11 ? String(localized: "запускается само") : String(localized: "запускаются сами")
+        let verb = Fmt.verb(n, one: String(localized: "запускается само"), other: String(localized: "запускаются сами"))
         var text = String(localized: "\(verb) · \(Fmt.items(model.items.count { !$0.isApple })) от сторонних разработчиков")
         if model.hiddenAppleCount > 0 { text += " · " + String(localized: "объекты macOS скрыты") }
         return text
@@ -194,9 +194,11 @@ private struct LoginItemsNote: View {
                 .foregroundStyle(Theme.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 8)
-            if model.loginItemsState == .notRead || model.loginItemsState == .failed {
-                Button(model.loginItemsState == .failed ? "Попробовать снова" : "Прочитать список") { model.readLoginItems() }
-                    .buttonStyle(PillButtonStyle(kind: .secondary))
+            if model.loginItemsState != .reading {
+                // After a read the list is a snapshot: what the user changes in System Settings shows up only on a re-read.
+                Button(model.loginItemsState == .failed ? "Попробовать снова"
+                       : model.loginItemsState == .read ? "Прочитать снова" : "Прочитать список") { model.readLoginItems() }
+                    .buttonStyle(PillButtonStyle(kind: model.loginItemsState == .read ? .quiet : .secondary))
                     .help("macOS спросит пароль администратора: без него список объектов входа не читается")
             }
             Button("Открыть настройки") { model.openLoginItemsSettings() }

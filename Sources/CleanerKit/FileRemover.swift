@@ -107,7 +107,9 @@ public enum FileRemover {
     /// True when any folder on the way to `url` (below /) is world-writable or sticky,
     /// i.e. other users or processes can rename things there.
     static func isInSharedWritableFolder(_ url: URL) -> Bool {
-        var dir = url.deletingLastPathComponent().standardizedFileURL
+        // The real folders: `standardizedFileURL` would turn /private/var/log into /var/log — a symlink —
+        // and call every system log «shared», so root-owned logs could never be removed.
+        var dir = url.deletingLastPathComponent().resolvingSymlinksInPath()
         while dir.path != "/" && !dir.path.isEmpty {
             var st = stat()
             if lstat(dir.path, &st) == 0 {
@@ -143,6 +145,9 @@ public enum FileRemover {
                     try FileManager.default.removeItem(at: url)
                     result.removed.append(url)
                     result.freedBytes += size
+                    result.deletedForGood.append(url)
+                    result.freedForGood += size
+                    result.trashEmptiedBytes += size
                     freed = size
                 } catch where isPermissionDenied(error) && isInUserTrash(url) {
                     refused.append(url)
@@ -194,6 +199,9 @@ public enum FileRemover {
             if ok.0, gone {
                 result.removed.append(url)
                 result.freedBytes += size
+                result.deletedForGood.append(url)
+                result.freedForGood += size
+                result.trashEmptiedBytes += size
                 progress?(RemovalStep(url: url, bytes: size, done: true))
             } else {
                 result.failed.append(RemovalFailure(url: url, reason: ok.1 ?? String(localized: "Не удалось удалить", bundle: .module)))

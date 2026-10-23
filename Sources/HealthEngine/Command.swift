@@ -27,7 +27,8 @@ enum Command {
             process.terminate()
             return nil
         }
-        readDone.wait()
+        // A helper the tool spawned may still hold the pipe: a read that never ends must not hang the check.
+        guard readDone.wait(timeout: .now() + 2) == .success else { return nil }
         return process.terminationStatus == 0 ? data : nil
     }
 }

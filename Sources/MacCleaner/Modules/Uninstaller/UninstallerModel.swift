@@ -570,6 +570,8 @@ final class UninstallerModel {
             return left.isEmpty ? nil : OrphanGroup(id: g.id, displayName: g.displayName, remnants: left)
         }
         orphanSelection.subtract(removed)
+        // The focused group may be gone with its last file: the detail must not say «nothing left» next to a list.
+        if focusedOrphan == nil { focusedOrphanID = orphans.first?.id }
     }
 
     // MARK: Orphans
@@ -581,8 +583,19 @@ final class UninstallerModel {
         orphanTask = Task { await scanOrphans() }
     }
 
+    /// Returns when the results are in — also for a caller that arrives while a scan is already running
+    /// (Smart Care after «Найти остатки»): it waits for that one instead of getting nothing.
     func scanOrphans() async {
-        guard let app, orphanState != .scanning else { return }
+        if orphanState == .scanning { await orphanRun?.value; return }
+        let run = Task { await runOrphanScan() }
+        orphanRun = run
+        await run.value
+    }
+
+    @ObservationIgnored private var orphanRun: Task<Void, Never>?
+
+    private func runOrphanScan() async {
+        guard let app else { return }
         orphanState = .scanning
         orphanProgress = ScanProgress(phase: String(localized: "Ищем приложения"), fraction: 0)
         let installed = await app.loadApps()

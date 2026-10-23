@@ -144,29 +144,30 @@ struct StorageShimmerBar: View {
     var body: some View {
         GeometryReader { geo in
             Capsule().fill(.white.opacity(dim ? 0.06 : 0.09))
+                // Value-scoped loops (see HeroIllustration): they cannot attach to a transition of the bar.
+                .animation(breathing ? .easeInOut(duration: 1.2).repeatForever(autoreverses: true) : nil, value: dim)
                 .overlay(alignment: .leading) {
                     LinearGradient(colors: [.clear, .white.opacity(0.28), .clear], startPoint: .leading, endPoint: .trailing)
                         .frame(width: geo.size.width * 0.45)
                         .offset(x: geo.size.width * (still ? 0.3 : phase))
+                        .animation(sweeping ? .easeInOut(duration: 1.3).repeatForever(autoreverses: false) : nil, value: phase)
                 }
                 .clipShape(Capsule())
         }
         .frame(height: height)
-        .onAppear(perform: start)
-        .onChange(of: still) { _, _ in start() }
+        .onChange(of: still, initial: true) { _, _ in start() }
         .accessibilityLabel("Считаем, что занимает место")
     }
+
+    private var sweeping: Bool { !still }
+    private var breathing: Bool { !isSnapshot && !animationsPaused && reduceMotion }
 
     private func start() {
         var reset = Transaction()
         reset.disablesAnimations = true
         withTransaction(reset) { phase = -0.4; dim = false }
         guard !isSnapshot, !animationsPaused else { return }
-        if reduceMotion {
-            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) { dim = true }
-        } else {
-            withAnimation(.easeInOut(duration: 1.3).repeatForever(autoreverses: false)) { phase = 1.0 }
-        }
+        if reduceMotion { dim = true } else { phase = 1.0 }
     }
 }
 

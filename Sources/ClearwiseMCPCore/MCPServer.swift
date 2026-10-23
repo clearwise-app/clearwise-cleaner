@@ -128,16 +128,18 @@ enum Args {
     static func string(_ args: [String: Any], _ key: String) -> String? {
         (args[key] as? String).flatMap { $0.isEmpty ? nil : $0 }
     }
+    /// JSON `true` only. A string "true" or a number is a client slip, and for `confirm` a slip must not remove files.
     static func bool(_ args: [String: Any], _ key: String) -> Bool {
-        if let b = args[key] as? Bool { return b }
-        if let n = args[key] as? NSNumber { return n.boolValue }
-        if let s = args[key] as? String { return ["true", "yes", "1"].contains(s.lowercased()) }
-        return false
+        guard let n = args[key] as? NSNumber, CFGetTypeID(n) == CFBooleanGetTypeID() else { return false }
+        return n.boolValue
     }
+    /// Clamped to 0…10 000 000: months and megabytes are multiplied later, and a huge value must not trap.
     static func int(_ args: [String: Any], _ key: String, default value: Int) -> Int {
-        if let n = args[key] as? NSNumber { return n.intValue }
-        if let s = args[key] as? String, let n = Int(s) { return n }
-        return value
+        let n: Int
+        if let number = args[key] as? NSNumber { n = number.intValue }
+        else if let s = args[key] as? String, let parsed = Int(s) { n = parsed }
+        else { return value }
+        return min(max(n, 0), 10_000_000)
     }
     static func strings(_ args: [String: Any], _ key: String) -> [String] {
         if let list = args[key] as? [String] { return list }

@@ -38,8 +38,13 @@ final class JunkModel {
 
     func selectedSize(in cat: JunkCategory) -> Int64 { selectedBytesByCategory[cat.id] ?? 0 }
 
+    /// The category's box counts the items a mode may tick: the newest backup of each device (`neverAuto`)
+    /// is ticked only by hand, row by row — so the box is «on» once everything else is.
     func state(of cat: JunkCategory) -> CheckState {
-        CheckState(selected: selectedCountByCategory[cat.id] ?? 0, total: cat.items.count)
+        let selected = selectedCountByCategory[cat.id] ?? 0
+        let auto = cat.items.count - cat.neverAuto.count
+        if selected == 0 { return .off }
+        return auto > 0 && selected >= auto ? .on : .mixed
     }
 
     /// Selected items grouped by category. Walks every item: for building cleaning plans only, never from a body.
@@ -91,13 +96,14 @@ final class JunkModel {
 
     func startScan() {
         app?.storage.noteUserScan()
-        // Settings may have changed it since the last scan; snapshots and tests stay gentle.
-        if app?.probesSystem ?? false { mode = .saved }
         task?.cancel()
         task = Task { await scan() }
     }
 
+    /// Also Smart Care's junk scan, so the saved mode is loaded here, not in `startScan`.
     func scan() async {
+        // Settings may have changed it since the last scan; snapshots and tests stay gentle.
+        if app?.probesSystem ?? false { mode = .saved }
         withAnimation(Theme.spring) { phase = .scanning }
         progress = ScanProgress(phase: String(localized: "Подготовка"), fraction: 0)
         let relay = progressRelay { [weak self] p in
@@ -105,9 +111,10 @@ final class JunkModel {
             self.progress = p
         }
         let found = await scanner.scan(progress: relay)
+        // A stopped scan finishing late must not relabel the live results either.
+        guard !Task.isCancelled, phase == .scanning else { return }
         notes = await scanner.notes
         dockerStatus = await scanner.docker
-        guard !Task.isCancelled, phase == .scanning else { return }
         apply(found)
     }
 
@@ -127,14 +134,14 @@ final class JunkModel {
     // MARK: Selection
 
     func toggle(_ cat: JunkCategory) {
-        let urls = cat.items.map(\.url)
         if state(of: cat) == .on {
-            selection.subtract(urls)
+            selection.subtract(cat.items.map(\.url))
             adjustTotals(cat.id, bytes: -(selectedBytesByCategory[cat.id] ?? 0), count: -(selectedCountByCategory[cat.id] ?? 0))
         } else {
-            selection.formUnion(urls)
-            adjustTotals(cat.id, bytes: cat.totalSize - (selectedBytesByCategory[cat.id] ?? 0),
-                         count: cat.items.count - (selectedCountByCategory[cat.id] ?? 0))
+            // Everything but the `neverAuto` items: a category tick never takes a device's last backup.
+            let adding = cat.items.filter { !cat.neverAuto.contains($0.url) && !selection.contains($0.url) }
+            selection.formUnion(adding.map(\.url))
+            adjustTotals(cat.id, bytes: adding.reduce(0) { $0 + $1.size }, count: adding.count)
         }
     }
 
@@ -182,7 +189,8 @@ final class JunkModel {
 
     // MARK: Clean
 
-    var includesTrash: Bool { (selectedCountByCategory[JunkCategoryID.trash] ?? 0) > 0 }
+    var includesTrash: Bool { selectedTrashCount > 0 }
+    var selectedTrashCount: Int { selectedCountByCategory[JunkCategoryID.trash] ?? 0 }
     var includesSystemLogs: Bool { (selectedCountByCategory[JunkCategoryID.systemLogs] ?? 0) > 0 }
     /// Docker frees its part at once, never through the Trash.
     var selectedDockerBytes: Int64 { selectedBytesByCategory[JunkCategoryID.docker] ?? 0 }
@@ -196,22 +204,24 @@ final class JunkModel {
     func confirmation(tint: ModuleTint, action: @escaping @MainActor () -> Void) -> Confirmation? {
         guard selectedCount > 0 else { return nil }
         return Self.cleanConfirmation(count: selectedCount, bytes: selectedSize, trashBytes: selectedTrashBytes,
-                                      dockerBytes: selectedDockerBytes, needsAdmin: includesSystemLogs, tint: tint, action: action)
+                                      trashCount: selectedTrashCount, dockerBytes: selectedDockerBytes,
+                                      needsAdmin: includesSystemLogs, tint: tint, action: action)
     }
 
     /// «Очистить N объектов?» — everything goes to the Trash, except the Trash's own content (`trashBytes`), which
     /// is deleted for good. Smart Care uses it for junk, leftovers and old files together.
-    static func cleanConfirmation(count: Int, bytes: Int64, trashBytes: Int64, dockerBytes: Int64 = 0, needsAdmin: Bool,
-                                  tint: ModuleTint, action: @escaping @MainActor () -> Void) -> Confirmation {
+    static func cleanConfirmation(count: Int, bytes: Int64, trashBytes: Int64, trashCount: Int = 0, dockerBytes: Int64 = 0,
+                                  needsAdmin: Bool, tint: ModuleTint, action: @escaping @MainActor () -> Void) -> Confirmation {
         let includesTrash = trashBytes > 0
-        let onlyTrash = includesTrash && trashBytes == bytes
+        // By count, not bytes: an unsized item (no Full Disk Access) weighs 0 and must not make the Trash «everything».
+        let onlyTrash = includesTrash && (trashCount > 0 ? trashCount == count : trashBytes == bytes)
         let docker = dockerBytes > 0 ? String(localized: " Docker (\(Fmt.size(dockerBytes))) очистит себя сам — сразу, без Корзины; тома с данными не трогаются.") : ""
         var title: String?
         var message: String?
         if includesTrash && !onlyTrash {
             title = String(localized: "Очистить \(ConfirmCopy.accusative(count, .items))?")
             message = String(localized: "Остальное попадёт в Корзину — это можно вернуть. Содержимое самой Корзины (\(Fmt.size(trashBytes))) будет удалено навсегда.") + docker
-        } else if !includesTrash && dockerBytes == bytes {
+        } else if !includesTrash && dockerBytes > 0 && dockerBytes == bytes {
             title = String(localized: "Очистить Docker?")
             message = String(localized: "Docker удалит выбранное сам — сразу, без Корзины. Образы скачаются заново при следующем запуске; тома с данными не трогаются.")
         } else if !includesTrash {

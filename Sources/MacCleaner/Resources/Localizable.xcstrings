@@ -1621,6 +1621,16 @@
         }
       }
     },
+    "Ещё %@ удалено из Корзины навсегда.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Another %@ was deleted from the Trash for good."
+          }
+        }
+      }
+    },
     "Ждём пароль администратора и читаем список объектов входа…": {
       "localizations": {
         "en": {
@@ -4297,6 +4307,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Read in total"
+          }
+        }
+      }
+    },
+    "Прочитать снова": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read again"
           }
         }
       }

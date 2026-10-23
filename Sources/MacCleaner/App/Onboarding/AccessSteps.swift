@@ -234,7 +234,7 @@ struct AppIconDragTile: View {
     var body: some View {
         Group {
             if isAppBundle {
-                Image(nsImage: NSWorkspace.shared.icon(forFile: bundleURL.path))
+                Image(nsImage: IconCache.icon(for: bundleURL))
                     .resizable()
                     .interpolation(.high)
             } else {

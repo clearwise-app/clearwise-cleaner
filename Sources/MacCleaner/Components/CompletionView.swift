@@ -27,7 +27,12 @@ struct CompletionView: View {
     /// Emptying the Trash, a cleanup that deleted for good right away («минуя Корзину»), or only Docker.
     private var isPermanent: Bool { permanent || result.deletedPermanently || (result.freedForGood > 0 && result.freedForGood == result.freedBytes) }
     /// Space Docker gave back at once, next to what went to the Trash.
-    private var dockerAside: Int64 { isPermanent ? 0 : result.freedForGood }
+    /// Freed at once by Docker, never through the Trash: an aside under the Trash figure.
+    private var dockerAside: Int64 { isPermanent ? 0 : result.freedForGood - result.trashEmptiedBytes }
+    /// Emptied out of the Trash for good as part of this cleanup (its own content, or a partly refused «навсегда»).
+    private var purgedAside: Int64 { isPermanent ? 0 : result.trashEmptiedBytes }
+    /// What waits in the Trash now — or, deleted for good, what the disk got back.
+    private var mainBytes: Int64 { isPermanent ? result.freedBytes : result.freedBytes - result.freedForGood }
     private var allFailed: Bool { result.removed.isEmpty && !result.failed.isEmpty }
     private var lines: [FailureCopy.Line] {
         result.failed.map { FailureCopy.describe($0, fullDiskAccess: hasFullDiskAccess) }
@@ -47,14 +52,22 @@ struct CompletionView: View {
                     .multilineTextAlignment(.center)
 
                 if result.freedBytes > 0 && !allFailed {
-                    HStack(alignment: .firstTextBaseline, spacing: 14) {
-                        Text(isPermanent ? "Удалено навсегда" : "В Корзине")
-                            .font(.system(size: 20, weight: .light))
-                            .foregroundStyle(Theme.textSecondary)
-                        BigSize(bytes: result.freedBytes - dockerAside, size: compact ? 50 : 60)
+                    if mainBytes > 0 {
+                        HStack(alignment: .firstTextBaseline, spacing: 14) {
+                            Text(isPermanent ? "Удалено навсегда" : "В Корзине")
+                                .font(.system(size: 20, weight: .light))
+                                .foregroundStyle(Theme.textSecondary)
+                            BigSize(bytes: mainBytes, size: compact ? 50 : 60)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .padding(.top, 6)
                     }
-                    .accessibilityElement(children: .combine)
-                    .padding(.top, 6)
+                    if purgedAside > 0 {
+                        Text("Ещё \(Fmt.size(purgedAside)) удалено из Корзины навсегда.")
+                            .font(.system(size: 14))
+                            .foregroundStyle(Theme.textSecondary)
+                            .padding(.top, 6)
+                    }
                     if dockerAside > 0 {
                         Text("Ещё \(Fmt.size(dockerAside)) освободил Docker — сразу, без Корзины.")
                             .font(.system(size: 14))
@@ -121,8 +134,10 @@ struct CompletionView: View {
             }
             return String(localized: "Файлы остались на месте. Что помешало и что можно сделать — ниже.")
         }
-        if isPermanent { return String(localized: "Место на диске освобождено · \(Fmt.count(n, noun))") }
-        return String(localized: "\(Fmt.count(n, noun).capitalizedFirst) можно вернуть из Корзины.")
+        // Only what actually waits in the Trash can come back: not Docker's items, not what was purged.
+        let recoverable = n - result.deletedForGood.count
+        if isPermanent || recoverable <= 0 { return String(localized: "Место на диске освобождено · \(Fmt.count(n, noun))") }
+        return String(localized: "\(Fmt.count(recoverable, noun).capitalizedFirst) можно вернуть из Корзины.")
     }
 
     private var announcement: String {
@@ -131,9 +146,16 @@ struct CompletionView: View {
             parts.append(String(localized: "Не удалось убрать выбранное"))
         } else {
             parts.append(title)
-            if result.freedBytes > 0 {
-                parts.append(isPermanent ? String(localized: "Удалено навсегда \(Fmt.size(result.freedBytes))")
-                                       : String(localized: "В Корзине \(Fmt.size(result.freedBytes))"))
+            // The same split as on screen: the Trash figure, then what was purged and what Docker freed.
+            if mainBytes > 0 {
+                parts.append(isPermanent ? String(localized: "Удалено навсегда \(Fmt.size(mainBytes))")
+                                       : String(localized: "В Корзине \(Fmt.size(mainBytes))"))
+            }
+            if purgedAside > 0 {
+                parts.append(String(localized: "Ещё \(Fmt.size(purgedAside)) удалено из Корзины навсегда."))
+            }
+            if dockerAside > 0 {
+                parts.append(String(localized: "Ещё \(Fmt.size(dockerAside)) освободил Docker — сразу, без Корзины."))
             }
         }
         if !result.failed.isEmpty { parts.append(String(localized: "Пропущено: \(Fmt.count(result.failed.count, noun))")) }

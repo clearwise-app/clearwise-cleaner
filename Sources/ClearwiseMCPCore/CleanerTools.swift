@@ -315,8 +315,9 @@ public enum CleanerTools {
             let ids = Set(Args.strings(args, "groups"))
             let paths = Set(Args.strings(args, "paths").map { normalize($0).lowercased() })
             guard !ids.isEmpty || !paths.isEmpty else { throw RPCError.invalidParams("Give groups or paths.") }
+            // A whole group means what the app itself ticks — the sure matches; a name-only guess goes only by path.
             let chosen = groups.flatMap { g in
-                g.remnants.filter { ids.contains(g.id) || paths.contains($0.item.url.path.lowercased()) }
+                g.remnants.filter { (ids.contains(g.id) && $0.confidence == .high) || paths.contains(pathKey($0.item.url).lowercased()) }
             }
             let total = chosen.reduce(0) { $0 + $1.item.size }
             guard Args.bool(args, "confirm") else {
@@ -558,8 +559,9 @@ public enum CleanerTools {
         }
     }
 
-    /// A file's path, or a Docker item's id (`docker-cleanup:///build-cache`).
-    public static func pathKey(_ url: URL) -> String { url.isFileURL ? url.path : url.absoluteString }
+    /// A file's path, or a Docker item's id (`docker-cleanup:///build-cache`). Standardized (`/private` dropped),
+    /// the same spelling `normalize` gives a path a client sends back.
+    public static func pathKey(_ url: URL) -> String { url.isFileURL ? url.standardizedFileURL.path : url.absoluteString }
 
     static func normalize(_ path: String) -> String {
         if path.hasPrefix("\(DockerCleanup.scheme):") { return path }
@@ -640,6 +642,10 @@ public enum CleanerTools {
         }
         guard let app = matches.first else {
             throw RPCError.invalidParams("No installed app matches \"\(query)\" (use a bundle id, the exact name or the path).")
+        }
+        // Two copies (/Applications and ~/Applications, say): never guess which one is meant.
+        if matches.count > 1 {
+            throw RPCError.invalidParams("Several apps match \"\(query)\": \(matches.map(\.url.path).joined(separator: ", ")). Give the path.")
         }
         return app
     }

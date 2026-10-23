@@ -8,6 +8,14 @@ struct RootView: View {
     @AppStorage(OnboardingKeys.done) private var onboardingDone = false
     /// The cleaning scene has finished fading in: the screens underneath are hidden and paused.
     @State private var overlayIn = false
+    /// Bumped when the app comes back to the front and the module's screen changed while it was in the
+    /// background: the content is built afresh, without animation. A transition that started in the instant
+    /// before deactivation could otherwise stay half-way (the old screen over the new one, dead to clicks).
+    @State private var contentEpoch = 0
+    @State private var awayScreen: AwayScreen?
+
+    private struct AwayScreen { let module: AppModule; let phase: ModulePhase? }
+    private struct ContentKey: Hashable { let module: AppModule; let epoch: Int }
 
     /// Content under a modal layer is neither clickable nor visible to VoiceOver.
     private var blocked: Bool { model.isModalActive }
@@ -48,8 +56,9 @@ struct RootView: View {
 
             if let session = model.cleaning {
                 CleaningOverlay(session: session)
-                    // The scene's own animations never pause for "overlay is in" (only the screens below do).
-                    .environment(\.animationsPaused, false)
+                    // The scene's own animations never pause for "overlay is in" (only the screens below do),
+                    // but they do stop while the window is in the background.
+                    .environment(\.animationsPaused, controlActiveState == .inactive)
                     .transition(Theme.motion(.asymmetric(insertion: .opacity.combined(with: .scale(scale: 1.03)),
                                                          removal: .opacity.combined(with: .scale(scale: 1.08)))))
                     .zIndex(20)
@@ -62,11 +71,25 @@ struct RootView: View {
                     .zIndex(30)
             }
         }
+        // Decorative loops (the mesh included) stop when the window is in the background, fully covered by the
+        // cleaning scene, or under the onboarding; the scene and the onboarding set their own value.
+        .environment(\.animationsPaused, controlActiveState == .inactive || overlayIn || fullScreenFlow)
         // Nobody sees the window: state changes land at once instead of as transitions that may never finish.
         .transaction { t in
-            guard !isSnapshot, !MainActor.assumeIsolated({ appWindowIsOnScreen }) else { return }
+            guard !isSnapshot, !MainActor.assumeIsolated({ appWindowIsWatched }) else { return }
             t.animation = nil
             t.disablesAnimations = true
+        }
+        .onChange(of: controlActiveState) { _, state in
+            if state == .inactive {
+                awayScreen = AwayScreen(module: model.selection, phase: model.phase(of: model.selection))
+            } else if let away = awayScreen {
+                awayScreen = nil
+                guard away.module == model.selection, away.phase != model.phase(of: model.selection) else { return }
+                var t = Transaction()
+                t.disablesAnimations = true
+                withTransaction(t) { contentEpoch += 1 }
+            }
         }
         .environment(\.moduleTint, model.selection.tint)
         .environment(\.hasFullDiskAccess, model.hasFullDiskAccess)
@@ -121,8 +144,6 @@ struct RootView: View {
                 }
         }
         .ignoresSafeArea()
-        // Decorative loops stop when the window is in the background or fully covered by the cleaning scene.
-        .environment(\.animationsPaused, controlActiveState == .inactive || overlayIn || fullScreenFlow)
         // Reduce Transparency: a flat dim instead of the blur.
         .blur(radius: covered && !reduceTransparency ? 24 : 0)
         .overlay {
@@ -149,7 +170,7 @@ struct RootView: View {
             case .startup: StartupView(model: model.startup)
             }
         }
-        .id(model.selection)
+        .id(ContentKey(module: model.selection, epoch: contentEpoch))
         .transition(Theme.motion(.opacity.combined(with: .offset(y: 8))))
     }
 }

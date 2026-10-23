@@ -407,6 +407,12 @@ extension AppModel {
         if forever, probesSystem, !total.inTrash.isEmpty {
             let purge = await FileRemover.deletePermanentlyFromTrash(total.inTrash)
             total.deletedPermanently = purge.failed.isEmpty
+            // Part of it may still sit in the Trash (a refused root-owned item, a cancelled password prompt):
+            // the completion screen counts what is gone and what stayed, instead of calling all of it one or the other.
+            total.deletedForGood += purge.removed
+            total.freedForGood += purge.freedForGood
+            total.trashEmptiedBytes += purge.trashEmptiedBytes
+            total.failed += purge.failed
         }
         // Everything the engines reported must be counted before the scene closes the ring.
         relay.flush()

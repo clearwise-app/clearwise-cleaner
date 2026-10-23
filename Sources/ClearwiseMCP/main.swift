@@ -27,16 +27,17 @@ if arguments.contains("--tools") {
 // stdout carries the protocol only; anything else goes to stderr.
 setvbuf(stdout, nil, _IOLBF, 0)
 let out = FileHandle.standardOutput
-final class Reply: @unchecked Sendable { var text: String? }
+let writeLock = NSLock()
+let inFlight = DispatchGroup()
+// Requests run concurrently: `ping` and `tools/list` are answered while a long scan or an administrator
+// prompt is in progress. The shared state is an actor; replies go out one whole line at a time.
 while let line = readLine(strippingNewline: true) {
-    let reply = Reply()
-    let done = DispatchSemaphore(value: 0)
+    inFlight.enter()
     Task.detached {
-        reply.text = await server.handle(line)
-        done.signal()
-    }
-    done.wait()
-    if let text = reply.text {
-        out.write(Data((text + "\n").utf8))
+        defer { inFlight.leave() }
+        guard let text = await server.handle(line) else { return }
+        writeLock.withLock { out.write(Data((text + "\n").utf8)) }
     }
 }
+// stdin closed: let the requests already running answer before exiting.
+inFlight.wait()

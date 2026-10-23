@@ -31,6 +31,8 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                         Spacer()
                         Button("Перезапустить") { AppLanguage.relaunch() }
+                            // Never in the middle of a cleanup (the app refuses to quit then anyway).
+                            .disabled(model.cleaning != nil)
                     }
                 }
             }

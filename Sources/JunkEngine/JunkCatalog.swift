@@ -78,6 +78,7 @@ enum JunkCatalog {
                          symbol: "doc.text.magnifyingglass", risk: .review)
         r.collector = { SpecialCollectors.systemLogs($0) }
         r.mode = .enhanced   // the administrator password
+        r.skipsActiveItems = true   // a log written to this hour is in use, whatever folder it is in
         return r
     }
 

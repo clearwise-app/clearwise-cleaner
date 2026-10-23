@@ -8,6 +8,8 @@ struct CleaningOverlay: View {
     let session: CleaningSession
     @Environment(\.isSnapshot) private var isSnapshot
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// The window is in the background (RootView): the broom, orbit, spinners and mesh stop ticking.
+    @Environment(\.animationsPaused) private var inactive
 
     private var frozen: Bool { isSnapshot || session.frozenTime != nil }
 
@@ -100,7 +102,8 @@ struct CleaningOverlay: View {
                          fraction: fraction,
                          clock: BroomClock(startedAt: session.startedAt,
                                            frozenTime: session.frozenTime ?? (isSnapshot ? 1.0 : nil),
-                                           finishElapsed: session.finishElapsed),
+                                           finishElapsed: session.finishElapsed,
+                                           inactive: inactive),
                          diameter: diameter,
                          reduceMotion: reduceMotion)
             .accessibilityRepresentation {
@@ -345,9 +348,8 @@ private struct StageRow: View {
 
     @ViewBuilder private var icon: some View {
         if let url = stage.iconURL {
-            Image(nsImage: IconCache.icon(for: url))
-                .resizable()
-                .frame(width: 28, height: 28)
+            // Fetched in a task, never from `body`: the scene is fading in when these rows first render.
+            FileIcon(url: url, size: 28)
                 .opacity(stage.state == .waiting && !current ? 0.6 : 1)
         } else {
             IconTile(symbol: stage.symbol, tint: tint, size: 28, muted: stage.state == .waiting && !current)
@@ -391,6 +393,7 @@ private struct Spinner: View {
     let frozen: Bool
     @State private var turn = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.animationsPaused) private var paused
 
     var body: some View {
         ZStack {
@@ -400,11 +403,20 @@ private struct Spinner: View {
                 .stroke(tint.accent, style: StrokeStyle(lineWidth: 2.2, lineCap: .round))
                 .padding(1.1)
                 .rotationEffect(.degrees(turn ? 360 : 0) + .degrees(-60))
+                // A value-scoped loop (see HeroIllustration): it cannot attach to a transition of the row.
+                .animation(running ? .linear(duration: 0.9).repeatForever(autoreverses: false) : nil, value: turn)
         }
-        .onAppear {
-            // Reduce Motion: a still arc; the stage's progress bar still shows activity.
-            guard !frozen, !reduceMotion else { return }
-            withAnimation(.linear(duration: 0.9).repeatForever(autoreverses: false)) { turn = true }
+        // Background window: the loop stops (assigning without animation replaces it) and restarts on return.
+        .onChange(of: running, initial: true) { _, run in
+            if run {
+                turn = true
+            } else {
+                var t = Transaction(); t.disablesAnimations = true
+                withTransaction(t) { turn = false }
+            }
         }
     }
+
+    /// Reduce Motion: a still arc; the stage's progress bar still shows activity.
+    private var running: Bool { !frozen && !reduceMotion && !paused }
 }

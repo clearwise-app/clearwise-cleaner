@@ -43,6 +43,7 @@ public actor JunkScanner {
         if usesLiveClock {
             env.now = Date()
             env.readsAppContainers = Permissions.hasFullDiskAccess   // may have been granted since launch
+            env.docker = DockerTool.locate(home: FileManager.default.homeDirectoryForCurrentUser)   // or installed since
         }
         let rules = self.rules
         progress?(ScanProgress(phase: String(localized: "Поиск файлов", bundle: .module), fraction: 0))
@@ -73,6 +74,8 @@ public actor JunkScanner {
                 group.addTask { (i, c, JunkSizing.item(for: c, rule: rules[i], env: env)) }
             }
             for await (i, candidate, item) in group {
+                // «Остановить»: no new sizing jobs; the ones running finish and the result is discarded.
+                if Task.isCancelled { group.cancelAll(); break }
                 done += 1
                 if let item {
                     items[i].append(item)
@@ -88,6 +91,8 @@ public actor JunkScanner {
                 }
             }
         }
+
+        if Task.isCancelled { return [] }
 
         var categories: [JunkCategory] = []
         for (i, rule) in rules.enumerated() where !items[i].isEmpty {

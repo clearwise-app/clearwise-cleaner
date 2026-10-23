@@ -85,8 +85,12 @@ public enum SafetyGuard {
             if isAppleSystemConfig(c) { return String(localized: "Системная служба macOS", bundle: .module) }
             if isMediaLibrary(c) { return String(localized: "Медиатека (Фото, Музыка, TV)", bundle: .module) }
         }
-        // Very shallow paths (e.g. /Users/name) are never what a cleaner wants.
-        if candidates.contains(where: { URL(fileURLWithPath: $0).pathComponents.count < 3 }) {
+        // Very shallow paths are never what a cleaner wants: /Users, /Volumes/Backup, another user's home
+        // (`/Users/name` has three components: "/", "Users", "name").
+        if candidates.contains(where: {
+            let comps = URL(fileURLWithPath: $0).pathComponents
+            return comps.count < 3 || (comps.count == 3 && ["users", "volumes"].contains(comps[1].lowercased()))
+        }) {
             return String(localized: "Слишком общий путь", bundle: .module)
         }
         return nil
@@ -101,9 +105,9 @@ public enum SafetyGuard {
         let path = (parent.path as NSString).appendingPathComponent(url.lastPathComponent).lowercased()
         let trash = home.appendingPathComponent(".Trash").resolvingSymlinksInPath().path.lowercased()
         if path.hasPrefix(trash + "/") { return true }
-        // /Volumes/<name>/.Trashes/<uid>/...
+        // /Volumes/<name>/.Trashes/<this user's uid>/… — the uid folder itself and other users' are not inside.
         let comps = URL(fileURLWithPath: path).pathComponents
-        if comps.count > 4, comps[1] == "volumes", comps[3] == ".trashes" { return true }
+        if comps.count > 5, comps[1] == "volumes", comps[3] == ".trashes", comps[4] == String(getuid()) { return true }
         return false
     }
 

@@ -46,6 +46,8 @@ final class AppModel {
     var appsState: AppsState = .notLoaded
     var appsProgress = ScanProgress(phase: "", fraction: 0)
     @ObservationIgnored private var appsTask: Task<[InstalledApp], Never>?
+    /// The Trash listing in flight for «Очистить Корзину…»; one at a time.
+    @ObservationIgnored private var trashListing: Task<Void, Never>?
 
     let smartCare = SmartCareModel()
     let junk = JunkModel()
@@ -341,6 +343,20 @@ struct Toast: Identifiable {
 // MARK: - Menu commands
 
 extension AppModel {
+    /// Which screen the module shows; nil for Mac Health, which has its own states.
+    func phase(of module: AppModule) -> ModulePhase? {
+        switch module {
+        case .smartCare: smartCare.phase
+        case .junk: junk.phase
+        case .uninstaller: uninstaller.phase
+        case .oldFiles: oldFiles.phase
+        case .duplicates: duplicates.phase
+        case .diskMap: diskMap.phase
+        case .health: nil
+        case .startup: startup.phase
+        }
+    }
+
     /// «Сканировать заново» (⌘R) is possible: nothing modal and the module is not busy.
     var canRescan: Bool {
         guard !isModalActive else { return false }
@@ -349,7 +365,7 @@ extension AppModel {
         case .junk: junk.phase != .scanning && junk.phase != .cleaning
         case .uninstaller:
             uninstaller.tab == .leftovers ? uninstaller.orphanState != .scanning
-                                          : uninstaller.phase != .scanning && uninstaller.phase != .cleaning
+                                          : uninstaller.phase != .scanning && uninstaller.phase != .cleaning && appsState != .loading
         case .oldFiles: oldFiles.phase != .scanning && oldFiles.phase != .cleaning
         case .duplicates: duplicates.phase != .scanning && duplicates.phase != .cleaning
         case .diskMap: diskMap.phase != .scanning && diskMap.phase != .cleaning
@@ -508,12 +524,16 @@ extension AppModel {
     /// «Очистить Корзину…» from CompletionView: lists ~/.Trash, confirms (permanent), then empties it
     /// through the cleaning scene. Without Full Disk Access macOS hides the Trash: say so and offer access.
     func requestEmptyTrash() {
-        guard !isModalActive else { NSSound.beep(); return }
+        // One listing at a time: sizing a big Trash takes seconds, and a second click must not queue a second ask.
+        guard !isModalActive, trashListing == nil else { NSSound.beep(); return }
         // Snapshots and tests never read (let alone empty) the real Trash.
         guard probesSystem else { return }
-        Task { [weak self] in
+        trashListing = Task { [weak self] in
             let listing = await Self.listTrash(at: Self.trashURL)
             guard let self else { return }
+            self.trashListing = nil
+            // Something modal opened meanwhile (the access sheet, a cleanup): the ask would land on top of it.
+            guard !self.isModalActive else { return }
             switch listing {
             case .unreadable:
                 self.showToast(Toast(text: String(localized: "Нет доступа к Корзине — macOS показывает её только с полным доступом к диску"),
@@ -552,7 +572,8 @@ extension AppModel {
         // a single password prompt, like Finder's «Очистить Корзину».
         let urls = items.map(\.url)
         let adminOnly = urls.filter(FileRemover.needsAdminToDelete)
-        plan.addChunks(urls.filter { !adminOnly.contains($0) }) { chunk, progress in
+        let adminSet = Set(adminOnly)
+        plan.addChunks(urls.filter { !adminSet.contains($0) }) { chunk, progress in
             await FileRemover.deletePermanentlyFromTrash(chunk, knownSizes: sizes, progress: progress)
         }
         if !adminOnly.isEmpty {

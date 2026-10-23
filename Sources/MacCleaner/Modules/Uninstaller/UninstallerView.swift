@@ -320,10 +320,7 @@ private struct AppRow: View {
     var body: some View {
         HStack(spacing: 9) {
             CheckBox(state: checked ? .on : .off, tint: .uninstaller, disabled: app.isSystemApp, label: app.name, action: onCheck)
-            Image(nsImage: IconCache.icon(for: app.url))
-                .resizable()
-                .interpolation(.high)
-                .frame(width: 34, height: 34)
+            FileIcon(url: app.url, size: 34)
                 .shadow(color: .black.opacity(0.25), radius: 3, y: 2)
                 .overlay(alignment: .bottomTrailing) {
                     if running {
@@ -391,7 +388,7 @@ private struct BatchBar: View {
         HStack(spacing: 10) {
             HStack(spacing: -9) {
                 ForEach(apps.prefix(3)) { a in
-                    Image(nsImage: IconCache.icon(for: a.url)).resizable().frame(width: 24, height: 24)
+                    FileIcon(url: a.url, size: 24)
                 }
             }
             .accessibilityHidden(true)
@@ -439,10 +436,7 @@ private struct BatchSummaryView: View {
             HStack(alignment: .center, spacing: 18) {
                 ZStack {
                     ForEach(Array(apps.prefix(3).enumerated().reversed()), id: \.element.id) { i, a in
-                        Image(nsImage: IconCache.icon(for: a.url))
-                            .resizable()
-                            .interpolation(.high)
-                            .frame(width: 58, height: 58)
+                        FileIcon(url: a.url, size: 58)
                             .shadow(color: .black.opacity(0.35), radius: 8, y: 4)
                             .offset(x: CGFloat(i) * 14, y: CGFloat(i) * -4)
                     }
@@ -510,11 +504,7 @@ private struct BatchAppRow: View {
     var body: some View {
         let leftovers = remnants?.reduce(Int64(0)) { $0 + $1.item.size }
         HStack(spacing: 12) {
-            Image(nsImage: IconCache.icon(for: app.url))
-                .resizable()
-                .interpolation(.high)
-                .frame(width: 32, height: 32)
-                .accessibilityHidden(true)
+            FileIcon(url: app.url, size: 32)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(app.name)
@@ -659,12 +649,8 @@ private struct AppHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center, spacing: 18) {
-                Image(nsImage: IconCache.icon(for: app.url))
-                    .resizable()
-                    .interpolation(.high)
-                    .frame(width: 68, height: 68)
+                FileIcon(url: app.url, size: 68)
                     .shadow(color: .black.opacity(0.35), radius: 12, y: 6)
-                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 5) {
                     Text(app.name)
                         .font(.system(size: 26, weight: .bold))

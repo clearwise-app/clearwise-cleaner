@@ -86,7 +86,9 @@ final class SmartCareModel {
 
     private struct DigestKey: Equatable {
         var junkItems: Int
+        var junkBytes: Int64
         var orphans: Int
+        var orphansBytes: Int64
         var oldFiles: Int
         var months: Int
         var apps: Int
@@ -98,7 +100,9 @@ final class SmartCareModel {
     /// (a rescan, or something removed in another module).
     func digest() -> Digest {
         guard let app else { return Digest() }
-        let key = DigestKey(junkItems: app.junk.itemCount, orphans: app.uninstaller.orphans.count,
+        // Bytes too: removing part of a group or a category keeps its count and changes its size.
+        let key = DigestKey(junkItems: app.junk.itemCount, junkBytes: app.junk.categories.reduce(0) { $0 + $1.totalSize },
+                            orphans: app.uninstaller.orphans.count, orphansBytes: app.uninstaller.orphansSize,
                             oldFiles: app.oldFiles.files.count, months: app.oldFiles.months, apps: app.apps.count)
         if let cached, cached.key == key { return cached.digest }
         var d = Digest()
@@ -187,7 +191,8 @@ final class SmartCareModel {
             case .leftovers: app.uninstaller.selectDefaultOrphans()
             case .oldFiles: break
             }
-            if selectedCount(area) == 0 { toggleExpanded(area) }
+            // Opens the list — and leaves it open if it already is.
+            if selectedCount(area) == 0, expanded != area { toggleExpanded(area) }
         }
         withAnimation(Theme.quick) {
             if on { included.insert(area) } else { included.remove(area) }
@@ -211,6 +216,7 @@ final class SmartCareModel {
             || (included.contains(.leftovers) && app.uninstaller.selectedOrphanRemnants.contains(where: \.requiresAdmin))
         app.ask(JunkModel.cleanConfirmation(count: totalCount, bytes: totalBytes,
                                             trashBytes: included.contains(.junk) ? app.junk.selectedTrashBytes : 0,
+                                            trashCount: included.contains(.junk) ? app.junk.selectedTrashCount : 0,
                                             dockerBytes: included.contains(.junk) ? app.junk.selectedDockerBytes : 0,
                                             needsAdmin: needsAdmin, tint: .smartCare) { [weak self] in self?.startClean() })
     }
@@ -231,7 +237,10 @@ final class SmartCareModel {
         task = Task {
             guard let app else { return }
             let junk = included.contains(.junk) ? app.junk.selectedPairs : []
-            let leftovers = included.contains(.leftovers) ? app.uninstaller.selectedOrphanRemnants : []
+            // A deleted app's cache folder is both junk («Кэш приложений») and a leftover: cleaned once, as junk.
+            let junkURLs = Set(junk.flatMap { $0.1.map(\.url.standardizedFileURL) })
+            let leftovers = included.contains(.leftovers)
+                ? app.uninstaller.selectedOrphanRemnants.filter { !junkURLs.contains($0.item.url.standardizedFileURL) } : []
             let old = included.contains(.oldFiles) ? app.oldFiles.selectedFiles : []
             resultWasPermanent = leftovers.isEmpty && old.isEmpty && junk.count == 1 && junk[0].0.id == JunkCategoryID.trash
             withAnimation(Theme.spring) { phase = .cleaning }

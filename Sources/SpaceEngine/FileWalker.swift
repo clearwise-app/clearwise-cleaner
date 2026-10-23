@@ -128,6 +128,8 @@ enum FileWalker {
     private static let keys: [URLResourceKey] = [
         .isDirectoryKey, .isPackageKey, .isSymbolicLinkKey, .isRegularFileKey,
         .totalFileAllocatedSizeKey, .fileAllocatedSizeKey, .fileSizeKey, .contentModificationDateKey,
+        // Prefetched with the rest: the per-directory volume check below then costs no extra stat.
+        .volumeIdentifierKey,
     ]
     private static let keySet = Set(keys)
 

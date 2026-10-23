@@ -105,6 +105,8 @@ struct AccessSheet: View {
                         .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous)
                             .strokeBorder(LinearGradient(colors: [.white.opacity(0.22), .white.opacity(0.06)],
                                                          startPoint: .top, endPoint: .bottom), lineWidth: 1))
+                        // One flattened layer casts the shadow while the card scales in, not three.
+                        .compositingGroup()
                         .shadow(color: .black.opacity(0.55), radius: 40, y: 20)
                 )
                 .environment(\.moduleTint, .smartCare)

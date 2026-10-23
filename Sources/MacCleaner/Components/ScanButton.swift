@@ -26,6 +26,7 @@ struct ScanButton: View {
     @State private var pressed = false
     @Environment(\.isSnapshot) private var isSnapshot
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.animationsPaused) private var animationsPaused
 
     private var isAction: Bool { if case .action = mode { true } else { false } }
     private var canStop: Bool { !isAction && onStop != nil }
@@ -76,7 +77,7 @@ struct ScanButton: View {
                 .shadow(color: tint.accent.opacity(0.8), radius: 8)
                 .animation(.easeOut(duration: 0.35), value: value)
         case .busy:
-            BusyArc(tint: tint, still: isSnapshot || reduceMotion)
+            BusyArc(tint: tint, still: isSnapshot || reduceMotion || animationsPaused)
         case .action:
             EmptyView()
         }
@@ -209,10 +210,16 @@ private struct BusyArc: View {
                                     startAngle: .degrees(0), endAngle: .degrees(100)),
                     style: StrokeStyle(lineWidth: 6, lineCap: .round))
             .rotationEffect(.degrees(turn ? 270 : -90))
+            // A value-scoped loop (see HeroIllustration): it cannot attach to a transition of the button.
+            .animation(still ? nil : .linear(duration: 1.1).repeatForever(autoreverses: false), value: turn)
             .shadow(color: tint.accent.opacity(0.7), radius: 8)
-            .onAppear {
-                guard !still else { return }
-                withAnimation(.linear(duration: 1.1).repeatForever(autoreverses: false)) { turn = true }
+            .onChange(of: still, initial: true) { _, still in
+                if still {
+                    var t = Transaction(); t.disablesAnimations = true
+                    withTransaction(t) { turn = false }
+                } else {
+                    turn = true
+                }
             }
     }
 }

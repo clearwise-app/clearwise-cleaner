@@ -5,7 +5,8 @@ import SpaceEngine
 struct CollectedItem: Identifiable, Hashable {
     var id: URL { url }
     let url: URL
-    let size: Int64
+    /// 0 until measured for an item dropped from outside the map.
+    var size: Int64
     let isDirectory: Bool
     var name: String { url.lastPathComponent }
 }
@@ -118,6 +119,8 @@ final class DiskMapModel {
         stack = [node]
         removedBytes = [:]
         zoomOrigin = nil
+        // The map's own root can never be in the tray (it may have been collected under the previous root).
+        collector.removeAll { $0.url.standardizedFileURL == node.url.standardizedFileURL }
         withAnimation(Theme.spring) { phase = .results }
     }
 
@@ -245,8 +248,19 @@ final class DiskMapModel {
     func collect(urls: [URL]) {
         for url in urls {
             let isDir = (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
-            let known = findNode(url)
-            collect(CollectedItem(url: url, size: known.map(size(of:)) ?? FileSizer.allocatedSize(of: url), isDirectory: isDir))
+            if let known = findNode(url) {
+                collect(CollectedItem(url: url, size: size(of: known), isDirectory: isDir))
+                continue
+            }
+            // Outside the map (or deeper than it): the chip appears at once and gets its size when the walk —
+            // off the main actor, it can take seconds for a big folder — is done.
+            collect(CollectedItem(url: url, size: 0, isDirectory: isDir))
+            guard collector.contains(where: { $0.url == url }) else { continue }
+            Task { [weak self] in
+                let measured = await Task.detached(priority: .userInitiated) { FileSizer.allocatedSize(of: url) }.value
+                guard let self, let i = collector.firstIndex(where: { $0.url == url }) else { return }
+                collector[i].size = measured
+            }
         }
     }
 
@@ -284,10 +298,12 @@ final class DiskMapModel {
     private func startTrash(_ picked: [CollectedItem]) {
         task?.cancel()
         task = Task {
-            let sizes = Dictionary(picked.map { ($0.url, $0.size) }, uniquingKeysWith: { a, _ in a })
+            // Both spellings of every URL: the remover reports standardized ones (`/private` stripped).
+            let sizes = CleaningPrep.sizes(picked.map { ($0.url, $0.size) })
             let r = await app?.runCleaning(Self.plan(picked)) ?? RemovalResult()
-            for url in r.removed { removedBytes[url.standardizedFileURL] = sizes[url] ?? 0 }
-            collector.removeAll { r.removed.contains($0.url) }
+            let gone = Set(r.removed.map(\.standardizedFileURL))
+            for url in gone { removedBytes[url] = sizes[url] ?? 0 }
+            collector.removeAll { gone.contains($0.url.standardizedFileURL) }
             result = r
             // `.done` first: `didRemove` updates other models, and a phase set after it can be lost.
             withAnimation(Theme.spring) { phase = .done }

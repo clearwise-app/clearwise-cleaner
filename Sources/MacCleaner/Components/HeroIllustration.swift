@@ -31,6 +31,8 @@ struct HeroIllustration: View {
 
     /// Off in snapshots, under Reduce Motion, and while `animationsPaused` (inactive window,
     /// cleaning overlay): the repeatForever loops below are stopped, not just hidden.
+    /// Every loop is an `.animation(_, value:)` on its own modifier, never `withAnimation` from a handler:
+    /// an animation started from a handler can attach to a transition in flight and keep the view half-removed.
     private var animated: Bool { !isSnapshot && !reduceMotion && !animationsPaused }
 
     var body: some View {
@@ -51,6 +53,7 @@ struct HeroIllustration: View {
                 .strokeBorder(.white.opacity(0.045), style: StrokeStyle(lineWidth: 1, dash: [2, 6]))
                 .frame(width: size * 1.5, height: size * 1.5)
                 .rotationEffect(.degrees(spin ? 360 : 0))
+                .animation(animated ? .linear(duration: 90).repeatForever(autoreverses: false) : nil, value: spin)
 
             if active {
                 Comet(tint: tint, animated: animated)
@@ -79,7 +82,7 @@ struct HeroIllustration: View {
         .onChange(of: animated, initial: true) { _, run in
             if run {
                 floating = true
-                withAnimation(.linear(duration: 90).repeatForever(autoreverses: false)) { spin = true }
+                spin = true
             } else {
                 // Assigning without animation replaces the running repeatForever loops: back to rest.
                 stillTransaction { floating = false; spin = false }
@@ -170,12 +173,9 @@ private struct Comet: View {
             }
         }
         .rotationEffect(.degrees(turn ? 360 : 0) + .degrees(-60))
+        .animation(animated ? .linear(duration: 2.4).repeatForever(autoreverses: false) : nil, value: turn)
         .onChange(of: animated, initial: true) { _, run in
-            if run {
-                withAnimation(.linear(duration: 2.4).repeatForever(autoreverses: false)) { turn = true }
-            } else {
-                stillTransaction { turn = false }
-            }
+            if run { turn = true } else { stillTransaction { turn = false } }
         }
     }
 }

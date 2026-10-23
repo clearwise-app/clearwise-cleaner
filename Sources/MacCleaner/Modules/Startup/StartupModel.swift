@@ -57,7 +57,10 @@ final class StartupModel {
 
     func startScan() {
         scanTask?.cancel()
-        phase = .scanning
+        // «Обновить» over results keeps the list on screen (the footer is disabled meanwhile); the first scan
+        // shows the stage.
+        if phase != .results { withAnimation(Theme.spring) { phase = .scanning } }
+        isBusy = true
         scanTask = Task { await scan() }
     }
 
@@ -69,7 +72,7 @@ final class StartupModel {
             let items = scanner.launchdItems()
             return snapshot.map { scanner.merging(items, with: $0) } ?? items
         }.value
-        guard !Task.isCancelled else { return }
+        guard !Task.isCancelled else { isBusy = false; return }
         apply(found)
     }
 
@@ -77,7 +80,8 @@ final class StartupModel {
         items = found
         let ids = Set(found.map(\.id))
         selection = selection.filter { ids.contains($0) }
-        phase = .results
+        isBusy = false
+        withAnimation(Theme.spring) { phase = .results }
     }
 
     /// Reads System Settings → Login Items through `sfltool dumpbtm`; macOS asks for the administrator password.
@@ -164,10 +168,11 @@ final class StartupModel {
         let env = environment
         Task {
             let report = await StartupActions.perform(action, on: targets, environment: env)
-            isBusy = false
             selection.subtract(report.succeeded)
             if !report.removal.removed.isEmpty { app?.didRemove(report.removal) }
+            // Busy until the list is re-read: a second click meanwhile would act on stale items.
             await scan()
+            isBusy = false
             announce(action, report: report, targets: targets)
         }
     }

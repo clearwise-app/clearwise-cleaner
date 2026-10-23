@@ -121,7 +121,9 @@ struct ModuleStage<Accessory: View, Options: View>: View {
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Theme.text)
                     .contentTransition(.opacity)
-                Text(p.currentPath.map { Fmt.path(URL(fileURLWithPath: $0)) } ?? " ")
+                // `isDirectory:` given: otherwise Foundation stats the path to decide on a trailing slash,
+                // ten times a second from `body`, on whatever disk is being scanned.
+                Text(p.currentPath.map { Fmt.path(URL(fileURLWithPath: $0, isDirectory: false)) } ?? " ")
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(Theme.textTertiary)
                     .lineLimit(1)
@@ -253,14 +255,19 @@ struct LastCleanupChip: View {
         }
     }
 
-    /// «только что», «5 минут назад», «вчера», «3 дня назад».
-    static func ago(_ date: Date, now: Date) -> String {
-        if now.timeIntervalSince(date) < 60 { return String(localized: "только что") }
+    /// One formatter for the app's lifetime: the language is fixed at launch, and `ago` runs on every render.
+    @MainActor private static let relative: RelativeDateTimeFormatter = {
         let f = RelativeDateTimeFormatter()
         f.locale = AppLanguage.locale
         f.dateTimeStyle = .named
         f.unitsStyle = .full
-        return f.localizedString(for: date, relativeTo: now)
+        return f
+    }()
+
+    /// «только что», «5 минут назад», «вчера», «3 дня назад».
+    @MainActor static func ago(_ date: Date, now: Date) -> String {
+        if now.timeIntervalSince(date) < 60 { return String(localized: "только что") }
+        return relative.localizedString(for: date, relativeTo: now)
     }
 }
 

@@ -67,11 +67,13 @@ final class LocationIndex: @unchecked Sendable {
 
     static func list(_ location: Location, at dir: URL, roots: SearchRoots, insideVendor: Bool) -> [IndexEntry] {
         let fm = FileManager.default
-        guard let names = try? fm.contentsOfDirectory(atPath: dir.path) else { return [] }
+        // The keys ride along with the listing: one directory read instead of a stat per entry.
+        guard let urls = try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: keys, options: []) else { return [] }
         let isHome = location.style == .dotFolders && dir.standardizedFileURL == roots.home.standardizedFileURL
         var out: [IndexEntry] = []
-        out.reserveCapacity(names.count)
-        for name in names {
+        out.reserveCapacity(urls.count)
+        for url in urls {
+            let name = url.lastPathComponent
             if location.style == .dotFolders {
                 if isHome {
                     guard name.hasPrefix("."), name.count > 1, name != ".Trash", name != ".config" else { continue }
@@ -79,7 +81,6 @@ final class LocationIndex: @unchecked Sendable {
             } else if name.hasPrefix(".") || name == "Icon\r" {
                 continue
             }
-            let url = dir.appendingPathComponent(name)
             let v = try? url.resourceValues(forKeys: Set(keys))
             let isDir = (v?.isDirectory ?? false) && v?.isSymbolicLink != true
             if let entry = makeEntry(url: url, name: name, isDir: isDir, modified: v?.contentModificationDate,

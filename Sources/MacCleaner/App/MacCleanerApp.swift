@@ -101,6 +101,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 
+    /// A cleanup in progress is not cut short: half of it would sit in the Trash with no screen saying so.
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        MainActor.assumeIsolated {
+            guard AppModel.shared.cleaning != nil else { return .terminateNow }
+            NSSound.beep()
+            return .terminateCancel
+        }
+    }
+
     /// .app dropped on the Dock icon or opened with MacCleaner.
     func application(_ application: NSApplication, open urls: [URL]) {
         MainActor.assumeIsolated {
