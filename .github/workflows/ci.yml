@@ -14,8 +14,10 @@ permissions:
 
 jobs:
   build-and-test:
-    name: Build and test (macOS 15)
-    runs-on: macos-15
+    name: Build and test (macOS 26)
+    # Xcode 26 / Swift 6.2. build_app.sh relies on its SwiftPM resource
+    # bundle layout (Contents/Info.plist); Xcode 16's SwiftPM writes flat bundles and the script stops there.
+    runs-on: macos-26
     timeout-minutes: 30
     env:
       # The opt-in smoke tests read (and one of them changes) the real Mac. They skip themselves unless one of these
