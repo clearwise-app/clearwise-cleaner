@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Clearwise Cleaner — аккуратная очистка Mac</title>
+<meta name="description" content="Бесплатный чистильщик для macOS с открытым кодом: системный мусор, остатки удалённых приложений, старые файлы, дубликаты и карта диска. Всё уходит в Корзину, без интернета и телеметрии.">
+<meta name="theme-color" content="#120a22">
+<link rel="icon" type="image/png" href="assets/img/icon-64.png">
+<link rel="apple-touch-icon" href="assets/img/icon-180.png">
+<link rel="alternate" hreflang="ru" href="./">
+<link rel="alternate" hreflang="en" href="en/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Clearwise Cleaner — аккуратная очистка Mac">
+<meta property="og:description" content="Мусор, старые файлы и приложения со всеми следами. Бесплатно, открытый код, всё — в Корзину.">
+<meta property="og:image" content="assets/img/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="assets/img/icon-64.png" alt="" width="30" height="30">Clearwise Cleaner</a>
+    <nav class="nav" aria-label="Разделы">
+      <a href="#features">Возможности</a>
+      <a href="#safety">Безопасность</a>
+      <a href="#editions">Версии</a>
+      <a href="#install">Установка</a>
+      <a href="#faq">Вопросы</a>
+    </nav>
+    <a class="lang" href="en/" hreflang="en" lang="en">EN</a>
+    <!-- DOWNLOAD_URL: обновлять при каждом релизе -->
+    <a class="btn btn-main btn-sm" href="https://github.com/clearwise-app/clearwise-cleaner/releases/download/v1.2.1/Clearwise-Cleaner-1.2.1.dmg">Скачать</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-grid">
+        <span class="eyebrow">Для macOS 15 и новее</span>
+        <h1><span class="grad">Больше места на Mac</span><br>без лишнего риска</h1>
+        <p class="lead">Clearwise Cleaner находит системный мусор, остатки удалённых приложений, старые и повторяющиеся файлы. Перед удалением видно каждый путь, а всё убранное сначала попадает в Корзину.</p>
+        <div class="cta-row">
+          <a class="btn btn-main" href="https://github.com/clearwise-app/clearwise-cleaner/releases/download/v1.2.1/Clearwise-Cleaner-1.2.1.dmg">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+            Скачать бесплатно
+          </a>
+          <a class="btn btn-ghost" href="https://github.com/clearwise-app/clearwise-cleaner">Исходный код на GitHub</a>
+        </div>
+        <p class="meta">Версия <b>1.2.1</b> · DMG 9,1 МБ · Apple silicon и Intel · <a href="https://github.com/clearwise-app/clearwise-cleaner/blob/main/CHANGELOG.md">Что нового</a></p>
+      </div>
+
+      <div class="window">
+        <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+        <img src="assets/img/1-smart-care.webp" width="1600" height="1000" alt="Окно «Умная очистка»: 12,7 ГБ безопасного мусора выбрано, рядом старые файлы и неиспользуемые приложения на выбор">
+      </div>
+
+      <div class="facts">
+        <div class="fact"><b>Бесплатно</b><span>Без подписки и пробного периода</span></div>
+        <div class="fact"><b>Всё в Корзину</b><span>Ошиблись — вернули из Корзины</span></div>
+        <div class="fact"><b>Без интернета</b><span>Ни аналитики, ни телеметрии</span></div>
+        <div class="fact"><b>Открытый код</b><span>Лицензия MIT, Swift 6</span></div>
+        <div class="fact"><b>Русский и English</b><span>Как в системе или на выбор</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Возможности</span>
+        <h2>Девять инструментов в одном окне</h2>
+        <p class="lead">Выберите раздел слева, как в самом приложении. Скриншоты сделаны в Clearwise Cleaner на демо-данных.</p>
+      </div>
+
+      <div class="app" data-tabs>
+        <div class="side" role="tablist" aria-label="Разделы приложения" aria-orientation="vertical">
+          <button role="tab" id="t-smart" aria-controls="p-smart" aria-selected="true"><span class="dot d-smart">✦</span>Умная очистка</button>
+          <span class="grp">Очистка</span>
+          <button role="tab" id="t-junk" aria-controls="p-junk" aria-selected="false" tabindex="-1"><span class="dot d-junk">✱</span>Системный мусор</button>
+          <button role="tab" id="t-unin" aria-controls="p-unin" aria-selected="false" tabindex="-1"><span class="dot d-unin">✕</span>Деинсталлятор</button>
+          <button role="tab" id="t-start" aria-controls="p-start" aria-selected="false" tabindex="-1"><span class="dot d-start">⏻</span>Автозапуск</button>
+          <span class="grp">Файлы</span>
+          <button role="tab" id="t-old" aria-controls="p-old" aria-selected="false" tabindex="-1"><span class="dot d-old">▤</span>Старые и большие</button>
+          <button role="tab" id="t-dup" aria-controls="p-dup" aria-selected="false" tabindex="-1"><span class="dot d-dup">❐</span>Дубликаты</button>
+          <button role="tab" id="t-map" aria-controls="p-map" aria-selected="false" tabindex="-1"><span class="dot d-map">◔</span>Карта диска</button>
+          <button role="tab" id="t-store" aria-controls="p-store" aria-selected="false" tabindex="-1"><span class="dot d-store">▥</span>Хранилище</button>
+          <span class="grp">Проверка</span>
+          <button role="tab" id="t-health" aria-controls="p-health" aria-selected="false" tabindex="-1"><span class="dot d-health">♥</span>Здоровье Mac</button>
+        </div>
+
+        <div class="pane" id="p-smart" role="tabpanel" aria-labelledby="t-smart">
+          <h3>Умная очистка</h3>
+          <p>Одно сканирование: мусор, остатки удалённых приложений, старые файлы и неиспользуемые программы. Безопасное выбрано сразу, остальное остаётся на ваш выбор.</p>
+          <img src="assets/img/1b-smart-care-review.webp" width="1600" height="1000" loading="lazy" alt="Умная очистка: разделы раскрываются до отдельных файлов">
+        </div>
+        <div class="pane" id="p-junk" role="tabpanel" aria-labelledby="t-junk" hidden>
+          <h3>Системный мусор</h3>
+          <p>Кэши приложений и браузеров (без истории, паролей и cookies), кэши Slack, Discord, VS Code и других программ на Electron, журналы, отчёты о сбоях, Xcode DerivedData, кэши npm, pip и Homebrew, старые установщики, прошивки iPhone и Docker. Три режима: Бережная, Усиленная, Максимальная.</p>
+          <img src="assets/img/2-junk.webp" width="1600" height="1000" loading="lazy" alt="Системный мусор по категориям с размерами">
+        </div>
+        <div class="pane" id="p-unin" role="tabpanel" aria-labelledby="t-unin" hidden>
+          <h3>Деинсталлятор</h3>
+          <p>Удаляет приложение вместе с настройками, кэшами, контейнерами, агентами запуска и помощниками. Отдельная вкладка находит следы программ, которые уже удалили перетаскиванием в Корзину.</p>
+          <img src="assets/img/3-uninstaller.webp" width="1600" height="1000" loading="lazy" alt="Деинсталлятор: приложение и все его файлы">
+        </div>
+        <div class="pane" id="p-start" role="tabpanel" aria-labelledby="t-start" hidden>
+          <h3>Автозапуск</h3>
+          <p>Что стартует вместе с Mac: агенты, системные службы и объекты входа, с владельцем, подписью и состоянием. Выключить можно обратимо, удалить — в Корзину. Службы macOS не трогаются.</p>
+          <img src="assets/img/9-startup.webp" width="1600" height="1000" loading="lazy" alt="Список объектов автозапуска с подписью и состоянием">
+        </div>
+        <div class="pane" id="p-old" role="tabpanel" aria-labelledby="t-old" hidden>
+          <h3>Старые и большие файлы</h3>
+          <p>То, что вы не открывали месяцами, и самые крупные файлы. Ничего не выбирается само.</p>
+          <img src="assets/img/4-old-files.webp" width="1600" height="1000" loading="lazy" alt="Старые и большие файлы с датой последнего открытия">
+        </div>
+        <div class="pane" id="p-dup" role="tabpanel" aria-labelledby="t-dup" hidden>
+          <h3>Дубликаты</h3>
+          <p>Одинаковые файлы по содержимому, а не по имени. Одна копия всегда остаётся.</p>
+          <img src="assets/img/6-duplicates.webp" width="1600" height="1000" loading="lazy" alt="Группы одинаковых файлов">
+        </div>
+        <div class="pane" id="p-map" role="tabpanel" aria-labelledby="t-map" hidden>
+          <h3>Карта диска</h3>
+          <p>Диаграмма-«солнце»: щелчок открывает папку, лишнее собирается в «Сборщик».</p>
+          <img src="assets/img/5-disk-map.webp" width="1600" height="1000" loading="lazy" alt="Карта диска в виде кольцевой диаграммы">
+        </div>
+        <div class="pane" id="p-store" role="tabpanel" aria-labelledby="t-store" hidden>
+          <h3>Хранилище</h3>
+          <p>Чем занят диск по категориям, в процентах и гигабайтах. Любую категорию можно раскрыть до файлов, даже «Система и прочее».</p>
+          <img src="assets/img/8-storage.webp" width="1600" height="1000" loading="lazy" alt="Разбивка диска по категориям">
+        </div>
+        <div class="pane" id="p-health" role="tabpanel" aria-labelledby="t-health" hidden>
+          <h3>Здоровье Mac</h3>
+          <p>Износ аккумулятора и SSD, свободное место и программы только для Intel, которым скоро не хватит Rosetta. Только проверка: ничего не меняет и не удаляет.</p>
+          <img src="assets/img/10-health.webp" width="1600" height="1000" loading="lazy" alt="Карточки здоровья: аккумулятор, SSD, память, программы для Intel">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="result">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Честный итог</span>
+        <h2>«В Корзине 2,1 ГБ», а не «освобождено»</h2>
+        <p class="lead">Пока Корзина не очищена, место всё ещё занято, и приложение так и пишет. Что удалено навсегда и что освободил Docker, показано отдельными строками.</p>
+      </div>
+      <div class="pair">
+        <figure>
+          <img src="assets/img/7-cleaning.webp" width="1600" height="1000" loading="lazy" alt="Очистка идёт: понятный прогресс по категориям">
+          <figcaption>Очистка с понятным прогрессом.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/img/7b-cleaning-done.webp" width="1600" height="1000" loading="lazy" alt="Итог очистки: сколько лежит в Корзине и сколько можно вернуть">
+          <figcaption>Итог: что в Корзине и что можно вернуть.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section id="safety">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Безопасность</span>
+        <h2>Осторожный по умолчанию</h2>
+      </div>
+      <div class="rules">
+        <div class="rule">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></span>
+          <h3>Всё уходит в Корзину</h3>
+          <p>Безвозвратно удаляется только содержимое самой Корзины и только после отдельного подтверждения. Удалить сразу навсегда можно лишь по явной галочке.</p>
+        </div>
+        <div class="rule">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+          <h3>Защищённые места</h3>
+          <p>Системные папки, Связка ключей, Почта, Сообщения, iCloud Drive, медиатеки «Фото» и «Музыка» и встроенные приложения macOS не трогаются никогда.</p>
+        </div>
+        <div class="rule">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span>
+          <h3>Видно каждый путь</h3>
+          <p>Личные файлы не выбираются автоматически, только безопасный мусор. Перед удалением виден полный путь каждого файла.</p>
+        </div>
+        <div class="rule">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8.5a15 15 0 0 1 20 0M5 12a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0M3 3l18 18"/></svg></span>
+          <h3>Без интернета</h3>
+          <p>Приложение ничего не отправляет и не собирает: ни аналитики, ни телеметрии. На этом сайте тоже нет счётчиков и cookies.</p>
+        </div>
+        <div class="rule">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h6"/><path d="m15 17 2 2 4-4"/></svg></span>
+          <h3>Режимы — это галочки</h3>
+          <p>Бережная, Усиленная и Максимальная только отмечают разное после сканирования. Корзина, последняя копия каждого iPhone и тома Docker не отмечаются никогда.</p>
+        </div>
+        <div class="rule">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 8-5 4 5 4M16 8l5 4-5 4M14 4l-4 16"/></svg></span>
+          <h3>Открытый код</h3>
+          <p>Весь код на GitHub под лицензией MIT. Можно проверить, что именно удаляется, и собрать приложение самому.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="editions">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Версии</span>
+        <h2>Полная версия и Lite</h2>
+        <p class="lead">Правила App Store не дают приложению прав администратора и доступа ко всему диску. Поэтому весь функционал есть только в полной версии с этого сайта. Lite из App Store проверяет папки, которые вы выбрали сами.</p>
+      </div>
+
+      <div class="editions">
+        <div class="edition main">
+          <h3>Clearwise Cleaner</h3>
+          <p>Полная версия. Все модули, системный мусор с правами администратора, Docker, деинсталлятор, автозапуск и MCP-сервер для ИИ-ассистентов. Бесплатно.</p>
+          <div class="cta-row">
+            <a class="btn btn-main btn-sm" href="https://github.com/clearwise-app/clearwise-cleaner/releases/download/v1.2.1/Clearwise-Cleaner-1.2.1.dmg">Скачать DMG</a>
+          </div>
+        </div>
+        <div class="edition">
+          <h3>Clearwise Lite <span class="soon">Скоро в App Store</span></h3>
+          <p>Безопасная часть внутри песочницы App Store: кэши в выбранных папках, старые файлы, дубликаты, карта диска. Обновляется через App Store. Бесплатно.</p>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Модуль</th><th class="col-full">Полная</th><th>Lite</th></tr></thead>
+          <tbody>
+            <tr><td>Умная очистка</td><td class="col-full yes">Да</td><td class="part">В выбранных папках</td></tr>
+            <tr><td>Системный мусор</td><td class="col-full yes">Всё, включая системные журналы и Docker</td><td class="part">Кэши и журналы пользователя, кэши разработчика</td></tr>
+            <tr><td>Деинсталлятор и остатки</td><td class="col-full yes">Да</td><td class="no">Нет</td></tr>
+            <tr><td>Автозапуск</td><td class="col-full yes">Да</td><td class="no">Нет</td></tr>
+            <tr><td>Старые и большие файлы, дубликаты</td><td class="col-full yes">Да</td><td class="part">В выбранных папках</td></tr>
+            <tr><td>Карта диска</td><td class="col-full yes">Да</td><td class="yes">Да</td></tr>
+            <tr><td>Хранилище по категориям</td><td class="col-full yes">Да</td><td class="part">Без раскрытия «Система и прочее»</td></tr>
+            <tr><td>Здоровье Mac</td><td class="col-full yes">Да</td><td class="part">Уточняется</td></tr>
+            <tr><td>MCP-сервер для ИИ-ассистентов</td><td class="col-full yes">Да</td><td class="no">Нет</td></tr>
+            <tr><td>Корзина, режимы, RU/EN, без телеметрии</td><td class="col-full yes">Да</td><td class="yes">Да</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="dev">
+    <div class="wrap dev">
+      <div class="stack">
+        <span class="eyebrow">Для разработчиков</span>
+        <h2>Знает, где копятся гигабайты у разработчика</h2>
+        <ul>
+          <li>Xcode: DerivedData, старые архивы, Device Support и кэш симуляторов</li>
+          <li>кэши npm, Yarn, pnpm, Bun, pip, uv, Homebrew, Gradle, CocoaPods, SwiftPM, Cargo и браузеры Playwright</li>
+          <li>Docker: кэш сборки, образы без имени, остановленные контейнеры. Тома с данными не трогаются</li>
+          <li>прошивки iPhone и iPad (.ipsw)</li>
+        </ul>
+      </div>
+      <div class="stack">
+        <h3>MCP-сервер для Claude, Cursor и других ассистентов</h3>
+        <p class="lead" style="font-size:16px">Внутри приложения лежит <code>clearwise-mcp</code>. Ассистент ищет мусор и убирает только то, что вы одобрили. Всё удаляющее сначала выполняется «на сухую».</p>
+        <div class="code"><button class="copy" type="button" data-done="Скопировано" data-copy='claude mcp add clearwise -- "/Applications/Clearwise Cleaner.app/Contents/MacOS/clearwise-mcp"'>Копировать</button><code><span class="c"># Claude Code</span>
+claude mcp add clearwise -- \
+  "/Applications/Clearwise Cleaner.app/Contents/MacOS/clearwise-mcp"</code></div>
+        <p class="meta">Другие клиенты и список инструментов — в <a href="https://github.com/clearwise-app/clearwise-cleaner/blob/main/skills/clearwise-cleaner/SKILL.md">SKILL.md</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Установка</span>
+        <h2>Установка за минуту</h2>
+      </div>
+      <ol class="steps">
+        <li><h3>Скачайте DMG</h3><p>Файл <code>Clearwise-Cleaner-1.2.1.dmg</code>, 9,1 МБ. Подходит для Apple silicon и Intel.</p></li>
+        <li><h3>Перетащите в «Программы»</h3><p>Откройте образ и перенесите Clearwise Cleaner в папку «Программы».</p></li>
+        <li><h3>Подтвердите первый запуск</h3><p>Системные настройки → Конфиденциальность и безопасность → «Всё равно открыть». Это нужно один раз.</p></li>
+        <li><h3>Дайте полный доступ к диску</h3><p>По желанию, но без него часть мусора не видна. Приложение само покажет, где его включить.</p></li>
+      </ol>
+      <!-- NOTARIZATION: убрать шаг 3 и этот блок, когда DMG будет подписан Developer ID и нотаризован -->
+      <div class="note">
+        <b>Почему macOS спрашивает подтверждение</b>
+        <p>Приложение пока не заверено Apple: для этого нужен платный аккаунт разработчика Apple. Проверить, что файл не изменён по дороге: <code>shasum -a 256 Clearwise-Cleaner-1.2.1.dmg</code> и сравнить с <a href="https://github.com/clearwise-app/clearwise-cleaner/releases/download/v1.2.1/Clearwise-Cleaner-1.2.1.dmg.sha256">файлом .sha256</a> из релиза.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Вопросы</span>
+        <h2>Частые вопросы</h2>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>Это правда бесплатно?</summary>
+          <div class="a"><p>Да. Без подписки, пробного периода и ограничений по объёму. Код открыт под лицензией MIT.</p></div>
+        </details>
+        <details>
+          <summary>Clearwise ускорит мой Mac?</summary>
+          <div class="a"><p>Мы не обещаем ускорения. Приложение освобождает место на диске и показывает, что его занимает. Если на диске почти не осталось места, macOS действительно работает медленнее, и очистка помогает. В остальных случаях скорость не изменится.</p></div>
+        </details>
+        <details>
+          <summary>Можно ли случайно удалить что-то важное?</summary>
+          <div class="a"><p>Сам выбирается только мусор, который программы создают заново. Личные файлы, старые документы и дубликаты вы отмечаете сами. Всё уходит в Корзину, откуда файл можно вернуть. Системные папки, Связка ключей, Почта, Фото и iCloud Drive защищены.</p></div>
+        </details>
+        <details>
+          <summary>Зачем полный доступ к диску?</summary>
+          <div class="a"><p>macOS закрывает часть папок с кэшами и журналами даже от программ пользователя. Без доступа Clearwise работает, но находит меньше. Доступ включается в Системных настройках, приложение покажет где. Данные никуда не отправляются: у приложения нет доступа в интернет.</p></div>
+        </details>
+        <details>
+          <summary>Чем это отличается от CleanMyMac?</summary>
+          <div class="a">
+            <p>Clearwise бесплатный, с открытым кодом и без телеметрии, а всё удалённое сначала лежит в Корзине. В нём нет антивируса, обновления приложений и «ускорения» — только место на диске, автозапуск и проверка состояния Mac.</p>
+          </div>
+        </details>
+        <details>
+          <summary>Какие нужны macOS и Mac?</summary>
+          <div class="a"><p>macOS 15 Sequoia или новее. Один DMG работает и на Apple silicon, и на Intel.</p></div>
+        </details>
+        <details>
+          <summary>Как обновить или удалить Clearwise?</summary>
+          <div class="a"><p>Чтобы обновить, скачайте новый DMG и перетащите приложение в «Программы» поверх старого. Чтобы удалить, перенесите его в Корзину.</p></div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="final">
+        <img src="assets/img/icon-180.png" width="72" height="72" alt="">
+        <h2>Посмотрите, что занимает ваш диск</h2>
+        <div class="cta-row">
+          <a class="btn btn-main" href="https://github.com/clearwise-app/clearwise-cleaner/releases/download/v1.2.1/Clearwise-Cleaner-1.2.1.dmg">Скачать Clearwise Cleaner</a>
+          <a class="btn btn-ghost" href="https://github.com/clearwise-app/clearwise-cleaner/releases">Все версии</a>
+        </div>
+        <p class="meta">Бесплатно · macOS 15+ · Apple silicon и Intel · 9,1 МБ</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Clearwise · Код под лицензией MIT</span>
+    <nav aria-label="Ссылки">
+      <a href="https://github.com/clearwise-app/clearwise-cleaner/blob/main/CHANGELOG.md">Что нового</a>
+      <a href="support.html">Поддержка</a>
+      <a href="privacy.html">Конфиденциальность</a>
+      <a href="https://github.com/clearwise-app/clearwise-cleaner">GitHub</a>
+      <a href="en/" hreflang="en" lang="en">English</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="assets/site.js" defer></script>
+</body>
+</html>

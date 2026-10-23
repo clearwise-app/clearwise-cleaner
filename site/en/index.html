@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Clearwise Cleaner — careful cleanup for your Mac</title>
+<meta name="description" content="A free, open-source cleaner for macOS: system junk, leftovers of deleted apps, old files, duplicates and a disk map. Everything goes to the Trash first, no internet, no telemetry.">
+<meta name="theme-color" content="#120a22">
+<link rel="icon" type="image/png" href="../assets/img/icon-64.png">
+<link rel="apple-touch-icon" href="../assets/img/icon-180.png">
+<link rel="alternate" hreflang="ru" href="../">
+<link rel="alternate" hreflang="en" href="./">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Clearwise Cleaner — careful cleanup for your Mac">
+<meta property="og:description" content="Junk, old files and apps with every trace they leave. Free, open source, Trash first.">
+<meta property="og:image" content="assets/img/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="../assets/img/icon-64.png" alt="" width="30" height="30">Clearwise Cleaner</a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#features">Features</a>
+      <a href="#safety">Safety</a>
+      <a href="#editions">Editions</a>
+      <a href="#install">Install</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <a class="lang" href="../" hreflang="ru" lang="ru">RU</a>
+    <!-- DOWNLOAD_URL: update on every release -->
+    <a class="btn btn-main btn-sm" href="https://github.com/clearwise-app/clearwise-cleaner/releases/download/v1.2.1/Clearwise-Cleaner-1.2.1.dmg">Download</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-grid">
+        <span class="eyebrow">For macOS 15 and later</span>
+        <h1><span class="grad">Free up your Mac</span><br>without the risk</h1>
+        <p class="lead">Clearwise Cleaner finds system junk, leftovers of deleted apps, old and duplicate files. You see every path before anything is removed, and everything goes to the Trash first.</p>
+        <div class="cta-row">
+          <a class="btn btn-main" href="https://github.com/clearwise-app/clearwise-cleaner/releases/download/v1.2.1/Clearwise-Cleaner-1.2.1.dmg">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+            Download free
+          </a>
+          <a class="btn btn-ghost" href="https://github.com/clearwise-app/clearwise-cleaner">Source code on GitHub</a>
+        </div>
+        <p class="meta">Version <b>1.2.1</b> · 9.1 MB DMG · Apple silicon and Intel · <a href="https://github.com/clearwise-app/clearwise-cleaner/blob/main/CHANGELOG.md">What’s new</a></p>
+      </div>
+
+      <div class="window">
+        <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+        <img src="../assets/img/1-smart-care.webp" width="1600" height="1000" alt="Smart Care window: 12.7 GB of safe junk selected, old files and unused apps left for you to choose">
+      </div>
+
+      <div class="facts">
+        <div class="fact"><b>Free</b><span>No subscription, no trial</span></div>
+        <div class="fact"><b>Trash first</b><span>Changed your mind? Put it back</span></div>
+        <div class="fact"><b>Offline</b><span>No analytics, no telemetry</span></div>
+        <div class="fact"><b>Open source</b><span>MIT license, Swift 6</span></div>
+        <div class="fact"><b>English and Russian</b><span>Follows your system or your pick</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Features</span>
+        <h2>Nine tools in one window</h2>
+        <p class="lead">Pick a section on the left, just like in the app. Screenshots are from Clearwise Cleaner on demo data.</p>
+      </div>
+
+      <div class="app" data-tabs>
+        <div class="side" role="tablist" aria-label="App sections" aria-orientation="vertical">
+          <button role="tab" id="t-smart" aria-controls="p-smart" aria-selected="true"><span class="dot d-smart">✦</span>Smart Care</button>
+          <span class="grp">Cleanup</span>
+          <button role="tab" id="t-junk" aria-controls="p-junk" aria-selected="false" tabindex="-1"><span class="dot d-junk">✱</span>System Junk</button>
+          <button role="tab" id="t-unin" aria-controls="p-unin" aria-selected="false" tabindex="-1"><span class="dot d-unin">✕</span>Uninstaller</button>
+          <button role="tab" id="t-start" aria-controls="p-start" aria-selected="false" tabindex="-1"><span class="dot d-start">⏻</span>Startup Items</button>
+          <span class="grp">Files</span>
+          <button role="tab" id="t-old" aria-controls="p-old" aria-selected="false" tabindex="-1"><span class="dot d-old">▤</span>Old &amp; Large</button>
+          <button role="tab" id="t-dup" aria-controls="p-dup" aria-selected="false" tabindex="-1"><span class="dot d-dup">❐</span>Duplicates</button>
+          <button role="tab" id="t-map" aria-controls="p-map" aria-selected="false" tabindex="-1"><span class="dot d-map">◔</span>Disk Map</button>
+          <button role="tab" id="t-store" aria-controls="p-store" aria-selected="false" tabindex="-1"><span class="dot d-store">▥</span>Storage</button>
+          <span class="grp">Checkup</span>
+          <button role="tab" id="t-health" aria-controls="p-health" aria-selected="false" tabindex="-1"><span class="dot d-health">♥</span>Mac Health</button>
+        </div>
+
+        <div class="pane" id="p-smart" role="tabpanel" aria-labelledby="t-smart">
+          <h3>Smart Care</h3>
+          <p>One scan covers junk, leftovers of deleted apps, old files and unused apps. Safe items are selected for you; the rest is your call.</p>
+          <img src="../assets/img/1b-smart-care-review.webp" width="1600" height="1000" loading="lazy" alt="Smart Care: each section expands to individual files">
+        </div>
+        <div class="pane" id="p-junk" role="tabpanel" aria-labelledby="t-junk" hidden>
+          <h3>System Junk</h3>
+          <p>App and browser caches (never history, passwords or cookies), caches of Slack, Discord, VS Code and other Electron apps, logs, crash reports, Xcode DerivedData, npm, pip and Homebrew caches, old installers, iPhone firmware and Docker. Three modes: Gentle, Thorough, Maximum.</p>
+          <img src="../assets/img/2-junk.webp" width="1600" height="1000" loading="lazy" alt="System junk by category with sizes">
+        </div>
+        <div class="pane" id="p-unin" role="tabpanel" aria-labelledby="t-unin" hidden>
+          <h3>Uninstaller</h3>
+          <p>Removes an app together with its settings, caches, containers, launch agents and helpers. A separate tab finds what is left of apps you already dragged to the Trash.</p>
+          <img src="../assets/img/3-uninstaller.webp" width="1600" height="1000" loading="lazy" alt="Uninstaller: an app and all of its files">
+        </div>
+        <div class="pane" id="p-start" role="tabpanel" aria-labelledby="t-start" hidden>
+          <h3>Startup Items</h3>
+          <p>What starts with your Mac: agents, system daemons and login items, with owner, signature and state. Turn them off reversibly or move them to the Trash. macOS services are never touched.</p>
+          <img src="../assets/img/9-startup.webp" width="1600" height="1000" loading="lazy" alt="Startup items with signature and state">
+        </div>
+        <div class="pane" id="p-old" role="tabpanel" aria-labelledby="t-old" hidden>
+          <h3>Old &amp; Large Files</h3>
+          <p>Files you haven’t opened in months and the biggest files on the disk. Nothing is selected automatically.</p>
+          <img src="../assets/img/4-old-files.webp" width="1600" height="1000" loading="lazy" alt="Old and large files with last opened date">
+        </div>
+        <div class="pane" id="p-dup" role="tabpanel" aria-labelledby="t-dup" hidden>
+          <h3>Duplicates</h3>
+          <p>Identical files by content, not by name. One copy always stays.</p>
+          <img src="../assets/img/6-duplicates.webp" width="1600" height="1000" loading="lazy" alt="Groups of identical files">
+        </div>
+        <div class="pane" id="p-map" role="tabpanel" aria-labelledby="t-map" hidden>
+          <h3>Disk Map</h3>
+          <p>A sunburst chart: click to open a folder, drop what you don’t need into the Collector.</p>
+          <img src="../assets/img/5-disk-map.webp" width="1600" height="1000" loading="lazy" alt="Disk map as a sunburst chart">
+        </div>
+        <div class="pane" id="p-store" role="tabpanel" aria-labelledby="t-store" hidden>
+          <h3>Storage</h3>
+          <p>What fills your disk by category, in percent and gigabytes. Any category opens down to files, even “System Data”.</p>
+          <img src="../assets/img/8-storage.webp" width="1600" height="1000" loading="lazy" alt="Disk usage by category">
+        </div>
+        <div class="pane" id="p-health" role="tabpanel" aria-labelledby="t-health" hidden>
+          <h3>Mac Health</h3>
+          <p>Battery and SSD wear, free space and Intel-only apps that will lose Rosetta soon. Read-only: it changes and removes nothing.</p>
+          <img src="../assets/img/10-health.webp" width="1600" height="1000" loading="lazy" alt="Health cards: battery, SSD, memory, Intel-only apps">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="result">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Honest numbers</span>
+        <h2>“2.1 GB in the Trash”, not “freed”</h2>
+        <p class="lead">Until the Trash is emptied the space is still in use, and the app says so. What was deleted for good and what Docker freed are shown on separate lines.</p>
+      </div>
+      <div class="pair">
+        <figure>
+          <img src="../assets/img/7-cleaning.webp" width="1600" height="1000" loading="lazy" alt="Cleanup in progress by category">
+          <figcaption>Cleanup with clear progress.</figcaption>
+        </figure>
+        <figure>
+          <img src="../assets/img/7b-cleaning-done.webp" width="1600" height="1000" loading="lazy" alt="Cleanup result: what is in the Trash and can be put back">
+          <figcaption>The result: what is in the Trash and can be put back.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section id="safety">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Safety</span>
+        <h2>Careful by default</h2>
+      </div>
+      <div class="rules">
+        <div class="rule">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></span>
+          <h3>Everything goes to the Trash</h3>
+          <p>Only the Trash itself is ever emptied for good, and only after a separate confirmation. Deleting permanently right away takes an explicit checkbox.</p>
+        </div>
+        <div class="rule">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+          <h3>Protected places</h3>
+          <p>System folders, Keychain, Mail, Messages, iCloud Drive, the Photos and Music libraries and built-in macOS apps are never touched.</p>
+        </div>
+        <div class="rule">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span>
+          <h3>Every path is visible</h3>
+          <p>Personal files are never selected automatically, only safe junk. You see the full path of every file before it is removed.</p>
+        </div>
+        <div class="rule">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8.5a15 15 0 0 1 20 0M5 12a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0M3 3l18 18"/></svg></span>
+          <h3>No internet</h3>
+          <p>The app sends and collects nothing: no analytics, no telemetry. This site has no counters or cookies either.</p>
+        </div>
+        <div class="rule">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h6"/><path d="m15 17 2 2 4-4"/></svg></span>
+          <h3>Modes are just checkmarks</h3>
+          <p>Gentle, Thorough and Maximum only tick different items after a scan. The Trash, the latest backup of each iPhone and Docker volumes are never ticked.</p>
+        </div>
+        <div class="rule">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 8-5 4 5 4M16 8l5 4-5 4M14 4l-4 16"/></svg></span>
+          <h3>Open source</h3>
+          <p>All code is on GitHub under the MIT license. Check exactly what gets removed, or build the app yourself.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="editions">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Editions</span>
+        <h2>Full version and Lite</h2>
+        <p class="lead">App Store rules don’t allow administrator rights or access to the whole disk. That is why every feature is only in the full version from this site. Lite from the App Store checks the folders you choose.</p>
+      </div>
+
+      <div class="editions">
+        <div class="edition main">
+          <h3>Clearwise Cleaner</h3>
+          <p>The full version. Every module, system junk with administrator rights, Docker, the uninstaller, startup items and an MCP server for AI assistants. Free.</p>
+          <div class="cta-row">
+            <a class="btn btn-main btn-sm" href="https://github.com/clearwise-app/clearwise-cleaner/releases/download/v1.2.1/Clearwise-Cleaner-1.2.1.dmg">Download DMG</a>
+          </div>
+        </div>
+        <div class="edition">
+          <h3>Clearwise Lite <span class="soon">Coming to the App Store</span></h3>
+          <p>The safe part inside the App Store sandbox: caches in folders you choose, old files, duplicates and the disk map. Updated through the App Store. Free.</p>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Module</th><th class="col-full">Full</th><th>Lite</th></tr></thead>
+          <tbody>
+            <tr><td>Smart Care</td><td class="col-full yes">Yes</td><td class="part">In chosen folders</td></tr>
+            <tr><td>System Junk</td><td class="col-full yes">All of it, including system logs and Docker</td><td class="part">User caches and logs, developer caches</td></tr>
+            <tr><td>Uninstaller and leftovers</td><td class="col-full yes">Yes</td><td class="no">No</td></tr>
+            <tr><td>Startup Items</td><td class="col-full yes">Yes</td><td class="no">No</td></tr>
+            <tr><td>Old &amp; large files, duplicates</td><td class="col-full yes">Yes</td><td class="part">In chosen folders</td></tr>
+            <tr><td>Disk Map</td><td class="col-full yes">Yes</td><td class="yes">Yes</td></tr>
+            <tr><td>Storage by category</td><td class="col-full yes">Yes</td><td class="part">Without opening “System Data”</td></tr>
+            <tr><td>Mac Health</td><td class="col-full yes">Yes</td><td class="part">To be confirmed</td></tr>
+            <tr><td>MCP server for AI assistants</td><td class="col-full yes">Yes</td><td class="no">No</td></tr>
+            <tr><td>Trash first, modes, EN/RU, no telemetry</td><td class="col-full yes">Yes</td><td class="yes">Yes</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="dev">
+    <div class="wrap dev">
+      <div class="stack">
+        <span class="eyebrow">For developers</span>
+        <h2>Knows where developer gigabytes pile up</h2>
+        <ul>
+          <li>Xcode: DerivedData, old archives, Device Support and simulator caches</li>
+          <li>npm, Yarn, pnpm, Bun, pip, uv, Homebrew, Gradle, CocoaPods, SwiftPM and Cargo caches, plus Playwright browsers</li>
+          <li>Docker: build cache, dangling images, stopped containers. Data volumes are never touched</li>
+          <li>iPhone and iPad firmware (.ipsw)</li>
+        </ul>
+      </div>
+      <div class="stack">
+        <h3>An MCP server for Claude, Cursor and other assistants</h3>
+        <p class="lead" style="font-size:16px">The app ships with <code>clearwise-mcp</code>. Your assistant finds junk and removes only what you approve. Anything destructive runs as a dry run first.</p>
+        <div class="code"><button class="copy" type="button" data-done="Copied" data-copy='claude mcp add clearwise -- "/Applications/Clearwise Cleaner.app/Contents/MacOS/clearwise-mcp"'>Copy</button><code><span class="c"># Claude Code</span>
+claude mcp add clearwise -- \
+  "/Applications/Clearwise Cleaner.app/Contents/MacOS/clearwise-mcp"</code></div>
+        <p class="meta">Other clients and the full tool list are in <a href="https://github.com/clearwise-app/clearwise-cleaner/blob/main/skills/clearwise-cleaner/SKILL.md">SKILL.md</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Install</span>
+        <h2>Installed in a minute</h2>
+      </div>
+      <ol class="steps">
+        <li><h3>Download the DMG</h3><p><code>Clearwise-Cleaner-1.2.1.dmg</code>, 9.1 MB. Works on Apple silicon and Intel.</p></li>
+        <li><h3>Drag to Applications</h3><p>Open the image and drag Clearwise Cleaner into the Applications folder.</p></li>
+        <li><h3>Confirm the first launch</h3><p>System Settings → Privacy &amp; Security → “Open Anyway”. You only do this once.</p></li>
+        <li><h3>Grant Full Disk Access</h3><p>Optional, but without it some junk stays hidden. The app shows you where to turn it on.</p></li>
+      </ol>
+      <!-- NOTARIZATION: remove step 3 and this block once the DMG is Developer ID signed and notarized -->
+      <div class="note">
+        <b>Why macOS asks for confirmation</b>
+        <p>The app is not notarized by Apple yet; that requires a paid Apple Developer account. To check the file wasn’t altered in transit, run <code>shasum -a 256 Clearwise-Cleaner-1.2.1.dmg</code> and compare it with the <a href="https://github.com/clearwise-app/clearwise-cleaner/releases/download/v1.2.1/Clearwise-Cleaner-1.2.1.dmg.sha256">.sha256 file</a> from the release.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">FAQ</span>
+        <h2>Questions</h2>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>Is it really free?</summary>
+          <div class="a"><p>Yes. No subscription, no trial, no size limits. The code is open under the MIT license.</p></div>
+        </details>
+        <details>
+          <summary>Will Clearwise speed up my Mac?</summary>
+          <div class="a"><p>We don’t promise that. The app frees disk space and shows what uses it. When a disk is nearly full macOS does slow down, and cleanup helps. Otherwise speed won’t change.</p></div>
+        </details>
+        <details>
+          <summary>Could I delete something important by accident?</summary>
+          <div class="a"><p>Only junk that apps recreate on their own is selected for you. Personal files, old documents and duplicates are yours to tick. Everything goes to the Trash, where you can put it back. System folders, Keychain, Mail, Photos and iCloud Drive are protected.</p></div>
+        </details>
+        <details>
+          <summary>Why does it need Full Disk Access?</summary>
+          <div class="a"><p>macOS hides some cache and log folders even from your own apps. Without access Clearwise still works but finds less. You turn it on in System Settings and the app shows you where. Nothing is sent anywhere: the app doesn’t use the internet.</p></div>
+        </details>
+        <details>
+          <summary>How is it different from CleanMyMac?</summary>
+          <div class="a">
+            <p>Clearwise is free, open source and has no telemetry, and everything it removes lands in the Trash first. It has no antivirus, app updater or “speed boost”: it focuses on disk space, startup items and a Mac health check.</p>
+          </div>
+        </details>
+        <details>
+          <summary>Which macOS and Macs are supported?</summary>
+          <div class="a"><p>macOS 15 Sequoia or later. One DMG runs on both Apple silicon and Intel.</p></div>
+        </details>
+        <details>
+          <summary>How do I update or remove Clearwise?</summary>
+          <div class="a"><p>To update, download the new DMG and drag the app into Applications over the old one. To remove it, move it to the Trash.</p></div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="final">
+        <img src="../assets/img/icon-180.png" width="72" height="72" alt="">
+        <h2>See what’s filling your disk</h2>
+        <div class="cta-row">
+          <a class="btn btn-main" href="https://github.com/clearwise-app/clearwise-cleaner/releases/download/v1.2.1/Clearwise-Cleaner-1.2.1.dmg">Download Clearwise Cleaner</a>
+          <a class="btn btn-ghost" href="https://github.com/clearwise-app/clearwise-cleaner/releases">All versions</a>
+        </div>
+        <p class="meta">Free · macOS 15+ · Apple silicon and Intel · 9.1 MB</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Clearwise · Code under the MIT license</span>
+    <nav aria-label="Links">
+      <a href="https://github.com/clearwise-app/clearwise-cleaner/blob/main/CHANGELOG.md">What’s new</a>
+      <a href="support.html">Support</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="https://github.com/clearwise-app/clearwise-cleaner">GitHub</a>
+      <a href="../" hreflang="ru" lang="ru">Русский</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="../assets/site.js" defer></script>
+</body>
+</html>
