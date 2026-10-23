@@ -3751,6 +3751,16 @@
         }
       }
     },
+    "Показать все (%@)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show all (%@)"
+          }
+        }
+      }
+    },
     "Показать ещё %@": {
       "localizations": {
         "en": {
@@ -4137,6 +4147,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "The reason for each file is in the list."
+          }
+        }
+      }
+    },
+    "Проверенные программы": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checked apps"
           }
         }
       }
@@ -5397,6 +5417,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Smart Care"
+          }
+        }
+      }
+    },
+    "Универсальная (%@)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Universal (%@)"
           }
         }
       }

@@ -312,12 +312,16 @@ private struct IntelAppsCard: View {
                 StatusBadge(status: intel.isEmpty ? .ok : .warning(String(localized: "Проверьте")))
             }
             if intel.isEmpty {
-                // Nothing to act on: one line instead of a big zero.
+                // Nothing to act on: one line instead of a big zero, then which apps that verdict covers.
                 Text(HealthCopy.intelCaption(intel: 0, total: report.apps.count).capitalizedFirst)
                     .font(.system(size: 13))
                     .foregroundStyle(Theme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 10)
+                if !report.apps.isEmpty {
+                    CheckedAppsList(apps: report.apps)
+                        .padding(.top, 14)
+                }
             } else {
                 HStack(alignment: .firstTextBaseline, spacing: 14) {
                     MetricText(metric: HealthMetric(value: Fmt.integer(intel.count), unit: nil, caption: ""))
@@ -354,9 +358,48 @@ private struct IntelAppsCard: View {
     }
 }
 
+/// Every app the check looked at, five at a time; «Показать все» unfolds the rest in place.
+private struct CheckedAppsList: View {
+    let apps: [AppArchitecture]
+    @State private var showsAll = false
+    private static let preview = 5
+
+    var body: some View {
+        let sorted = apps.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        let shown = showsAll ? sorted : Array(sorted.prefix(Self.preview))
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Проверенные программы")
+                .font(.label11)
+                .foregroundStyle(.themeTertiary)
+            VStack(spacing: 0) {
+                ForEach(shown) { app in
+                    if app.id != shown.first?.id { Hairline(inset: 40) }
+                    IntelAppRow(app: app)
+                }
+            }
+            .padding(.top, 4)
+            if sorted.count > Self.preview {
+                Button(showsAll ? "Свернуть" : "Показать все (\(Fmt.integer(sorted.count)))") {
+                    withAnimation(Theme.unfold) { showsAll.toggle() }
+                }
+                .buttonStyle(PillButtonStyle(kind: .quiet))
+                .padding(.top, 6)
+            }
+        }
+    }
+}
+
 private struct IntelAppRow: View {
     let app: AppArchitecture
     @State private var hover = false
+
+    /// «Intel (x86_64)», «Универсальная (arm64, x86_64)» or «Apple silicon (arm64)».
+    private var architecture: String {
+        let names = app.architectures.sorted().map(\.title).joined(separator: ", ")
+        if app.isIntelOnly { return "Intel (\(names))" }
+        if app.isUniversal { return String(localized: "Универсальная (\(names))") }
+        return "Apple silicon (\(names))"
+    }
 
     var body: some View {
         HStack(spacing: 10) {
@@ -369,7 +412,7 @@ private struct IntelAppRow: View {
                     .font(.rowTitle)
                     .foregroundStyle(Theme.text)
                     .lineLimit(1)
-                Text([app.version.map { String(localized: "Версия \($0)") }, "Intel (\(app.architectures.sorted().map(\.title).joined(separator: ", ")))"]
+                Text([app.version.map { String(localized: "Версия \($0)") }, architecture]
                     .compactMap { $0 }.joined(separator: " · "))
                     .font(.caption11)
                     .foregroundStyle(.themeTertiary)

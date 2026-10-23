@@ -125,7 +125,7 @@ struct StorageSegmentBar: View {
     private func grow() {
         guard !grown else { return }
         if reduceMotion || isSnapshot { grown = true; return }
-        withAnimation(.spring(response: 0.9, dampingFraction: 0.82).delay(0.1)) { grown = true }
+        withAnimation(.spring(response: 0.9, dampingFraction: 0.92).delay(0.1)) { grown = true }
     }
 }
 

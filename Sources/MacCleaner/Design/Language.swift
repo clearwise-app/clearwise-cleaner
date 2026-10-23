@@ -35,15 +35,24 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     /// Numbers, dates and units in the app's language.
     static var locale: Locale { Locale(identifier: isEnglish ? "en_US" : "ru_RU") }
 
+    /// What macOS picks for the app without an override: the first of the user's languages the app has, Russian or
+    /// English, and English when neither is listed — a German or Turkish Mac gets English, not Russian. Read from
+    /// the global domain, so the app's own override (an explicit choice) does not mask the system's list.
+    static var systemLanguage: String {
+        let global = UserDefaults.standard.persistentDomain(forName: UserDefaults.globalDomain)?["AppleLanguages"] as? [String]
+        for code in global ?? Locale.preferredLanguages {
+            if code.hasPrefix("ru") { return "ru" }
+            if code.hasPrefix("en") { return "en" }
+        }
+        return "en"
+    }
+
     /// What a choice would show, before the relaunch.
     var resolved: String {
         switch self {
-        case .system:
-            let codes = Bundle.main.localizations
-            let best = Bundle.preferredLocalizations(from: codes, forPreferences: Locale.preferredLanguages).first ?? "ru"
-            return best.hasPrefix("en") ? "en" : "ru"
-        case .russian: return "ru"
-        case .english: return "en"
+        case .system: Self.systemLanguage
+        case .russian: "ru"
+        case .english: "en"
         }
     }
 

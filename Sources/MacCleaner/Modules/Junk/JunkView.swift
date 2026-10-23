@@ -153,7 +153,7 @@ struct JunkCategoryCard: View {
                     }
                 }
                 .padding(.vertical, 4)
-                .transition(.opacity)
+                .transition(Theme.motion(.drawer))
             }
         }
         .glass(radius: 16, shadow: false)

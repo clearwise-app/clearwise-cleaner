@@ -35,16 +35,20 @@ enum Theme {
 
     static let sidebarWidth: CGFloat = 252
 
-    // Motion. Under Reduce Motion the springs become a short ease so moves, offsets and scales
-    // settle almost at once; pair moving transitions with `Theme.motion(_:)` to get a crossfade.
+    // Motion. The springs settle without a visible overshoot — the app should feel calm, not springy — and
+    // nothing that moves takes longer than about half a second. Under Reduce Motion they become a short ease
+    // so moves, offsets and scales settle almost at once; pair moving transitions with `Theme.motion(_:)`.
+    /// Screens, dialogs and toasts appearing or going away; a phase changing.
     static var spring: Animation {
-        reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.45, dampingFraction: 0.86)
+        reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.5, dampingFraction: 0.9)
     }
+    /// Switching modules and other whole-screen swaps: critically damped, so a crossfade has no tail.
     static var softSpring: Animation {
-        reduceMotion ? .easeInOut(duration: 0.25) : .spring(response: 0.7, dampingFraction: 0.9)
+        reduceMotion ? .easeInOut(duration: 0.25) : .spring(response: 0.55, dampingFraction: 1)
     }
+    /// Hover, selection and other small state changes.
     static var quick: Animation {
-        reduceMotion ? .easeInOut(duration: 0.15) : .easeOut(duration: 0.18)
+        reduceMotion ? .easeInOut(duration: 0.15) : .easeOut(duration: 0.2)
     }
 
     /// System Reduce Motion setting. AppKit caches it and keeps it current, so reading it is cheap.
@@ -57,7 +61,7 @@ enum Theme {
 
     /// Opening and closing a list in place: no bounce, the content below simply makes room.
     static var unfold: Animation {
-        reduceMotion ? .easeInOut(duration: 0.15) : .easeInOut(duration: 0.26)
+        reduceMotion ? .easeInOut(duration: 0.15) : .easeInOut(duration: 0.3)
     }
 }
 

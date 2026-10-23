@@ -120,6 +120,8 @@ private struct SidebarItem<Badge: View>: View {
         .accessibilityAddTraits(selected ? .isSelected : [])
         .onHover { hover = $0 }
         .animation(Theme.quick, value: hover)
+        // The highlight fades from the old item to the new one instead of jumping.
+        .animation(Theme.quick, value: selected)
     }
 }
 

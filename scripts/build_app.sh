@@ -41,6 +41,17 @@ done
 for lproj in "$BIN_DIR"/MacCleaner_MacCleaner.bundle/Contents/Resources/*.lproj; do
     [ -d "$lproj" ] && cp -R "$lproj" "$APP/Contents/Resources/"
 done
+# The language follows macOS the usual way: the first of the user's languages the app has. English is the fallback
+# (CFBundleDevelopmentRegion below), so a German or Turkish Mac gets English, not Russian. Russian is the catalogs'
+# source language — the keys — and gets a real ru.lproj table written from them (an empty ru.lproj would make SwiftUI
+# fall back to the English table). The nested catalogs get the same rule.
+python3 scripts/l10n_ru_strings.py Sources/MacCleaner/Resources/Localizable.xcstrings "$APP/Contents/Resources/ru.lproj/Localizable.strings"
+for bundle in "$APP"/Contents/Resources/MacCleaner_*.bundle; do
+    target="$(basename "$bundle" .bundle)"; target="${target#MacCleaner_}"
+    plutil -replace CFBundleDevelopmentRegion -string en "$bundle/Contents/Info.plist"
+    python3 scripts/l10n_ru_strings.py "Sources/$target/Resources/Localizable.xcstrings" "$bundle/Contents/Resources/ru.lproj/Localizable.strings"
+done
+plutil -lint "$APP"/Contents/Resources/ru.lproj/Localizable.strings "$APP"/Contents/Resources/MacCleaner_*.bundle/Contents/Resources/ru.lproj/Localizable.strings >/dev/null
 # The debug map holds absolute paths of the sources and object files (the builder's home folder); like Xcode's
 # release builds, the shipped binary keeps only what dyld needs.
 strip -S -x "$APP/Contents/MacOS/MacCleaner" "$APP/Contents/MacOS/clearwise-mcp"
@@ -64,7 +75,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundleIconFile</key>              <string>AppIcon</string>
     <key>CFBundleShortVersionString</key>    <string>${VERSION}</string>
     <key>CFBundleVersion</key>               <string>${BUILD_NUMBER}</string>
-    <key>CFBundleDevelopmentRegion</key>     <string>ru</string>
+    <key>CFBundleDevelopmentRegion</key>     <string>en</string>
     <key>LSMinimumSystemVersion</key>        <string>15.0</string>
     <key>LSApplicationCategoryType</key>     <string>public.app-category.utilities</string>
     <key>NSHighResolutionCapable</key>       <true/>

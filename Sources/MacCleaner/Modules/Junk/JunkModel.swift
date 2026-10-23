@@ -174,7 +174,8 @@ final class JunkModel {
     }
 
     func toggleExpanded(_ cat: JunkCategory) {
-        withAnimation(Theme.spring) {
+        // A list opening in place: an ease, not a spring — the cards below should slide, not bounce.
+        withAnimation(Theme.unfold) {
             if expanded.contains(cat.id) { expanded.remove(cat.id) } else { expanded.insert(cat.id) }
         }
     }
