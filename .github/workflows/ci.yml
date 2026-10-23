@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# A newer push to the same branch or PR cancels the run that is still going.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build and test (macOS 15)
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      # The opt-in smoke tests read (and one of them changes) the real Mac. They skip themselves unless one of these
+      # is "1"; CI pins them empty and also leaves the tests out by name below, so neither guard depends on the other.
+      UNINSTALL_REAL_DISK: ""
+      STARTUP_REAL_MAC: ""
+      STARTUP_REAL_MAC_BTM: ""
+      STARTUP_REAL_ACTIONS: ""
+      SPACEENGINE_REALDISK: ""
+      JUNK_REAL_SCAN: ""
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Build
+        run: swift build --build-tests
+
+      - name: Test (without real-disk tests)
+        run: swift test --skip-build --parallel --skip 'RealDiskSmokeTests|RealMacSmokeTests|RealDiskTests|testRealDisk'
+
+      # What ships: the release binaries assembled, localized and signed (ad-hoc) into the .app.
+      - name: Build app bundle
+        run: scripts/build_app.sh
