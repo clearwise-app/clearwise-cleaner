@@ -1,0 +1,12 @@
+# Local development: only PostgreSQL in Docker, the server runs with `npm run dev`.
+#   docker compose -f docker-compose.dev.yml up -d
+#   DATABASE_URL=postgres://clearwise:clearwise@localhost:5432/clearwise
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: clearwise
+      POSTGRES_USER: clearwise
+      POSTGRES_PASSWORD: clearwise
+    ports:
+      - "5432:5432"

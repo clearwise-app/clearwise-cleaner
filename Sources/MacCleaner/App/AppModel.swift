@@ -59,6 +59,8 @@ final class AppModel {
     let startup = StartupModel()
     /// Disk usage by category (sidebar widget). Measured at launch and after every cleanup.
     let storage: StorageModel
+    /// Trial and subscription: whether cleanups are allowed (see `Licensing/`).
+    let access: AccessModel
 
     /// False for snapshots and tests: no system probes, no UserDefaults, no real Trash.
     @ObservationIgnored let probesSystem: Bool
@@ -72,6 +74,7 @@ final class AppModel {
         hasFullDiskAccess = probeSystem ? Permissions.hasFullDiskAccess : true
         disk = probeSystem ? DiskUsage.startupVolume() : nil
         storage = StorageModel(live: probeSystem)
+        access = AccessModel(live: probeSystem)
         lastCleanup = probeSystem ? LastCleanup.load() : nil
         if probeSystem { storage.refreshIfAllowed(fullDiskAccess: hasFullDiskAccess) }
         smartCare.app = self
@@ -82,6 +85,7 @@ final class AppModel {
         diskMap.app = self
         startup.app = self
         if probeSystem { observeTextFocus() }
+        access.start()
     }
 
     var showsFDABanner: Bool { !hasFullDiskAccess && !fdaBannerDismissed }
@@ -95,6 +99,7 @@ final class AppModel {
     /// disk, so they run off the main thread; results are applied on main.
     func refreshSystemState() {
         guard probesSystem else { return }
+        access.refreshIfDue()
         systemTask?.cancel()
         systemTask = Task { [weak self] in
             let probe = await Task.detached(priority: .utility) {
