@@ -46,5 +46,6 @@ let package = Package(
         .testTarget(name: "HealthEngineTests", dependencies: ["HealthEngine"], swiftSettings: swift5),
         .testTarget(name: "StartupEngineTests", dependencies: ["StartupEngine"], swiftSettings: swift5),
         .testTarget(name: "ClearwiseMCPTests", dependencies: ["ClearwiseMCPCore"], swiftSettings: swift5),
+        .testTarget(name: "MacCleanerTests", dependencies: ["MacCleaner"], swiftSettings: swift5),
     ]
 )

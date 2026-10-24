@@ -37,6 +37,10 @@ jobs:
       - name: Build
         run: swift build --build-tests
 
+      # The App Store edition's code paths (StoreKit 2 instead of the site license) must keep compiling.
+      - name: Build App Store edition code (CLEARWISE_LITE)
+        run: swift build --product MacCleaner -Xswiftc -DCLEARWISE_LITE --build-path .build-lite
+
       - name: Test (without real-disk tests)
         run: swift test --skip-build --parallel --skip 'RealDiskSmokeTests|RealMacSmokeTests|RealDiskTests|testRealDisk'
 
