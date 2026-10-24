@@ -115,7 +115,7 @@ enum SunburstLayout {
             let ring = Int((r - hole) / ringWidth) + 1
             var a = atan2(dx, -dy) / (2 * .pi)
             if a < 0 { a += 1 }
-            return (ring, a)
+            return (ring, Double(a))
         }
 
         func isInHole(_ p: CGPoint) -> Bool {
