@@ -39,10 +39,13 @@ struct RootView: View {
             if let c = model.confirmation {
                 ConfirmDialog(confirmation: c, onCancel: { model.dismissConfirmation() }) { forever in
                     model.dismissConfirmation()
-                    // A permanent cleanup without the box (junk with the Trash) follows the Settings choice.
-                    model.deletePermanentlyOnce = forever
-                        || (c.permanent && UserDefaults.standard.bool(forKey: SettingsKeys.deletePermanently))
-                    c.action()
+                    // After the trial every cleanup needs the subscription; scanning stays free.
+                    model.access.requireAccess {
+                        // A permanent cleanup without the box (junk with the Trash) follows the Settings choice.
+                        model.deletePermanentlyOnce = forever
+                            || (c.permanent && UserDefaults.standard.bool(forKey: SettingsKeys.deletePermanently))
+                        c.action()
+                    }
                 }
                 .transition(Theme.motion(.opacity.combined(with: .scale(scale: 0.97))))
                 .zIndex(10)
@@ -111,6 +114,9 @@ struct RootView: View {
         .onAppear {
             guard !isSnapshot else { return }
             model.startAccessFlowIfNeeded(onboardingDone: onboardingDone)
+        }
+        .sheet(isPresented: Bindable(model.access).isPaywallPresented) {
+            PaywallView().environment(model)
         }
         .preferredColorScheme(.dark)
         .environment(\.locale, AppLanguage.locale)

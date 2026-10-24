@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Clearwise — аккаунт</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --ink: #120a22; --panel: #1c1133; --panel-2: #24173f; --line: rgba(214,190,255,.12);
+    --text: #f4eeff; --muted: #b7a6d4; --pink: #f062b8; --teal: #37d3b0; --amber: #ffb648;
+    --grad: linear-gradient(100deg, #c77dff 0%, #f062b8 100%);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: radial-gradient(900px 500px at 85% -10%, rgba(176,79,224,.28), transparent 60%), var(--ink);
+         color: var(--text); font: 16px/1.5 var(--font); -webkit-font-smoothing: antialiased; }
+  main { max-width: 560px; margin: 0 auto; padding: 48px 16px; display: grid; gap: 20px; }
+  h1 { margin: 0; font-size: 30px; letter-spacing: -.02em; }
+  h2 { margin: 0 0 8px; font-size: 18px; }
+  p { margin: 0; }
+  .muted { color: var(--muted); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; gap: 14px; }
+  label { display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
+  input { font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; width: 100%; }
+  input:focus { outline: 2px solid var(--pink); outline-offset: 1px; }
+  button { font: inherit; font-weight: 600; cursor: pointer; border: 0; border-radius: 10px; padding: 12px 16px; color: #1a0b2a; background: var(--grad); }
+  button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  button:disabled { opacity: .5; cursor: default; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row > button { flex: 1 1 200px; }
+  .status { font-weight: 600; }
+  .ok { color: var(--teal); } .warn { color: var(--amber); }
+  .err { color: var(--pink); min-height: 1.5em; font-size: 14px; }
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  li { display: flex; justify-content: space-between; gap: 12px; align-items: center; background: var(--panel-2); border-radius: 10px; padding: 10px 12px; }
+  li button { padding: 6px 10px; font-size: 14px; }
+  [hidden] { display: none !important; }
+  a { color: var(--text); }
+</style>
+</head>
+<body>
+<main>
+  <header><h1 data-t="title">Аккаунт Clearwise</h1></header>
+
+  <!-- Step 1: e-mail -->
+  <form class="card" id="step-email">
+    <p class="muted" data-t="intro">Войдите по почте: пришлём код, пароль не нужен.</p>
+    <label><span data-t="email">Почта</span><input type="email" name="email" autocomplete="email" required></label>
+    <button type="submit" data-t="sendCode">Получить код</button>
+    <p class="err" role="alert"></p>
+  </form>
+
+  <!-- Step 2: code -->
+  <form class="card" id="step-code" hidden>
+    <p class="muted"><span data-t="codeSent">Код отправлен на</span> <b id="code-email"></b>.</p>
+    <label><span data-t="code">Код из письма</span><input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="\d{6}" maxlength="6" required></label>
+    <div class="row">
+      <button type="submit" data-t="signIn">Войти</button>
+      <button type="button" class="ghost" id="back" data-t="otherEmail">Другая почта</button>
+    </div>
+    <p class="err" role="alert"></p>
+  </form>
+
+  <!-- Signed in -->
+  <section id="dash" hidden>
+    <div class="card">
+      <p class="muted" id="who"></p>
+      <h2 data-t="subscription">Подписка</h2>
+      <p class="status" id="sub-status"></p>
+      <div class="row" id="buy">
+        <button data-plan="monthly" data-t="buyMonthly">Оформить на месяц</button>
+        <button data-plan="yearly" data-t="buyYearly">Оформить на год</button>
+      </div>
+      <button class="ghost" id="portal" hidden data-t="manage">Управлять подпиской и оплатой</button>
+      <p class="muted" id="next-step" hidden data-t="nextStep">Откройте Clearwise на Mac и войдите с этой же почтой: подписка подключится сама.</p>
+      <p class="err" role="alert"></p>
+    </div>
+    <div class="card">
+      <h2><span data-t="devices">Компьютеры</span> <span class="muted" id="dev-count"></span></h2>
+      <ul id="devices"></ul>
+      <p class="muted" id="no-devices" data-t="noDevices">Пока ни одного Mac.</p>
+    </div>
+    <div class="row"><button class="ghost" id="logout" data-t="logout">Выйти</button></div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const en = !navigator.language.toLowerCase().startsWith("ru");
+  const T = en ? {
+    title: "Clearwise account", intro: "Sign in with your e-mail: we'll send a code, no password needed.", email: "E-mail",
+    sendCode: "Send code", codeSent: "We sent a code to", code: "Code from the e-mail", signIn: "Sign in", otherEmail: "Other e-mail",
+    subscription: "Subscription", buyMonthly: "Subscribe monthly", buyYearly: "Subscribe yearly", manage: "Manage subscription and payment",
+    nextStep: "Open Clearwise on your Mac and sign in with the same e-mail: the subscription connects by itself.",
+    devices: "Macs", noDevices: "No Macs yet.", logout: "Sign out", remove: "Remove", none: "No subscription",
+    active: "Active", trialing: "Trial", past_due: "Payment failed, update your card", paused: "Paused", canceled: "Canceled",
+    until: "until", renews: "renews", monthly: "monthly", yearly: "yearly", badCode: "Wrong or expired code.",
+    failed: "Something went wrong. Try again.", closed: "Purchases are not open yet.", rateLimited: "Too many attempts. Wait a few minutes.",
+  } : {
+    none: "Подписки нет", active: "Активна", trialing: "Пробный период", past_due: "Оплата не прошла, обновите карту", paused: "На паузе",
+    canceled: "Отменена", until: "до", renews: "продлится", monthly: "помесячно", yearly: "на год", remove: "Отвязать",
+    badCode: "Неверный или устаревший код.", failed: "Что-то пошло не так. Попробуйте ещё раз.", closed: "Продажи ещё не открыты.",
+    rateLimited: "Слишком много попыток. Подождите несколько минут.",
+  };
+  if (en) { document.documentElement.lang = "en"; document.querySelectorAll("[data-t]").forEach((el) => { if (T[el.dataset.t]) el.textContent = T[el.dataset.t]; }); }
+  const t = (k) => T[k] || k;
+  const $ = (s) => document.querySelector(s);
+  const params = new URLSearchParams(location.search);
+  const wantedPlan = params.get("plan");               // the app opens /account?plan=yearly
+  let token = null; try { token = localStorage.getItem("cw_token"); } catch {}
+  let email = "";
+
+  async function api(path, opts = {}) {
+    const res = await fetch(path, { ...opts, headers: { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}) } });
+    if (res.status === 401 && token) { signOut(); throw new Error("unauthorized"); }
+    const body = res.status === 204 ? null : await res.json().catch(() => null);
+    if (!res.ok) { const e = new Error(body?.error || "failed"); e.status = res.status; throw e; }
+    return body;
+  }
+  const errText = (e) => e.status === 429 ? t("rateLimited") : t("failed");
+  const show = (id) => ["#step-email", "#step-code", "#dash"].forEach((s) => $(s).hidden = s !== id);
+  const fmtDate = (d) => new Date(d).toLocaleDateString(en ? "en-US" : "ru-RU", { day: "numeric", month: "long", year: "numeric" });
+
+  $("#step-email").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const form = ev.currentTarget; email = form.email.value.trim(); form.querySelector(".err").textContent = "";
+    try { await api("/api/auth/request-code", { method: "POST", body: JSON.stringify({ email, locale: en ? "en" : "ru" }) });
+      $("#code-email").textContent = email; show("#step-code"); $("#step-code").code.focus();
+    } catch (e) { form.querySelector(".err").textContent = errText(e); }
+  });
+  $("#back").addEventListener("click", () => show("#step-email"));
+  $("#step-code").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const form = ev.currentTarget; form.querySelector(".err").textContent = "";
+    try { const r = await api("/api/auth/verify-code", { method: "POST", body: JSON.stringify({ email, code: form.code.value, client: "web" }) });
+      token = r.token; try { localStorage.setItem("cw_token", token); } catch {}
+      await loadDash(true);
+    } catch (e) { form.querySelector(".err").textContent = e.status === 400 ? t("badCode") : errText(e); }
+  });
+
+  function signOut() { token = null; try { localStorage.removeItem("cw_token"); } catch {} show("#step-email"); }
+  $("#logout").addEventListener("click", async () => { try { await api("/api/auth/logout", { method: "POST" }); } catch {} signOut(); });
+
+  async function loadDash(fromLogin) {
+    const me = await api("/api/me");
+    show("#dash");
+    $("#who").textContent = me.account.email;
+    const s = me.subscription;
+    const st = $("#sub-status");
+    if (s && me.entitled) {
+      const when = s.currentPeriodEnd ? ` · ${s.cancelAtPeriodEnd || s.status !== "active" ? t("until") : t("renews")} ${fmtDate(s.currentPeriodEnd)}` : "";
+      st.textContent = `${t(s.status)}, ${t(s.plan)}${when}`; st.className = "status " + (s.status === "past_due" ? "warn" : "ok");
+    } else { st.textContent = s ? t(s.status) : t("none"); st.className = "status warn"; }
+    $("#buy").hidden = me.entitled;
+    $("#portal").hidden = !s || s.provider === "manual";
+    $("#next-step").hidden = !me.entitled;
+    $("#dev-count").textContent = `${me.devices.length} / ${me.maxDevices}`;
+    $("#no-devices").hidden = me.devices.length > 0;
+    const list = $("#devices"); list.replaceChildren();
+    for (const d of me.devices) {
+      const li = document.createElement("li");
+      const name = document.createElement("span"); name.textContent = `${d.deviceName || "Mac"} · ${fmtDate(d.lastSeenAt)}`;
+      const btn = document.createElement("button"); btn.className = "ghost"; btn.textContent = t("remove");
+      btn.onclick = async () => { await api("/api/license/devices/" + encodeURIComponent(d.deviceId), { method: "DELETE" }); loadDash(); };
+      li.append(name, btn); list.append(li);
+    }
+    if (fromLogin && wantedPlan && !me.entitled) checkout(wantedPlan);
+  }
+
+  // Paddle.js overlay checkout: https://developer.paddle.com/paddlejs/overview
+  let paddleReady = null;
+  function loadPaddle(session) {
+    paddleReady ??= new Promise((resolve, reject) => {
+      const s = document.createElement("script"); s.src = "https://cdn.paddle.com/paddle/v2/paddle.js";
+      s.onload = () => {
+        if (session.environment === "sandbox") window.Paddle.Environment.set("sandbox");
+        window.Paddle.Initialize({ token: session.clientToken, eventCallback: (e) => { if (e.name === "checkout.completed") waitForSubscription(); } });
+        resolve(window.Paddle);
+      };
+      s.onerror = reject; document.head.append(s);
+    });
+    return paddleReady;
+  }
+  async function checkout(plan) {
+    const err = $("#dash .err"); err.textContent = "";
+    try {
+      const session = await api("/api/billing/checkout", { method: "POST", body: JSON.stringify({ plan }) });
+      if (session.provider !== "paddle") { err.textContent = t("closed"); return; }
+      const Paddle = await loadPaddle(session);
+      Paddle.Checkout.open({ items: session.items, customer: session.customer, customData: session.customData, settings: { locale: en ? "en" : "ru" } });
+    } catch (e) { err.textContent = errText(e); }
+  }
+  // The webhook lands a few seconds after the payment.
+  async function waitForSubscription() {
+    for (let i = 0; i < 15; i++) { await new Promise((r) => setTimeout(r, 2000)); const me = await api("/api/me"); if (me.entitled) return loadDash(); }
+  }
+  document.querySelectorAll("#buy button").forEach((b) => b.addEventListener("click", () => checkout(b.dataset.plan)));
+  $("#portal").addEventListener("click", async () => {
+    try { const r = await api("/api/billing/portal", { method: "POST" }); location.href = r.url; }
+    catch (e) { $("#dash .err").textContent = errText(e); }
+  });
+
+  if (token) loadDash(true).catch(() => signOut()); else show("#step-email");
+})();
+</script>
+</body>
+</html>

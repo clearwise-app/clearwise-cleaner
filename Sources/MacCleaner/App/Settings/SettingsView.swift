@@ -9,11 +9,21 @@ struct SettingsView: View {
     @AppStorage(SettingsKeys.deletePermanently) private var deletePermanently = false
     @AppStorage(SettingsKeys.cleanupMode) private var cleanupMode = CleanupMode.gentle.rawValue
     @State private var language = AppLanguage.chosen
+    @State private var showsPaywall = false
 
     var body: some View {
         Form {
             Section("Доступ") {
                 accessRow
+            }
+
+            Section("Подписка") {
+                HStack {
+                    AccessStatusText(state: model.access.state)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer()
+                    Button(model.access.state.isSubscribed ? "Управлять…" : "Оформить…") { showsPaywall = true }
+                }
             }
 
             Section("Язык / Language") {
@@ -81,12 +91,17 @@ struct SettingsView: View {
                     }
                 }
                 .accessibilityElement(children: .combine)
+                #if CLEARWISE_LITE
                 Label("Работает без интернета и ничего никуда не отправляет.", systemImage: "wifi.slash")
+                #else
+                Label("В сеть ходит только проверка подписки: почта и анонимный номер Mac. Файлы никуда не отправляются.", systemImage: "network")
+                #endif
                 Label("Личные файлы никогда не отмечаются сами.", systemImage: "hand.raised.fill")
                 Label("Всё удалённое сначала попадает в Корзину — его можно вернуть.", systemImage: "arrow.uturn.backward")
             }
         }
         .formStyle(.grouped)
+        .sheet(isPresented: $showsPaywall) { PaywallView().environment(model) }
         .frame(width: 520)
         .fixedSize(horizontal: false, vertical: true)
         .environment(\.locale, AppLanguage.locale)
