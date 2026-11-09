@@ -82,18 +82,22 @@ struct StorageSegmentBar: View {
                     let isLast = i == segments.count - 1
                     let lead: CGFloat = i == 0 ? height / 2 : 1.5
                     let trail: CGFloat = isLast ? height / 2 : 1.5
-                    let dim = hovered != nil && hovered != s.kind
-                    UnevenRoundedRectangle(topLeadingRadius: lead, bottomLeadingRadius: lead,
-                                           bottomTrailingRadius: trail, topTrailingRadius: trail, style: .continuous)
+                    let isHovered = hovered == s.kind
+                    let dim = hovered != nil && !isHovered
+                    // Named pieces keep this within the type checker's time limit (Swift 6.3 gives up otherwise).
+                    let shape = UnevenRoundedRectangle(topLeadingRadius: lead, bottomLeadingRadius: lead,
+                                                       bottomTrailingRadius: trail, topTrailingRadius: trail, style: .continuous)
+                    let segmentWidth: CGFloat = max(1, (s.width - (isLast ? 0 : Self.gap)) * progress)
+                    let offsetX: CGFloat = s.x * progress
+                    shape
                         .fill(s.kind.gradient)
                         // A white wash, not `.brightness`: that filter smears the layer's edge pixels.
-                        .overlay(Color.white.opacity(hovered == s.kind ? 0.1 : 0))
-                        .clipShape(UnevenRoundedRectangle(topLeadingRadius: lead, bottomLeadingRadius: lead,
-                                                          bottomTrailingRadius: trail, topTrailingRadius: trail, style: .continuous))
+                        .overlay(Color.white.opacity(isHovered ? 0.1 : 0))
+                        .clipShape(shape)
                         .opacity(dim ? 0.32 : 1)
-                        .shadow(color: s.kind.color.opacity(hovered == s.kind ? 0.75 : 0), radius: 5)
-                        .frame(width: max(1, (s.width - (isLast ? 0 : Self.gap)) * progress), height: height)
-                        .offset(x: s.x * progress)
+                        .shadow(color: s.kind.color.opacity(isHovered ? 0.75 : 0), radius: 5)
+                        .frame(width: segmentWidth, height: height)
+                        .offset(x: offsetX)
                 }
             }
             .frame(height: height)
