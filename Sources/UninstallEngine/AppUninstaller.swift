@@ -9,8 +9,48 @@ public enum AppUninstaller {
     /// System apps are refused. If the app does not quit within ~5 s nothing is removed.
     public static func uninstall(_ app: InstalledApp, remnants: [AppRemnant], removeBundle: Bool = true,
                                  progress: RemovalProgressHandler? = nil) async -> RemovalResult {
+        await uninstall(app, remnants: remnants, removeBundle: removeBundle, deferAdmin: false, progress: progress).result
+    }
+
+    /// Root-owned parts left for a later `finish` call, so several apps share one administrator prompt.
+    public struct PendingAdmin: Sendable {
+        /// Root-owned items, in order (each app's bundle after its leftovers).
+        public var adminItems: [URL] = []
+        /// User-movable bundles of apps that also had root-owned parts: still moved after them («bundle last»).
+        public var userBundles: [URL] = []
+        public var knownSizes: [URL: Int64] = [:]
+        public init() {}
+        public var isEmpty: Bool { adminItems.isEmpty && userBundles.isEmpty }
+        public mutating func merge(_ other: PendingAdmin) {
+            adminItems += other.adminItems
+            userBundles += other.userBundles
+            knownSizes.merge(other.knownSizes) { a, _ in a }
+        }
+    }
+
+    /// Batch uninstall: like `uninstall`, but an app's root-owned part (and then its bundle) is returned
+    /// instead of done. Run `finish` with the merged parts of all apps: one password for the whole batch.
+    public static func uninstallDeferringAdmin(_ app: InstalledApp, remnants: [AppRemnant],
+                                               progress: RemovalProgressHandler? = nil) async -> (result: RemovalResult, pending: PendingAdmin) {
+        await uninstall(app, remnants: remnants, removeBundle: true, deferAdmin: true, progress: progress)
+    }
+
+    /// The deferred root-owned items of several apps under one administrator prompt, then their bundles.
+    public static func finish(_ pending: PendingAdmin, progress: RemovalProgressHandler? = nil) async -> RemovalResult {
+        var result = RemovalResult()
+        if !pending.adminItems.isEmpty {
+            result.merge(await FileRemover.moveToTrashAsAdmin(pending.adminItems, knownSizes: pending.knownSizes, progress: progress))
+        }
+        if !pending.userBundles.isEmpty {
+            result.merge(await FileRemover.moveToTrash(pending.userBundles, knownSizes: pending.knownSizes, progress: progress))
+        }
+        return result
+    }
+
+    static func uninstall(_ app: InstalledApp, remnants: [AppRemnant], removeBundle: Bool, deferAdmin: Bool,
+                          progress: RemovalProgressHandler?) async -> (result: RemovalResult, pending: PendingAdmin) {
         if app.isSystemApp || SafetyGuard.isProtected(app.url) {
-            return RemovalResult(failed: [RemovalFailure(url: app.url, reason: String(localized: "Системное приложение нельзя удалить", bundle: .module))])
+            return (RemovalResult(failed: [RemovalFailure(url: app.url, reason: String(localized: "Системное приложение нельзя удалить", bundle: .module))]), PendingAdmin())
         }
         if isRunning(app) {
             let quit = await requestQuit(app)
@@ -19,12 +59,23 @@ public enum AppUninstaller {
                 var result = RemovalResult()
                 if removeBundle { result.failed.append(RemovalFailure(url: app.url, reason: reason)) }
                 result.failed += remnants.map { RemovalFailure(url: $0.item.url, reason: reason) }
-                return result
+                return (result, PendingAdmin())
             }
         }
         let plan = RemovalPlan(app: app, remnants: remnants, removeBundle: removeBundle,
                                bundleNeedsAdmin: removeBundle && !userCanMove(app.url))
-        return await execute(plan, progress: progress)
+        guard deferAdmin, !plan.adminItems.isEmpty else { return (await execute(plan, progress: progress), PendingAdmin()) }
+        // Everything the user can do now; the root-owned part and then the bundle wait for `finish`.
+        for agent in plan.launchAgentsToUnload { bootout(agent) }
+        var result = RemovalResult()
+        if !plan.userItems.isEmpty {
+            result.merge(await FileRemover.moveToTrash(plan.userItems, knownSizes: plan.knownSizes, progress: progress))
+        }
+        var pending = PendingAdmin()
+        pending.adminItems = plan.adminItems
+        pending.userBundles = plan.userBundle.map { [$0] } ?? []
+        pending.knownSizes = plan.knownSizes
+        return (result, pending)
     }
 
     /// Removes leftovers only (used for orphans and "reset app").

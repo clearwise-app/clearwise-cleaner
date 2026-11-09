@@ -186,4 +186,42 @@ final class SafetyGuardTests: XCTestCase {
         XCTAssertTrue(FileRemover.isInSharedWritableFolder(URL(fileURLWithPath: "/private/tmp/x")))
         XCTAssertFalse(FileRemover.isInSharedWritableFolder(URL(fileURLWithPath: "/Library/LaunchDaemons/com.vendor.plist")))
     }
+
+    /// The root shell of `moveToTrashAsAdmin`, run here as the user: the item reaches its destination through
+    /// the private stage, nothing is left in /private/var/tmp, and a failed last move puts it back.
+    /// (As the user nothing is root-owned, so the folders are never handed over: that needs a real admin run.)
+    func testTrashFunctionsMoveThroughStageAndPutBackOnFailure() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("tf-\(UUID().uuidString)")
+        let app = dir.appendingPathComponent("A.app/Contents", isDirectory: true)
+        try FileManager.default.createDirectory(at: app, withIntermediateDirectories: true)
+        try Data("x".utf8).write(to: app.appendingPathComponent("file"))
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let src = dir.appendingPathComponent("A.app").path
+        let dest = dir.appendingPathComponent("A 1").path
+        let missing = dir.appendingPathComponent("no-such-dir/A 2").path
+
+        func run(_ s: String, _ d: String) throws -> Int32 {
+            let p = Process()
+            p.executableURL = URL(fileURLWithPath: "/bin/sh")
+            p.arguments = ["-c", FileRemover.trashFunctions(uid: getuid(), gid: getgid())
+                           + " ; cw_trash \(AdminShell.quote(s)) \(AdminShell.quote(d))"]
+            try p.run()
+            p.waitUntilExit()
+            return p.terminationStatus
+        }
+        let stagesBefore = try stageDirs()
+
+        XCTAssertEqual(try run(src, missing), 0)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: src + "/Contents/file"), "a failed last move puts the item back")
+
+        XCTAssertEqual(try run(src, dest), 0)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: src))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: dest + "/Contents/file"))
+
+        XCTAssertEqual(try stageDirs(), stagesBefore, "the private stage is always removed")
+    }
+
+    private func stageDirs() throws -> Set<String> {
+        Set(try FileManager.default.contentsOfDirectory(atPath: "/private/var/tmp").filter { $0.hasPrefix("clearwise.") })
+    }
 }
