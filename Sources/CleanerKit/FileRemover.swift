@@ -44,9 +44,15 @@ public enum FileRemover {
     /// - items inside world-writable or sticky folders (/Library/Caches, /Users/Shared…) never go through root —
     ///   another user or process could swap them; they are trashed as the current user or reported;
     /// - the destination name is random (UUID) and the move is refused if it already exists or is a link;
-    /// - ownership is NOT changed afterwards (a recursive chown as root could be redirected via hard links),
-    ///   so Finder will ask for the password again when emptying the Trash, and "Put Back" is not available.
-    /// A privileged helper (SMAppService + XPC, fd-based renames) would close the remaining TOCTOU window.
+    /// - on the way the item passes through a private root-only folder (`mktemp -d`, 0700). There, if nothing
+    ///   in it was writable by anyone but root (owner, group/other bits, ACLs), its FOLDERS are handed to the user
+    ///   (`chmod u+rwx`, then `chown -h`, deepest first). Files keep their owner: unlinking a file needs only
+    ///   write access to its folder, so emptying the Trash later needs no second password (in the app or in
+    ///   Finder). Folders cannot be hard-linked and the tree cannot change under root's feet, so the chown
+    ///   cannot be redirected to a file elsewhere; any doubt (a user-writable entry, an ACL) leaves the item
+    ///   root-owned as before, and the Trash asks for the password once when emptied.
+    /// "Put Back" is not available for these items. A privileged helper (SMAppService + XPC, fd-based renames)
+    /// would close the remaining TOCTOU window on the source path.
     /// `rootPrelude` runs as root first, in the same password prompt (e.g. `launchctl bootout system/<label>`);
     /// its result is ignored, the moves are checked on disk as always.
     public static func moveToTrashAsAdmin(_ urls: [URL], knownSizes: [URL: Int64] = [:], rootPrelude: [LaunchdRootCommand] = [],
@@ -79,10 +85,11 @@ public enum FileRemover {
             destinations.append(destPath)
             let dest = shellQuote(destPath)
             let source = shellQuote(url.path)
-            commands.append("{ [ ! -e \(dest) ] && [ ! -L \(dest) ] && /bin/mv -n -- \(source) \(dest); }")
+            commands.append("cw_trash \(source) \(dest)")
         }
         // Each item is checked on disk afterwards, so one failed move must not fail the whole batch.
-        let shell = (rootPrelude.compactMap(\.shellLine) + commands).joined(separator: " ; ") + " ; exit 0"
+        let shell = ([trashFunctions(uid: getuid(), gid: getgid())] + rootPrelude.compactMap(\.shellLine) + commands)
+            .joined(separator: " ; ") + " ; exit 0"
 
         let sizes = allowed.map { knownSizes[$0] ?? FileSizer.allocatedSize(of: $0) }
         // osascript in a child process: shows the standard password prompt without blocking the UI.
@@ -102,6 +109,29 @@ public enum FileRemover {
             }
         }
         return result
+    }
+
+    /// Root shell functions for `moveToTrashAsAdmin` (see its hardening notes).
+    /// `cw_trash SRC DEST`: SRC → private stage → (folders handed to the user when safe) → DEST in ~/.Trash;
+    /// if the last move fails the item goes back to SRC, never stays in the stage.
+    /// `cw_handover DIR STAGE`: only when every entry is root-owned, not group/other-writable and without ACLs;
+    /// a failed check (find or ls error) counts as «not safe».
+    static func trashFunctions(uid: uid_t, gid: gid_t) -> String {
+        let owner = "\(uid):\(gid)"
+        return """
+        cw_handover() { [ -d "$1" ] && [ ! -L "$1" ] || return 0 ; \
+        cw_x=$(/usr/bin/find "$1" \\( ! -user 0 -o \\( ! -type l \\( -perm -020 -o -perm -002 \\) \\) \\) -print -quit) || return 0 ; \
+        [ -z "$cw_x" ] || return 0 ; \
+        /bin/ls -leRA "$1" > "$2/acl" || return 0 ; \
+        /usr/bin/grep -qE '^ [0-9]+: ' "$2/acl" && return 0 ; \
+        /usr/bin/find "$1" -type d -exec /bin/chmod u+rwx {} + && /usr/bin/find -d "$1" -type d -exec /usr/sbin/chown -h \(owner) {} + ; \
+        return 0 ; } ; \
+        cw_trash() { { [ -e "$2" ] || [ -L "$2" ] ; } && return 0 ; \
+        cw_s=$(/usr/bin/mktemp -d /private/var/tmp/clearwise.XXXXXX) || { /bin/mv -n -- "$1" "$2" ; return 0 ; } ; \
+        if /bin/mv -n -- "$1" "$cw_s/i" ; then cw_handover "$cw_s/i" "$cw_s" ; \
+        /bin/mv -n -- "$cw_s/i" "$2" || /bin/mv -n -- "$cw_s/i" "$1" ; fi ; \
+        /bin/rm -f -- "$cw_s/acl" ; /bin/rmdir -- "$cw_s" 2>/dev/null ; return 0 ; }
+        """
     }
 
     /// True when any folder on the way to `url` (below /) is world-writable or sticky,

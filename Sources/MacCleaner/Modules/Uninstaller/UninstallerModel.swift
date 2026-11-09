@@ -457,18 +457,32 @@ final class UninstallerModel {
         return plan
     }
 
-    /// Batch: one stage and one engine call per app.
+    /// Batch: one stage and one engine call per app. When several apps have root-owned parts, those wait
+    /// for one last unit: one administrator password for the whole batch instead of one per app.
     static func batchPlan(_ apps: [(InstalledApp, [AppRemnant])]) -> CleaningPlan {
         var plan = CleaningPlan(title: String(localized: "Удаление \(Fmt.apps(apps.count))"), module: .uninstaller)
-        for (a, remnants) in apps {
+        let needsAdmin = apps.map { a, remnants in remnants.contains(where: \.requiresAdmin) || bundleNeedsAdmin(a) }
+        let pending: PendingAdminBox? = needsAdmin.filter { $0 }.count > 1 ? PendingAdminBox() : nil
+        for ((a, remnants), adminParts) in zip(apps, needsAdmin) {
             let ordered = byKind(remnants)
             var admin = Set(ordered.filter(\.requiresAdmin).map(\.item.url))
             if bundleNeedsAdmin(a) { admin.insert(a.url) }
             let stage = plan.addStage(a.name, symbol: "app.fill", iconURL: a.url,
                                       items: ordered.map { ($0.item.url, $0.item.size) } + [(a.url, a.size)], admin: admin)
-            plan.addUnit(activating: stage) { progress in
-                await AppUninstaller.uninstall(a, remnants: ordered, removeBundle: true, progress: progress)
+            if let pending, adminParts {
+                plan.addUnit(activating: stage) { progress in
+                    let (result, rest) = await AppUninstaller.uninstallDeferringAdmin(a, remnants: ordered, progress: progress)
+                    pending.value.merge(rest)
+                    return result
+                }
+            } else {
+                plan.addUnit(activating: stage) { progress in
+                    await AppUninstaller.uninstall(a, remnants: ordered, removeBundle: true, progress: progress)
+                }
             }
+        }
+        if let pending {
+            plan.addUnit { progress in await AppUninstaller.finish(pending.value, progress: progress) }
         }
         return plan
     }
@@ -668,4 +682,10 @@ final class UninstallerModel {
         c.confirmTitle = String(localized: "Удалить остатки")
         app.ask(c)
     }
+}
+
+/// Root-owned parts of a batch uninstall, collected by the per-app units for the last one (plan units run on the main actor).
+@MainActor
+final class PendingAdminBox {
+    var value = AppUninstaller.PendingAdmin()
 }
